@@ -1,0 +1,15 @@
+<component name="ArtifactManager">
+  <artifact type="exploded-ear" name="core">
+    <output-path>$PROJECT_DIR$/out/artifacts/core.ear</output-path>
+    <properties id="ant-preprocessing">
+      <options enabled="true" />
+    </properties>
+    <root id="root">
+      <element id="directory" name="lib">
+        <element id="archive" name="core.jar">
+          <element id="module-output" name="core" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>
