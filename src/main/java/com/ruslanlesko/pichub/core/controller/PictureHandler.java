@@ -17,6 +17,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,9 +67,19 @@ public class PictureHandler {
     @Produces(MediaType.TEXT_PLAIN)
     public long add(@PathParam("userId") long userId, InputStream is) {
         try {
-            byte[] data = new byte[is.available()];
-            is.read(data);
-            return pictureDao.save(userId, new Picture(-1, data));
+            byte[] buffer = new byte[is.available()];
+            byte[] data;
+            int count = is.read(buffer);
+            while (count > 0) {
+                data = new byte[is.available()];
+                count = is.read(data);
+                byte[] newBuffer = Arrays.copyOf(buffer, buffer.length + count);
+                for (int i = 0; i < count; i++) {
+                    newBuffer[newBuffer.length - count + i] = data[i];
+                }
+                buffer = newBuffer;
+            }
+            return pictureDao.save(userId, new Picture(-1, buffer));
         } catch (IOException e) {
             return -1;
         }

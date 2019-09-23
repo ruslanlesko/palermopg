@@ -14,6 +14,6 @@ public class GlobalFilter implements ContainerResponseFilter {
             throws IOException {
         containerResponseContext.getHeaders().putSingle("Access-Control-Allow-Origin", "*");
         containerResponseContext.getHeaders().putSingle("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        containerResponseContext.getHeaders().putSingle("Access-Control-Allow-Headers", "Authorization");
+        containerResponseContext.getHeaders().putSingle("Access-Control-Allow-Headers", "Authorization, content-type");
     }
 }

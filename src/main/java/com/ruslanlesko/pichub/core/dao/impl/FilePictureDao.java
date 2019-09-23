@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @ApplicationScoped
 public class FilePictureDao implements PictureDao {
-    private String folderPath = "/Users/r.lesko/Projects/Pichub/data";
+    private String folderPath = "/Users/ruslan_lesko/Projects/pichub/data";
 
     @Override
     public List<Long> findIdsForUser(long userId) {
