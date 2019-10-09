@@ -1,5 +1,0 @@
-com/ruslanlesko/pichub/core/entity/Picture.class
-com/ruslanlesko/pichub/core/filters/GlobalFilter.class
-com/ruslanlesko/pichub/core/dao/impl/FilePictureDao.class
-com/ruslanlesko/pichub/core/controller/PictureHandler.class
-com/ruslanlesko/pichub/core/dao/PictureDao.class
