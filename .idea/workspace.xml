@@ -7,102 +7,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="57b3df2a-a3e1-46be-8060-8ddea560c93d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/target/classes/META-INF/core.kotlin_module" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/ruslanlesko/pichub/core/controller/PictureHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/ruslanlesko/pichub/core/controller/PictureHandler.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/ruslanlesko/pichub/core/dao/impl/FilePictureDao.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/ruslanlesko/pichub/core/dao/impl/FilePictureDao.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/ruslanlesko/pichub/core/filters/GlobalFilter.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/ruslanlesko/pichub/core/filters/GlobalFilter.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/quarkus.log" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/quarkus.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/core-1.0-SNAPSHOT-runner.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/core-1.0-SNAPSHOT.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/core-dev.jar" beforeDir="false" afterPath="$PROJECT_DIR$/target/core-dev.jar" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/com.sun.activation.jakarta.activation-1.2.1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/commons-codec.commons-codec-1.10.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/commons-io.commons-io-2.5.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/commons-logging.commons-logging-1.2.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/io.quarkus.arc.arc-runtime-0.11.0.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/io.quarkus.quarkus-arc-runtime-0.11.0.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/io.quarkus.quarkus-core-runtime-0.11.0.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/io.quarkus.quarkus-jaxb-runtime-0.11.0.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/io.quarkus.quarkus-resteasy-common-runtime-0.11.0.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/io.quarkus.quarkus-resteasy-runtime-0.11.0.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/io.quarkus.quarkus-undertow-runtime-0.11.0.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/io.smallrye.smallrye-config-1.3.5.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/io.undertow.undertow-core-2.0.17.Final.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/io.undertow.undertow-servlet-2.0.17.Final.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/javax.annotation.javax.annotation-api-1.3.2.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/javax.el.javax.el-api-3.0.0.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/javax.enterprise.cdi-api-2.0.SP1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/javax.inject.javax.inject-1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/javax.interceptor.javax.interceptor-api-1.2.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/javax.validation.validation-api-2.0.1.Final.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/javax.xml.bind.jaxb-api-2.3.1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/net.jcip.jcip-annotations-1.0.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.apache.httpcomponents.httpclient-4.5.6.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.apache.httpcomponents.httpcore-4.4.10.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.eclipse.microprofile.config.microprofile-config-api-1.3.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.graalvm.sdk.graal-sdk-1.0.0-rc12.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.jboss.logging.jboss-logging-3.3.2.Final.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.jboss.logging.jboss-logging-annotations-2.1.0.Final.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.jboss.logmanager.jboss-logmanager-embedded-1.0.0.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.jboss.resteasy.resteasy-core-4.0.0.Beta8.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.jboss.resteasy.resteasy-core-spi-4.0.0.Beta8.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.jboss.slf4j.slf4j-jboss-logging-1.1.0.Final.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.jboss.spec.javax.servlet.jboss-servlet-api_4.0_spec-1.0.0.Final.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.jboss.spec.javax.ws.rs.jboss-jaxrs-api_2.1_spec-1.0.2.Final.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.jboss.spec.javax.xml.bind.jboss-jaxb-api_2.3_spec-1.0.1.Final.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.jboss.threads.jboss-threads-3.0.0.Alpha4.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.jboss.xnio.xnio-api-3.6.5.Final.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.jboss.xnio.xnio-nio-3.6.5.Final.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.osgi.org.osgi.annotation.versioning-1.0.0.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.reactivestreams.reactive-streams-1.0.2.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.slf4j.slf4j-api-1.7.25.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.wildfly.common.wildfly-common-1.5.0.Final-format-001.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.wildfly.security.wildfly-elytron-asn1-2.0.0.Alpha1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.wildfly.security.wildfly-elytron-auth-2.0.0.Alpha1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.wildfly.security.wildfly-elytron-auth-server-2.0.0.Alpha1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.wildfly.security.wildfly-elytron-base-2.0.0.Alpha1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.wildfly.security.wildfly-elytron-credential-2.0.0.Alpha1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.wildfly.security.wildfly-elytron-permission-2.0.0.Alpha1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.wildfly.security.wildfly-elytron-ssl-2.0.0.Alpha1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.wildfly.security.wildfly-elytron-util-2.0.0.Alpha1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.wildfly.security.wildfly-elytron-x500-2.0.0.Alpha1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.wildfly.security.wildfly-elytron-x500-cert-2.0.0.Alpha1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/lib/org.wildfly.security.wildfly-elytron-x500-cert-util-2.0.0.Alpha1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-archiver/pom.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/quarkus.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/surefire-reports/2019-03-11T14-12-58_324.dumpstream" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/surefire-reports/2019-03-13T17-13-22_587.dumpstream" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/surefire-reports/TEST-com.ruslanlesko.pichub.core.controller.HelloTest.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/surefire-reports/com.ruslanlesko.pichub.core.controller.HelloTest.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/test-classes/com/ruslanlesko/pichub/core/controller/HelloTest.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/test-classes/com/ruslanlesko/pichub/core/dao/impl/FilePictureDaoTest.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/META-INF/quarkus-default-config.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/META-INF/services/io.quarkus.arc.ComponentsProvider" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/com/ruslanlesko/pichub/core/controller/Hello_Bean.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/arc/ActivateRequestContextInterceptor_Bean.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/arc/runtime/LifecycleEventRunner_Bean.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/arc/setup/Default_ComponentsProvider.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/deployment/steps/ArcAnnotationProcessor$build4.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/deployment/steps/LifecycleEventsBuildStep$startupEvent9.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/deployment/steps/LoggingResourceProcessor$setupLoggingRuntimeInit2.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/deployment/steps/LoggingResourceProcessor$setupLoggingStaticInit1.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/deployment/steps/ResteasyScanningProcessor$setupInjection5.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/deployment/steps/UndertowArcIntegrationBuildStep$integrateRequestContext6.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/deployment/steps/UndertowBuildStep$boot8.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/deployment/steps/UndertowBuildStep$build7.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/runner/ApplicationImpl1.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/runner/AutoFeature.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/runner/GeneratedMain.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/runtime/generated/ConfigHelper.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/runtime/generated/ConfigHelperData.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/io/quarkus/runtime/generated/ConfigRoot.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-classes/javax/enterprise/context/control/ActivateRequestContext_Shared_AnnotationLiteral.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-devmode/io/quarkus/arc/runtime/LifecycleEventRunner_Bean.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/wiring-devmode/io/quarkus/arc/runtime/LifecycleEventRunner_Bean.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-devmode/io/quarkus/runtime/generated/ConfigHelper.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/wiring-devmode/io/quarkus/runtime/generated/ConfigHelper.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/wiring-devmode/io/quarkus/runtime/generated/ConfigRoot.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/wiring-devmode/io/quarkus/runtime/generated/ConfigRoot.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/com/ruslanlesko/pichub/core/controller/PictureHandlerTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/controller/PictureHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/controller/PictureHandler.java" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -135,6 +42,9 @@
     </option>
   </component>
   <component name="ProjectId" id="1REcgHObqj79eJJ470M0loMnNxq" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="aspect.path.notification.shown" value="true" />
@@ -145,7 +55,7 @@
     <property name="project.structure.last.edited" value="Libraries" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.2" />
-    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
+    <property name="settings.editor.selected.configurable" value="preferences.fileTypes" />
   </component>
   <component name="RecentsManager">
     <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
@@ -165,6 +75,21 @@
     </option>
   </component>
   <component name="RunManager" selected="Maven.Run Dev">
+    <configuration name="FilePictureDaoTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="core" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.ruslanlesko.pichub.core.dao.impl.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.ruslanlesko.pichub.core.dao.impl" />
+      <option name="MAIN_CLASS_NAME" value="com.ruslanlesko.pichub.core.dao.impl.FilePictureDaoTest" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="FilePictureDaoTest.testAddNewFile" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="core" />
       <extension name="coverage">
@@ -177,6 +102,36 @@
       <option name="MAIN_CLASS_NAME" value="com.ruslanlesko.pichub.core.dao.impl.FilePictureDaoTest" />
       <option name="METHOD_NAME" value="testAddNewFile" />
       <option name="TEST_OBJECT" value="method" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="HelloTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="core" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.ruslanlesko.pichub.core.controller.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.ruslanlesko.pichub.core.controller" />
+      <option name="MAIN_CLASS_NAME" value="com.ruslanlesko.pichub.core.controller.HelloTest" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="PictureHandlerTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="core" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.ruslanlesko.pichub.core.controller.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.ruslanlesko.pichub.core.controller" />
+      <option name="MAIN_CLASS_NAME" value="com.ruslanlesko.pichub.core.controller.PictureHandlerTest" />
+      <option name="TEST_OBJECT" value="class" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
@@ -253,10 +208,16 @@
     </configuration>
     <list>
       <item itemvalue="JUnit.FilePictureDaoTest.testAddNewFile" />
+      <item itemvalue="JUnit.HelloTest" />
+      <item itemvalue="JUnit.FilePictureDaoTest" />
       <item itemvalue="Maven.Run Dev" />
+      <item itemvalue="JUnit.PictureHandlerTest" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="JUnit.PictureHandlerTest" />
+        <item itemvalue="JUnit.HelloTest" />
+        <item itemvalue="JUnit.FilePictureDaoTest" />
         <item itemvalue="JUnit.FilePictureDaoTest.testAddNewFile" />
       </list>
     </recent_temporary>
@@ -276,7 +237,8 @@
       <workItem from="1569237197159" duration="1331000" />
       <workItem from="1569239007435" duration="14687000" />
       <workItem from="1570611975109" duration="523000" />
-      <workItem from="1570621450071" duration="1241000" />
+      <workItem from="1570621450071" duration="3737000" />
+      <workItem from="1570704589894" duration="2527000" />
     </task>
     <task id="LOCAL-00001" summary="Fix picture upload">
       <created>1569249534584</created>

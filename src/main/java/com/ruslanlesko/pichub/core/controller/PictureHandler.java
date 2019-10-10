@@ -25,7 +25,15 @@ import java.util.Optional;
 public class PictureHandler {
 
     @Inject
-    private PictureDao pictureDao;
+    PictureDao pictureDao;
+
+    public PictureHandler() {
+
+    }
+
+    public PictureHandler(PictureDao pictureDao) {
+        this.pictureDao = pictureDao;
+    }
 
     @GET
     @Path("/{userId}/{pictureId}")
