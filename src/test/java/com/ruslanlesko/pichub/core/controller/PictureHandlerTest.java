@@ -1,13 +1,10 @@
 package com.ruslanlesko.pichub.core.controller;
 
 import com.ruslanlesko.pichub.core.dao.PictureDao;
-import com.ruslanlesko.pichub.core.entity.Picture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.mock;

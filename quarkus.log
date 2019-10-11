@@ -16,3 +16,9 @@
 2019-03-13 17:14:20,826 ruslans-mac-mini core-1.0-SNAPSHOT-runner.jar[88122] INFO  [io.quarkus] (main) Quarkus 0.11.0 started in 6.729s. Listening on: http://127.0.0.1:8080
 2019-03-13 17:14:20,831 ruslans-mac-mini core-1.0-SNAPSHOT-runner.jar[88122] INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
 2019-03-13 17:14:26,076 ruslans-mac-mini core-1.0-SNAPSHOT-runner.jar[88122] INFO  [io.quarkus] (main) Quarkus stopped in 0.015s
+2019-10-11 10:34:22,642 epuakyiw2635 core-1.0-SNAPSHOT-runner.jar[16755] DEBUG [org.xnio] (main) XNIO version 3.6.5.Final
+2019-10-11 10:34:22,723 epuakyiw2635 core-1.0-SNAPSHOT-runner.jar[16755] DEBUG [org.xni.nio] (main) XNIO NIO Implementation Version 3.6.5.Final
+2019-10-11 10:34:22,945 epuakyiw2635 core-1.0-SNAPSHOT-runner.jar[16755] DEBUG [org.jbo.threads] (main) JBoss Threads version 3.0.0.Alpha4
+2019-10-11 10:34:23,035 epuakyiw2635 core-1.0-SNAPSHOT-runner.jar[16755] INFO  [io.quarkus] (main) Quarkus 0.11.0 started in 1.094s. Listening on: http://127.0.0.1:8080
+2019-10-11 10:34:23,038 epuakyiw2635 core-1.0-SNAPSHOT-runner.jar[16755] INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
+2019-10-11 10:34:41,399 epuakyiw2635 core-1.0-SNAPSHOT-runner.jar[16755] INFO  [io.quarkus] (main) Quarkus stopped in 0.007s

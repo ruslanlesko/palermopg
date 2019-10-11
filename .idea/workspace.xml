@@ -7,9 +7,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="57b3df2a-a3e1-46be-8060-8ddea560c93d" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/test/java/com/ruslanlesko/pichub/core/controller/PictureHandlerTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/controller/PictureHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/controller/PictureHandler.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/controller/PingHandler.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/quarkus.log" beforeDir="false" afterPath="$PROJECT_DIR$/quarkus.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/docker/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/docker/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/ruslanlesko/pichub/core/controller/HelloTest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/ruslanlesko/pichub/core/controller/PictureHandlerTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/ruslanlesko/pichub/core/controller/PictureHandlerTest.java" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -52,7 +55,7 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
-    <property name="project.structure.last.edited" value="Libraries" />
+    <property name="project.structure.last.edited" value="Modules" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.2" />
     <property name="settings.editor.selected.configurable" value="preferences.fileTypes" />
@@ -74,7 +77,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Maven.Run Dev">
+  <component name="RunManager" selected="Maven.Package">
     <configuration name="FilePictureDaoTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="core" />
       <extension name="coverage">
@@ -135,6 +138,61 @@
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
+    </configuration>
+    <configuration name="Package to docker" type="MavenRunConfiguration" factoryName="Maven">
+      <MavenSettings>
+        <option name="myGeneralSettings" />
+        <option name="myRunnerSettings" />
+        <option name="myRunnerParameters">
+          <MavenRunnerParameters>
+            <option name="profiles">
+              <set />
+            </option>
+            <option name="goals">
+              <list>
+                <option value="clean" />
+                <option value="compile" />
+                <option value="package" />
+                <option value="-Pnative" />
+                <option value="-Dnative-image.docker-build=true" />
+              </list>
+            </option>
+            <option name="pomFileName" />
+            <option name="profilesMap">
+              <map />
+            </option>
+            <option name="resolveToWorkspace" value="false" />
+            <option name="workingDirPath" value="$PROJECT_DIR$" />
+          </MavenRunnerParameters>
+        </option>
+      </MavenSettings>
+      <method v="2" />
+    </configuration>
+    <configuration name="Package" type="MavenRunConfiguration" factoryName="Maven">
+      <MavenSettings>
+        <option name="myGeneralSettings" />
+        <option name="myRunnerSettings" />
+        <option name="myRunnerParameters">
+          <MavenRunnerParameters>
+            <option name="profiles">
+              <set />
+            </option>
+            <option name="goals">
+              <list>
+                <option value="clean" />
+                <option value="package" />
+              </list>
+            </option>
+            <option name="pomFileName" />
+            <option name="profilesMap">
+              <map />
+            </option>
+            <option name="resolveToWorkspace" value="false" />
+            <option name="workingDirPath" value="$PROJECT_DIR$" />
+          </MavenRunnerParameters>
+        </option>
+      </MavenSettings>
+      <method v="2" />
     </configuration>
     <configuration name="Run Dev" type="MavenRunConfiguration" factoryName="Maven">
       <MavenSettings>
@@ -210,8 +268,10 @@
       <item itemvalue="JUnit.FilePictureDaoTest.testAddNewFile" />
       <item itemvalue="JUnit.HelloTest" />
       <item itemvalue="JUnit.FilePictureDaoTest" />
-      <item itemvalue="Maven.Run Dev" />
       <item itemvalue="JUnit.PictureHandlerTest" />
+      <item itemvalue="Maven.Package" />
+      <item itemvalue="Maven.Run Dev" />
+      <item itemvalue="Maven.Package to docker" />
     </list>
     <recent_temporary>
       <list>
@@ -238,7 +298,7 @@
       <workItem from="1569239007435" duration="14687000" />
       <workItem from="1570611975109" duration="523000" />
       <workItem from="1570621450071" duration="3737000" />
-      <workItem from="1570704589894" duration="2527000" />
+      <workItem from="1570704589894" duration="6355000" />
     </task>
     <task id="LOCAL-00001" summary="Fix picture upload">
       <created>1569249534584</created>

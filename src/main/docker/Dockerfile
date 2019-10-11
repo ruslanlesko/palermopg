@@ -12,9 +12,8 @@
 # docker run -i --rm -p 8080:8080 quarkus/core
 #
 ###
-FROM registry.fedoraproject.org/fedora-minimal
+FROM openjdk:11-slim
 WORKDIR /work/
-COPY target/*-runner /work/application
-RUN chmod 775 /work
+COPY /target/ /work/
 EXPOSE 8080
-CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+CMD ["java", "-jar", "core-1.0-SNAPSHOT-runner.jar"]
