@@ -7,10 +7,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="57b3df2a-a3e1-46be-8060-8ddea560c93d" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/exception/AuthorizationException.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/controller/PictureHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/controller/PictureHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/ruslanlesko/pichub/core/controller/PictureHandlerTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/ruslanlesko/pichub/core/controller/PictureHandlerTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/security/JWTParser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -75,7 +73,20 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="JUnit.PictureHandlerTest">
+  <component name="RunManager" selected="Application.JWTParser">
+    <configuration name="JWTParser" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.ruslanlesko.pichub.core.security.JWTParser" />
+      <module name="core" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.ruslanlesko.pichub.core.security.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="FilePictureDaoTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="core" />
       <extension name="coverage">
@@ -270,9 +281,11 @@
       <item itemvalue="Maven.Package" />
       <item itemvalue="Maven.Run Dev" />
       <item itemvalue="Maven.Package to docker" />
+      <item itemvalue="Application.JWTParser" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Application.JWTParser" />
         <item itemvalue="JUnit.PictureHandlerTest" />
         <item itemvalue="JUnit.HelloTest" />
         <item itemvalue="JUnit.FilePictureDaoTest" />
@@ -296,7 +309,7 @@
       <workItem from="1569239007435" duration="14687000" />
       <workItem from="1570611975109" duration="523000" />
       <workItem from="1570621450071" duration="3737000" />
-      <workItem from="1570704589894" duration="7799000" />
+      <workItem from="1570704589894" duration="10805000" />
     </task>
     <task id="LOCAL-00001" summary="Fix picture upload">
       <created>1569249534584</created>
@@ -327,5 +340,16 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Fix picture upload" />
     <option name="LAST_COMMIT_MESSAGE" value="Fix picture upload" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/security/JWTParser.java</url>
+          <line>24</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
