@@ -7,11 +7,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="57b3df2a-a3e1-46be-8060-8ddea560c93d" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/controller/PingHandler.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/quarkus.log" beforeDir="false" afterPath="$PROJECT_DIR$/quarkus.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/docker/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/docker/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/ruslanlesko/pichub/core/controller/HelloTest.java" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/exception/AuthorizationException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/controller/PictureHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/controller/PictureHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/test/java/com/ruslanlesko/pichub/core/controller/PictureHandlerTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/ruslanlesko/pichub/core/controller/PictureHandlerTest.java" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -77,7 +75,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Maven.Package">
+  <component name="RunManager" selected="JUnit.PictureHandlerTest">
     <configuration name="FilePictureDaoTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="core" />
       <extension name="coverage">
@@ -298,7 +296,7 @@
       <workItem from="1569239007435" duration="14687000" />
       <workItem from="1570611975109" duration="523000" />
       <workItem from="1570621450071" duration="3737000" />
-      <workItem from="1570704589894" duration="6355000" />
+      <workItem from="1570704589894" duration="7799000" />
     </task>
     <task id="LOCAL-00001" summary="Fix picture upload">
       <created>1569249534584</created>

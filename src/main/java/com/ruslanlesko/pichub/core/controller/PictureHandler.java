@@ -6,12 +6,7 @@ import com.ruslanlesko.pichub.core.dao.PictureDao;
 import com.ruslanlesko.pichub.core.entity.Picture;
 
 import javax.inject.Inject;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
@@ -39,7 +34,8 @@ public class PictureHandler {
     @Path("/{userId}/{pictureId}")
     @Produces({"image/jpeg"})
     public Response getById(@PathParam("userId") long userId,
-                            @PathParam("pictureId") long id) {
+                            @PathParam("pictureId") long id,
+                            @HeaderParam("Authorization") @DefaultValue("") String token) {
         Optional<Picture> picture = pictureDao.find(userId, id);
 
         if (picture.isEmpty()) {
@@ -55,7 +51,9 @@ public class PictureHandler {
     @GET
     @Path("/{userId}")
     @Produces(MediaType.APPLICATION_JSON)
-    public String getIdsForUser(@PathParam("userId") long userId) {
+    public String getIdsForUser(
+            @PathParam("userId") long userId,
+            @HeaderParam("Authorization") String token) {
         List<Long> result = pictureDao.findIdsForUser(userId);
         if (result == null) {
             return "[]";
@@ -73,7 +71,10 @@ public class PictureHandler {
     @Path("/{userId}")
     @Consumes({"image/jpeg"})
     @Produces(MediaType.TEXT_PLAIN)
-    public long add(@PathParam("userId") long userId, InputStream is) {
+    public long add(
+            @PathParam("userId") long userId,
+            InputStream is,
+            @HeaderParam("Authorization") String token) {
         try {
             byte[] buffer = new byte[is.available()];
             byte[] data;
