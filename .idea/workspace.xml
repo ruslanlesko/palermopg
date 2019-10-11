@@ -7,8 +7,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="57b3df2a-a3e1-46be-8060-8ddea560c93d" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/security/JWTParser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/artifacts/core.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/dao/impl/FilePictureDao.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/dao/impl/FilePictureDao.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/security/JWTParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/security/JWTParser.java" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -212,6 +214,8 @@
             <option name="environmentProperties">
               <map>
                 <entry key="JAVA_HOME" value="$USER_HOME$/java/jdk11" />
+                <entry key="PIC_DATA" value="$PROJECT_DIR$/../data" />
+                <entry key="PIC_KEY" value="$PROJECT_DIR$/../keys/key.pub" />
               </map>
             </option>
             <option name="jreName" value="#USE_PROJECT_JDK" />
@@ -274,6 +278,7 @@
       <method v="2" />
     </configuration>
     <list>
+      <item itemvalue="Application.JWTParser" />
       <item itemvalue="JUnit.FilePictureDaoTest.testAddNewFile" />
       <item itemvalue="JUnit.HelloTest" />
       <item itemvalue="JUnit.FilePictureDaoTest" />
@@ -281,7 +286,6 @@
       <item itemvalue="Maven.Package" />
       <item itemvalue="Maven.Run Dev" />
       <item itemvalue="Maven.Package to docker" />
-      <item itemvalue="Application.JWTParser" />
     </list>
     <recent_temporary>
       <list>
@@ -340,16 +344,5 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Fix picture upload" />
     <option name="LAST_COMMIT_MESSAGE" value="Fix picture upload" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/security/JWTParser.java</url>
-          <line>24</line>
-          <option name="timeStamp" value="2" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>

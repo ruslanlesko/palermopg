@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruslanlesko.pichub.core.dao.PictureDao;
 import com.ruslanlesko.pichub.core.entity.Picture;
+import com.ruslanlesko.pichub.core.security.JWTParser;
 
 import javax.inject.Inject;
 import javax.ws.rs.*;
@@ -21,6 +22,9 @@ public class PictureHandler {
 
     @Inject
     PictureDao pictureDao;
+
+    @Inject
+    JWTParser jwtParser;
 
     public PictureHandler() {
 
