@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruslanlesko.pichub.core.dao.PictureDao;
 import com.ruslanlesko.pichub.core.entity.Picture;
+import com.ruslanlesko.pichub.core.exception.AuthorizationException;
 import com.ruslanlesko.pichub.core.security.JWTParser;
 
 import javax.inject.Inject;
@@ -40,6 +41,8 @@ public class PictureHandler {
     public Response getById(@PathParam("userId") long userId,
                             @PathParam("pictureId") long id,
                             @HeaderParam("Authorization") @DefaultValue("") String token) {
+        checkAuthorization(token, userId);
+
         Optional<Picture> picture = pictureDao.find(userId, id);
 
         if (picture.isEmpty()) {
@@ -58,6 +61,8 @@ public class PictureHandler {
     public String getIdsForUser(
             @PathParam("userId") long userId,
             @HeaderParam("Authorization") String token) {
+        checkAuthorization(token, userId);
+
         List<Long> result = pictureDao.findIdsForUser(userId);
         if (result == null) {
             return "[]";
@@ -79,6 +84,8 @@ public class PictureHandler {
             @PathParam("userId") long userId,
             InputStream is,
             @HeaderParam("Authorization") String token) {
+        checkAuthorization(token, userId);
+
         try {
             byte[] buffer = new byte[is.available()];
             byte[] data;
@@ -95,6 +102,12 @@ public class PictureHandler {
             return pictureDao.save(userId, new Picture(-1, buffer));
         } catch (IOException e) {
             return -1;
+        }
+    }
+
+    private void checkAuthorization(String token, long userId) {
+        if (!jwtParser.validateTokenForUserId(token, userId)) {
+            throw new AuthorizationException();
         }
     }
 }

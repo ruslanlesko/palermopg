@@ -7,10 +7,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="57b3df2a-a3e1-46be-8060-8ddea560c93d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/artifacts/core.xml" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/exception/AuthorizationExceptionMapper.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/dao/impl/FilePictureDao.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/dao/impl/FilePictureDao.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/security/JWTParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/security/JWTParser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/controller/PictureHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/ruslanlesko/pichub/core/controller/PictureHandler.java" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -75,7 +74,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Application.JWTParser">
+  <component name="RunManager" selected="Maven.Run Dev">
     <configuration name="JWTParser" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="com.ruslanlesko.pichub.core.security.JWTParser" />
       <module name="core" />
