@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 public class JWTParser {
     private static final String KEY_PATH = System.getenv("PIC_KEY");
     private static final String USER_ID_ATTR = "userId";
+    private static final String BEARER = "Bearer ";
 
     private JwtConsumer consumer;
 
@@ -40,8 +41,9 @@ public class JWTParser {
         String strKey = readPemKey();
         byte[] encoded = Base64.getDecoder().decode(strKey);
         try {
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encoded);
             KeyFactory kf = KeyFactory.getInstance("RSA");
-            return kf.generatePublic(new X509EncodedKeySpec(encoded));
+            return kf.generatePublic(keySpec);
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             e.printStackTrace();
             return null;
@@ -59,6 +61,10 @@ public class JWTParser {
     }
 
     public boolean validateTokenForUserId(String token, long userId) {
+        if (token.startsWith(BEARER)) {
+            token = token.substring(BEARER.length());
+        }
+
         try {
             JwtClaims claims = consumer.processToClaims(token);
             return claims.getClaimValue(USER_ID_ATTR, Long.class).equals(userId);
