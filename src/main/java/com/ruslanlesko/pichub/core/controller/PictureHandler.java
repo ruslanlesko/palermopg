@@ -41,7 +41,7 @@ public class PictureHandler {
     public Response getById(@PathParam("userId") long userId,
                             @PathParam("pictureId") long id,
                             @HeaderParam("Authorization") @DefaultValue("") String token) {
-//        checkAuthorization(token, userId);
+        checkAuthorization(token, userId);
 
         Optional<Picture> picture = pictureDao.find(userId, id);
 
