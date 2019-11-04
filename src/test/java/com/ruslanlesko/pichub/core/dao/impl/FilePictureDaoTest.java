@@ -9,6 +9,6 @@ public class FilePictureDaoTest {
     @Test
     public void testAddNewFile() {
         PictureDao pictureDao = new FilePictureDao();
-        pictureDao.save(2, new Picture(1, new byte[3]));
+        pictureDao.save(2, new Picture(1, new byte[3], dateUploaded, dateCaptured));
     }
 }

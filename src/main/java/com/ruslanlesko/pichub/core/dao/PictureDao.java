@@ -9,4 +9,5 @@ public interface PictureDao {
     long save(long userId, Picture picture);
     Optional<Picture> find(long userId, long id);
     List<Long> findIdsForUser(long userId);
+    List<Picture> findPicturesForUser(long userId);
 }

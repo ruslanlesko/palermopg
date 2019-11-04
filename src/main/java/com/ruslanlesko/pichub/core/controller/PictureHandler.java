@@ -15,8 +15,11 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Path("/pic")
 public class PictureHandler {
@@ -63,10 +66,22 @@ public class PictureHandler {
             @HeaderParam("Authorization") String token) {
         checkAuthorization(token, userId);
 
-        List<Long> result = pictureDao.findIdsForUser(userId);
-        if (result == null) {
-            return "[]";
-        }
+        List<Long> result = pictureDao.findPicturesForUser(userId).stream()
+                .sorted((picA, picB) -> {
+                    LocalDateTime uploadedA = picA.getDateUploaded();
+                    LocalDateTime uploadedB = picB.getDateUploaded();
+                    LocalDateTime capturedA = picA.getDateCaptured();
+                    LocalDateTime capturedB = picB.getDateCaptured();
+
+                    if (uploadedA.getYear() == uploadedB.getYear()
+                            && uploadedA.getDayOfYear() == uploadedB.getDayOfYear()) {
+                        return capturedB.compareTo(capturedA);
+                    }
+
+                    return uploadedB.compareTo(capturedA);
+                })
+                .map(Picture::getId)
+                .collect(Collectors.toList());
 
         ObjectMapper mapper = new ObjectMapper();
         try {
@@ -88,7 +103,7 @@ public class PictureHandler {
 
         try {
             byte[] data = IOUtils.toByteArray(is);
-            return pictureDao.save(userId, new Picture(-1, data));
+            return pictureDao.save(userId, new Picture(-1, data, null, null));
         } catch (IOException e) {
             return -1;
         }

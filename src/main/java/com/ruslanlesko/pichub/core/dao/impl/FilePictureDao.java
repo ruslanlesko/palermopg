@@ -1,16 +1,25 @@
 package com.ruslanlesko.pichub.core.dao.impl;
 
+import com.drew.imaging.ImageMetadataReader;
+import com.drew.imaging.ImageProcessingException;
+import com.drew.metadata.Metadata;
+import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.ruslanlesko.pichub.core.dao.PictureDao;
 import com.ruslanlesko.pichub.core.entity.Picture;
 
 import javax.enterprise.context.ApplicationScoped;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class FilePictureDao implements PictureDao {
@@ -38,6 +47,41 @@ public class FilePictureDao implements PictureDao {
         }
 
         return result;
+    }
+
+    @Override
+    public List<Picture> findPicturesForUser(long userId) {
+        Path userDir = Paths.get(folderPath + "/" + userId);
+
+        if (Files.notExists(userDir)) {
+            return List.of();
+        }
+
+        try {
+            return Files.list(userDir)
+                    .map(this::pathToPicture)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private Picture pathToPicture(Path path) {
+        try {
+            BasicFileAttributes attributes = Files.readAttributes(path, BasicFileAttributes.class);
+            FileTime fileTime = attributes.lastModifiedTime();
+            long fileTimeMills = fileTime.toMillis();
+            LocalDateTime uploadedDate = LocalDateTime.ofInstant(Instant.ofEpochMilli(fileTimeMills), ZoneId.systemDefault());
+            Metadata metadata = ImageMetadataReader.readMetadata(new FileInputStream(path.toString()));
+            ExifSubIFDDirectory exifDirectory = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
+            Date date = exifDirectory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
+            LocalDateTime dateCaptured = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            return new Picture(extractId(path), Files.readAllBytes(path), uploadedDate, dateCaptured);
+        } catch (IOException | ImageProcessingException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
     }
 
     @Override
@@ -88,7 +132,7 @@ public class FilePictureDao implements PictureDao {
 
         try {
             byte[] data = Files.readAllBytes(fullPath);
-            result = new Picture(pictureId, data);
+            result = new Picture(pictureId, data, null, null);
         } catch (IOException e) {
             System.out.println(e.getMessage());
             return Optional.empty();
