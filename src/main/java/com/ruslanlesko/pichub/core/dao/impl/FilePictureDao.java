@@ -77,7 +77,7 @@ public class FilePictureDao implements PictureDao {
             ExifSubIFDDirectory exifDirectory = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
             Date date = exifDirectory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
             LocalDateTime dateCaptured = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-            return new Picture(extractId(path), Files.readAllBytes(path), uploadedDate, dateCaptured);
+            return new Picture(extractId(path), Files.readAllBytes(path), path.toString(), uploadedDate, dateCaptured);
         } catch (IOException | ImageProcessingException e) {
             System.out.println(e.getMessage());
             return null;
@@ -132,7 +132,7 @@ public class FilePictureDao implements PictureDao {
 
         try {
             byte[] data = Files.readAllBytes(fullPath);
-            result = new Picture(pictureId, data, null, null);
+            result = new Picture(pictureId, data, fullPath.toString(), null, null);
         } catch (IOException e) {
             System.out.println(e.getMessage());
             return Optional.empty();
