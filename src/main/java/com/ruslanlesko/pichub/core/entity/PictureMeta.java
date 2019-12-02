@@ -1,19 +1,18 @@
 package com.ruslanlesko.pichub.core.entity;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Objects;
 
-public class Picture {
+public class PictureMeta {
     private final long id;
-    private final byte[] data;
+    private final long userId;
     private final String path;
     private final LocalDateTime dateUploaded;
     private final LocalDateTime dateCaptured;
 
-    public Picture(long id, byte[] data, String path, LocalDateTime dateUploaded, LocalDateTime dateCaptured) {
+    public PictureMeta(long id, long userId, String path, LocalDateTime dateUploaded, LocalDateTime dateCaptured) {
         this.id = id;
-        this.data = data;
+        this.userId = userId;
         this.path = path;
         this.dateUploaded = dateUploaded;
         this.dateCaptured = dateCaptured;
@@ -23,8 +22,8 @@ public class Picture {
         return id;
     }
 
-    public byte[] getData() {
-        return data;
+    public long getUserId() {
+        return userId;
     }
 
     public String getPath() {
@@ -45,26 +44,24 @@ public class Picture {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        Picture picture = (Picture) o;
-        return id == picture.id &&
-               Arrays.equals(data, picture.data) &&
-               Objects.equals(path, picture.path) &&
-               Objects.equals(dateUploaded, picture.dateUploaded) &&
-               Objects.equals(dateCaptured, picture.dateCaptured);
+        PictureMeta pictureMeta = (PictureMeta) o;
+        return id == pictureMeta.id &&
+               userId == pictureMeta.userId &&
+               Objects.equals(path, pictureMeta.path) &&
+               Objects.equals(dateUploaded, pictureMeta.dateUploaded) &&
+               Objects.equals(dateCaptured, pictureMeta.dateCaptured);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(id, path, dateUploaded, dateCaptured);
-        result = 31 * result + Arrays.hashCode(data);
-        return result;
+        return Objects.hash(id, userId, path, dateUploaded, dateCaptured);
     }
 
     @Override
     public String toString() {
         return "Picture{" +
                "id=" + id +
-               ", data=" + Arrays.toString(data) +
+               ", userId=" + userId +
                ", path='" + path + '\'' +
                ", dateUploaded=" + dateUploaded +
                ", dateCaptured=" + dateCaptured +

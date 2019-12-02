@@ -5,8 +5,9 @@ import org.jose4j.jwt.MalformedClaimException;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+import org.slf4j.Logger;
+import org.slf4j.impl.SimpleLoggerFactory;
 
-import javax.enterprise.context.ApplicationScoped;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,9 +19,9 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.stream.Collectors;
 
-
-@ApplicationScoped
 public class JWTParser {
+    private static Logger logger = new SimpleLoggerFactory().getLogger("JWTParser");
+
     private static final String KEY_PATH = System.getenv("PIC_KEY");
     private static final String USER_ID_ATTR = "userId";
     private static final String BEARER = "Bearer ";
@@ -69,7 +70,7 @@ public class JWTParser {
             JwtClaims claims = consumer.processToClaims(token);
             return claims.getClaimValue(USER_ID_ATTR, Long.class).equals(userId);
         } catch (InvalidJwtException | MalformedClaimException e) {
-            System.out.println("JWT is invalid: " + e.getMessage());
+            logger.debug("JWT is invalid: " + e.getMessage());
             return false;
         }
     }
