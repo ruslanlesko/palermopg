@@ -53,6 +53,11 @@ public class PictureHandler {
                 return;
             }
 
+            if (meta.get().getUserId() != userId) {
+                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
+                return;
+            }
+
             Optional<byte[]> data = pictureDataDao.find(meta.get().getPath());
 
             if (data.isEmpty()) {
@@ -80,6 +85,7 @@ public class PictureHandler {
 
         routingContext.vertx().executeBlocking(future -> {
             List<Long> result = pictureMetaDao.findPictureMetasForUser(userId).stream()
+                    .filter(p -> p.getAlbumId() <= 0)
                     .sorted((picA, picB) -> {
                         LocalDateTime uploadedA = picA.getDateUploaded();
                         LocalDateTime uploadedB = picB.getDateUploaded();
@@ -91,7 +97,7 @@ public class PictureHandler {
                             return capturedB.compareTo(capturedA);
                         }
 
-                        return uploadedB.compareTo(capturedA);
+                        return uploadedB.compareTo(uploadedA);
                     })
                     .map(PictureMeta::getId)
                     .collect(Collectors.toList());
@@ -112,6 +118,7 @@ public class PictureHandler {
     public void add(RoutingContext routingContext) {
         HttpServerRequest request = routingContext.request();
         long userId = Long.parseLong(request.getParam("userId"));
+        long albumId = Long.parseLong(Optional.ofNullable(request.getParam("albumId")).orElse("-1"));
         String token = request.getHeader("Authorization");
 
         try {
@@ -128,7 +135,7 @@ public class PictureHandler {
 
         routingContext.vertx().executeBlocking(future -> {
             String path = pictureDataDao.save(data);
-            long id = pictureMetaDao.save(new PictureMeta(-1, userId, path, LocalDateTime.now(), dateCaptured));
+            long id = pictureMetaDao.save(new PictureMeta(-1, userId, albumId, path, LocalDateTime.now(), dateCaptured));
 
             withCORSHeaders(routingContext.response()).end(String.valueOf(id));
 

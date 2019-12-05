@@ -41,6 +41,10 @@ public class MongoPictureMetaDao implements PictureMetaDao {
                 .append("userId", pictureMeta.getUserId())
                 .append("dateUploaded", pictureMeta.getDateUploaded())
                 .append("dateCaptured", pictureMeta.getDateCaptured());
+
+        if (pictureMeta.getAlbumId() > 0) {
+            document.append("albumId", pictureMeta.getAlbumId());
+        }
         getCollection().insertOne(document);
         return id;
     }
@@ -65,10 +69,22 @@ public class MongoPictureMetaDao implements PictureMetaDao {
         return result;
     }
 
+    @Override
+    public List<PictureMeta> findPictureMetasForAlbumId(long albumId) {
+        logger.debug("Finding pictures for album id " + albumId);
+        List<PictureMeta> result = new ArrayList<>();
+        getCollection().find(eq("albumId", albumId))
+                .forEach((Consumer<Document>) document -> result.add(mapToPicture(document)));
+        return result;
+    }
+
     private PictureMeta mapToPicture(Document document) {
+        Long albumId = document.getLong("albumId");
+
         return new PictureMeta(
                 document.getLong("id"),
                 document.getLong("userId"),
+                albumId == null ? -1 : albumId,
                 document.getString("path"),
                 document.getDate("dateUploaded").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
                 document.getDate("dateCaptured").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()

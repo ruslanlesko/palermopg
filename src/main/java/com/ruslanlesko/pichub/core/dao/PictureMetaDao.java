@@ -9,4 +9,5 @@ public interface PictureMetaDao {
     long save(PictureMeta pictureMeta);
     Optional<PictureMeta> find(long id);
     List<PictureMeta> findPictureMetasForUser(long userId);
+    List<PictureMeta> findPictureMetasForAlbumId(long albumId);
 }

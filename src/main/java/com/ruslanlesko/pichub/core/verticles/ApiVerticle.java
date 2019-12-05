@@ -1,7 +1,10 @@
 package com.ruslanlesko.pichub.core.verticles;
 
+import com.ruslanlesko.pichub.core.controller.AlbumHandler;
 import com.ruslanlesko.pichub.core.controller.PictureHandler;
+import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
 import com.ruslanlesko.pichub.core.dao.impl.FilePictureDataDao;
+import com.ruslanlesko.pichub.core.dao.impl.MongoAlbumDao;
 import com.ruslanlesko.pichub.core.dao.impl.MongoPictureMetaDao;
 import com.ruslanlesko.pichub.core.security.JWTParser;
 import io.vertx.core.AbstractVerticle;
@@ -16,12 +19,17 @@ public class ApiVerticle extends AbstractVerticle {
 
     @Override
     public void start(Promise<Void> startPromise) {
-        MongoPictureMetaDao mongoPictureMetaDao = new MongoPictureMetaDao("mongodb://pcusr:pcpwd@localhost/pichubdb");
+        final String dbUrl = "mongodb://pcusr:pcpwd@localhost/pichubdb";
 
-        PictureHandler pictureHandler = new PictureHandler(new FilePictureDataDao(), mongoPictureMetaDao, new JWTParser());
+        MongoPictureMetaDao mongoPictureMetaDao = new MongoPictureMetaDao(dbUrl);
+        JWTParser jwtParser = new JWTParser();
+
+        PictureHandler pictureHandler = new PictureHandler(new FilePictureDataDao(), mongoPictureMetaDao, jwtParser);
+        AlbumHandler albumHandler = new AlbumHandler(new MongoAlbumDao(dbUrl), mongoPictureMetaDao, jwtParser);
 
         Router router = Router.router(vertx);
         router.route("/pic/:userId*").handler(BodyHandler.create());
+        router.route("/album/:userId*").handler(BodyHandler.create());
         router.options().handler(r ->r.response()
                 .putHeader("Access-Control-Allow-Headers", "content-type, authorization")
                 .putHeader("Access-Control-Allow-Origin", "*")
@@ -31,6 +39,10 @@ public class ApiVerticle extends AbstractVerticle {
         router.get("/pic/:userId").produces("application/json").handler(pictureHandler::getIdsForUser);
         router.get("/pic/:userId/:pictureId").produces("image/jpeg").handler(pictureHandler::getById);
         router.post("/pic/:userId").consumes("image/jpeg").handler(pictureHandler::add);
+
+        router.get("/album/:userId").produces("application/json").handler(albumHandler::getAlbumsForUser);
+        router.get("/album/:userId/:albumId").produces("application/json").handler(albumHandler::getAlbumContents);
+        router.post("/album/:userId").consumes("application/json").handler(albumHandler::add);
 
         logger.debug("Creating HTTP server on 8081 port");
         vertx.createHttpServer().requestHandler(router)

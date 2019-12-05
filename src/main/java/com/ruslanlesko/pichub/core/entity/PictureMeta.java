@@ -6,13 +6,15 @@ import java.util.Objects;
 public class PictureMeta {
     private final long id;
     private final long userId;
+    private final long albumId;
     private final String path;
     private final LocalDateTime dateUploaded;
     private final LocalDateTime dateCaptured;
 
-    public PictureMeta(long id, long userId, String path, LocalDateTime dateUploaded, LocalDateTime dateCaptured) {
+    public PictureMeta(long id, long userId, long albumId, String path, LocalDateTime dateUploaded, LocalDateTime dateCaptured) {
         this.id = id;
         this.userId = userId;
+        this.albumId = albumId;
         this.path = path;
         this.dateUploaded = dateUploaded;
         this.dateCaptured = dateCaptured;
@@ -24,6 +26,10 @@ public class PictureMeta {
 
     public long getUserId() {
         return userId;
+    }
+
+    public long getAlbumId() {
+        return albumId;
     }
 
     public String getPath() {
@@ -44,24 +50,26 @@ public class PictureMeta {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        PictureMeta pictureMeta = (PictureMeta) o;
-        return id == pictureMeta.id &&
-               userId == pictureMeta.userId &&
-               Objects.equals(path, pictureMeta.path) &&
-               Objects.equals(dateUploaded, pictureMeta.dateUploaded) &&
-               Objects.equals(dateCaptured, pictureMeta.dateCaptured);
+        PictureMeta that = (PictureMeta) o;
+        return id == that.id &&
+               userId == that.userId &&
+               albumId == that.albumId &&
+               Objects.equals(path, that.path) &&
+               Objects.equals(dateUploaded, that.dateUploaded) &&
+               Objects.equals(dateCaptured, that.dateCaptured);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, userId, path, dateUploaded, dateCaptured);
+        return Objects.hash(id, userId, albumId, path, dateUploaded, dateCaptured);
     }
 
     @Override
     public String toString() {
-        return "Picture{" +
+        return "PictureMeta{" +
                "id=" + id +
                ", userId=" + userId +
+               ", albumId=" + albumId +
                ", path='" + path + '\'' +
                ", dateUploaded=" + dateUploaded +
                ", dateCaptured=" + dateCaptured +
