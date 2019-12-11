@@ -2,7 +2,6 @@ package com.ruslanlesko.pichub.core.verticles;
 
 import com.ruslanlesko.pichub.core.controller.AlbumHandler;
 import com.ruslanlesko.pichub.core.controller.PictureHandler;
-import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
 import com.ruslanlesko.pichub.core.dao.impl.FilePictureDataDao;
 import com.ruslanlesko.pichub.core.dao.impl.MongoAlbumDao;
 import com.ruslanlesko.pichub.core.dao.impl.MongoPictureMetaDao;
