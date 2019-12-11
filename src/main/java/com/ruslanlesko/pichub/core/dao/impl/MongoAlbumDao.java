@@ -1,7 +1,6 @@
 package com.ruslanlesko.pichub.core.dao.impl;
 
 import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
@@ -22,8 +21,8 @@ public class MongoAlbumDao implements AlbumDao {
 
     private MongoClient mongoClient;
 
-    public MongoAlbumDao(String url) {
-        mongoClient = MongoClients.create(url);
+    public MongoAlbumDao(MongoClient mongoClient) {
+        this.mongoClient = mongoClient;
     }
 
     @Override

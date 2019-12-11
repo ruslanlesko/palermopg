@@ -1,5 +1,7 @@
 package com.ruslanlesko.pichub.core.verticles;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.ruslanlesko.pichub.core.controller.AlbumHandler;
 import com.ruslanlesko.pichub.core.controller.PictureHandler;
 import com.ruslanlesko.pichub.core.dao.impl.FilePictureDataDao;
@@ -11,20 +13,21 @@ import io.vertx.core.Promise;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import org.slf4j.Logger;
-import org.slf4j.impl.SimpleLoggerFactory;
+import org.slf4j.LoggerFactory;
 
 public class ApiVerticle extends AbstractVerticle {
-    private static Logger logger = new SimpleLoggerFactory().getLogger("ApiVerticle");
+    private static Logger logger = LoggerFactory.getLogger("Application");
 
     @Override
     public void start(Promise<Void> startPromise) {
         final String dbUrl = "mongodb://pcusr:pcpwd@localhost/pichubdb";
+        final MongoClient mongoClient = MongoClients.create(dbUrl);
 
-        MongoPictureMetaDao mongoPictureMetaDao = new MongoPictureMetaDao(dbUrl);
+        MongoPictureMetaDao mongoPictureMetaDao = new MongoPictureMetaDao(mongoClient);
         JWTParser jwtParser = new JWTParser();
 
         PictureHandler pictureHandler = new PictureHandler(new FilePictureDataDao(), mongoPictureMetaDao, jwtParser);
-        AlbumHandler albumHandler = new AlbumHandler(new MongoAlbumDao(dbUrl), mongoPictureMetaDao, jwtParser);
+        AlbumHandler albumHandler = new AlbumHandler(new MongoAlbumDao(mongoClient), mongoPictureMetaDao, jwtParser);
 
         Router router = Router.router(vertx);
         router.route("/pic/:userId*").handler(BodyHandler.create());

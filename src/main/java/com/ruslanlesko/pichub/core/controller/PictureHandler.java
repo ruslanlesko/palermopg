@@ -13,7 +13,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
-import org.slf4j.impl.SimpleLoggerFactory;
+//import org.slf4j.impl.SimpleLoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,7 +21,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class PictureHandler {
-    private static Logger logger = new SimpleLoggerFactory().getLogger("PictureHandler");
+//    private static Logger logger = new SimpleLoggerFactory().getLogger("PictureHandler");
 
     private PictureDataDao pictureDataDao;
     private PictureMetaDao pictureMetaDao;
@@ -102,7 +102,7 @@ public class PictureHandler {
                     .map(PictureMeta::getId)
                     .collect(Collectors.toList());
 
-            logger.info("Extracted " + result.size() + " pictures");
+//            logger.info("Extracted " + result.size() + " pictures");
 
             ObjectMapper mapper = new ObjectMapper();
             try {

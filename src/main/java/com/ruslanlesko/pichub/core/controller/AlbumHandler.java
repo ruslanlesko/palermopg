@@ -11,7 +11,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
-import org.slf4j.impl.SimpleLoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,7 +18,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class AlbumHandler {
-    private static Logger logger = new SimpleLoggerFactory().getLogger("AlbumHandler");
+//    private static Logger logger = new SimpleLoggerFactory().getLogger("AlbumHandler");
 
     private final AlbumDao albumDao;
     private final PictureMetaDao pictureMetaDao;
@@ -36,7 +35,7 @@ public class AlbumHandler {
         long userId = Long.parseLong(request.getParam("userId"));
         String token = request.getHeader("Authorization");
 
-        logger.debug("Creating new album for userId " + userId);
+//        logger.debug("Creating new album for userId " + userId);
 
         try {
             checkAuthorization(token, userId);
@@ -47,7 +46,7 @@ public class AlbumHandler {
 
         JsonObject body = routingContext.getBodyAsJson();
         if (body == null || !body.containsKey("name")) {
-            logger.debug("Body is invalid, returning 404");
+//            logger.debug("Body is invalid, returning 404");
             withCORSHeaders(routingContext.response().setStatusCode(404)).end();
             return;
         }
@@ -67,7 +66,7 @@ public class AlbumHandler {
         long userId = Long.parseLong(request.getParam("userId"));
         String token = request.getHeader("Authorization");
 
-        logger.debug("Getting albums for userId " + userId);
+//        logger.debug("Getting albums for userId " + userId);
 
         try {
             checkAuthorization(token, userId);

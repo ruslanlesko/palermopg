@@ -1,7 +1,6 @@
 package com.ruslanlesko.pichub.core.dao.impl;
 
 import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
@@ -9,7 +8,7 @@ import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
 import com.ruslanlesko.pichub.core.entity.PictureMeta;
 import org.bson.Document;
 import org.slf4j.Logger;
-import org.slf4j.impl.SimpleLoggerFactory;
+import org.slf4j.LoggerFactory;
 
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -20,15 +19,15 @@ import java.util.function.Consumer;
 import static com.mongodb.client.model.Filters.*;
 
 public class MongoPictureMetaDao implements PictureMetaDao {
-    private static Logger logger = new SimpleLoggerFactory().getLogger("PictureMetaDao");
+    private static Logger logger = LoggerFactory.getLogger("Application");
 
     private final static String DB = "pichubdb";
     private final static String COLLECTION = "pictures";
 
     private MongoClient mongoClient;
 
-    public MongoPictureMetaDao(String url) {
-        mongoClient = MongoClients.create(url);
+    public MongoPictureMetaDao(MongoClient mongoClient) {
+        this.mongoClient = mongoClient;
     }
 
     @Override
