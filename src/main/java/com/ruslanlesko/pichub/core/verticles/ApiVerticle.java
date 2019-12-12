@@ -2,12 +2,19 @@ package com.ruslanlesko.pichub.core.verticles;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
-import com.ruslanlesko.pichub.core.controller.AlbumHandler;
-import com.ruslanlesko.pichub.core.controller.PictureHandler;
+import com.ruslanlesko.pichub.core.dao.AlbumDao;
+import com.ruslanlesko.pichub.core.dao.PictureDataDao;
+import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
+import com.ruslanlesko.pichub.core.handlers.AlbumHandler;
+import com.ruslanlesko.pichub.core.handlers.PictureHandler;
 import com.ruslanlesko.pichub.core.dao.impl.FilePictureDataDao;
 import com.ruslanlesko.pichub.core.dao.impl.MongoAlbumDao;
 import com.ruslanlesko.pichub.core.dao.impl.MongoPictureMetaDao;
 import com.ruslanlesko.pichub.core.security.JWTParser;
+import com.ruslanlesko.pichub.core.services.AlbumService;
+import com.ruslanlesko.pichub.core.services.PictureService;
+import com.ruslanlesko.pichub.core.services.impl.AlbumServiceImpl;
+import com.ruslanlesko.pichub.core.services.impl.PictureServiceImpl;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.ext.web.Router;
@@ -23,11 +30,16 @@ public class ApiVerticle extends AbstractVerticle {
         final String dbUrl = "mongodb://pcusr:pcpwd@localhost/pichubdb";
         final MongoClient mongoClient = MongoClients.create(dbUrl);
 
-        MongoPictureMetaDao mongoPictureMetaDao = new MongoPictureMetaDao(mongoClient);
+        PictureDataDao pictureDataDao = new FilePictureDataDao();
+        PictureMetaDao pictureMetaDao = new MongoPictureMetaDao(mongoClient);
+        AlbumDao albumDao = new MongoAlbumDao(mongoClient);
         JWTParser jwtParser = new JWTParser();
 
-        PictureHandler pictureHandler = new PictureHandler(new FilePictureDataDao(), mongoPictureMetaDao, jwtParser);
-        AlbumHandler albumHandler = new AlbumHandler(new MongoAlbumDao(mongoClient), mongoPictureMetaDao, jwtParser);
+        PictureService pictureService = new PictureServiceImpl(pictureMetaDao, pictureDataDao, jwtParser);
+        AlbumService albumService = new AlbumServiceImpl(pictureMetaDao, albumDao, jwtParser);
+
+        PictureHandler pictureHandler = new PictureHandler(pictureService);
+        AlbumHandler albumHandler = new AlbumHandler(albumService);
 
         Router router = Router.router(vertx);
         router.route("/pic/:userId*").handler(BodyHandler.create());
@@ -53,6 +65,7 @@ public class ApiVerticle extends AbstractVerticle {
                 logger.debug("HTTP server was created");
                 startPromise.complete();
             } else {
+                logger.error("Failed to deploy HTTP server on port 8081: {}", result.cause().getMessage());
                 startPromise.fail(result.cause());
             }
         });
