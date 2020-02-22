@@ -27,7 +27,7 @@ public class ApiVerticle extends AbstractVerticle {
 
     @Override
     public void start(Promise<Void> startPromise) {
-        final String dbUrl = "mongodb://pcusr:pcpwd@localhost/pichubdb";
+        final String dbUrl = System.getenv("PIC_DB");
         final MongoClient mongoClient = MongoClients.create(dbUrl);
 
         PictureDataDao pictureDataDao = new FilePictureDataDao();
