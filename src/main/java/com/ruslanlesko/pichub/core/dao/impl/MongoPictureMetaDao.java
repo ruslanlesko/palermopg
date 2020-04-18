@@ -4,6 +4,7 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.result.DeleteResult;
 import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
 import com.ruslanlesko.pichub.core.entity.PictureMeta;
 import org.bson.Document;
@@ -75,6 +76,16 @@ public class MongoPictureMetaDao implements PictureMetaDao {
         getCollection().find(eq("albumId", albumId))
                 .forEach((Consumer<Document>) document -> result.add(mapToPicture(document)));
         return result;
+    }
+
+    @Override
+    public boolean deleteById(long id) {
+        DeleteResult deleteResult = getCollection().deleteOne(eq("id", id));
+        if (deleteResult.getDeletedCount() == 0) {
+            logger.error("Delete failed due to the absence of document to delete");
+            return false;
+        }
+        return deleteResult.wasAcknowledged();
     }
 
     private PictureMeta mapToPicture(Document document) {

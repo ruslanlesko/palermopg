@@ -47,11 +47,12 @@ public class ApiVerticle extends AbstractVerticle {
         router.options().handler(r ->r.response()
                 .putHeader("Access-Control-Allow-Headers", "content-type, authorization")
                 .putHeader("Access-Control-Allow-Origin", "*")
-                .putHeader("Access-Control-Request-Methods", "GET, POST, OPTIONS")
+                .putHeader("Access-Control-Request-Methods", "GET, POST, DELETE, OPTIONS")
                 .end()
         );
         router.get("/pic/:userId").produces("application/json").handler(pictureHandler::getIdsForUser);
         router.get("/pic/:userId/:pictureId").produces("image/jpeg").handler(pictureHandler::getById);
+        router.delete("/pic/:userId/:pictureId").produces("application/json").handler(pictureHandler::deleteById);
         router.post("/pic/:userId").consumes("image/jpeg").handler(pictureHandler::add);
 
         router.get("/album/:userId").produces("application/json").handler(albumHandler::getAlbumsForUser);

@@ -99,6 +99,33 @@ public class PictureServiceImpl implements PictureService {
         return id > 0 ? Optional.of(id) : Optional.empty();
     }
 
+    @Override
+    public boolean deletePicture(String token, long userId, long pictureId) {
+        if (!jwtParser.validateTokenForUserId(token, userId)) {
+            throw new AuthorizationException("Invalid token for userId: " + userId);
+        }
+
+        Optional<PictureMeta> meta = pictureMetaDao.find(pictureId);
+        if (meta.isEmpty()) {
+            logger.error("Picture with id {} is missing in database", pictureId);
+            return false;
+        }
+
+        boolean wasDeleted = pictureMetaDao.deleteById(pictureId);
+        if (!wasDeleted) {
+            logger.error("Cannot delete picture with id {} for user id {}", pictureId, userId);
+            return false;
+        }
+
+        if (!pictureDataDao.delete(meta.get().getPath())) {
+            logger.error("Cannot delete picture id {} data", pictureId);
+            return false;
+        }
+
+        logger.info("Successfully deleted picture id {}", pictureId);
+        return true;
+    }
+
     private byte[] rotateImage(byte[] bytes, int degrees) {
         if (degrees <= 0) {
             return bytes;

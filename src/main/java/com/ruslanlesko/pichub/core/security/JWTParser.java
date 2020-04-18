@@ -23,6 +23,7 @@ public class JWTParser {
     private static Logger logger = LoggerFactory.getLogger("JWTParser");
 
     private static final String KEY_PATH = System.getenv("PIC_KEY");
+    private static final String SECURITY_DISABLED = System.getenv("SECURITY_DISABLED");
     private static final String USER_ID_ATTR = "userId";
     private static final String BEARER = "Bearer ";
 
@@ -67,6 +68,14 @@ public class JWTParser {
     }
 
     public boolean validateTokenForUserId(String token, long userId) {
+        if (SECURITY_DISABLED != null && SECURITY_DISABLED.equals("true")) {
+            return true;
+        }
+
+        if (token == null) {
+            return false;
+        }
+
         if (token.startsWith(BEARER)) {
             token = token.substring(BEARER.length());
         }

@@ -10,4 +10,5 @@ public interface PictureMetaDao {
     Optional<PictureMeta> find(long id);
     List<PictureMeta> findPictureMetasForUser(long userId);
     List<PictureMeta> findPictureMetasForAlbumId(long albumId);
+    boolean deleteById(long id);
 }
