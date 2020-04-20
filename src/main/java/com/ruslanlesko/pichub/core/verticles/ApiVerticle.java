@@ -36,7 +36,7 @@ public class ApiVerticle extends AbstractVerticle {
         JWTParser jwtParser = new JWTParser();
 
         PictureService pictureService = new PictureServiceImpl(pictureMetaDao, pictureDataDao, jwtParser);
-        AlbumService albumService = new AlbumServiceImpl(pictureMetaDao, albumDao, jwtParser);
+        AlbumService albumService = new AlbumServiceImpl(pictureMetaDao, pictureDataDao, albumDao, jwtParser);
 
         PictureHandler pictureHandler = new PictureHandler(pictureService);
         AlbumHandler albumHandler = new AlbumHandler(albumService);
@@ -47,7 +47,7 @@ public class ApiVerticle extends AbstractVerticle {
         router.options().handler(r ->r.response()
                 .putHeader("Access-Control-Allow-Headers", "content-type, authorization")
                 .putHeader("Access-Control-Allow-Origin", "*")
-                .putHeader("Access-Control-Request-Methods", "GET, POST, DELETE, OPTIONS")
+                .putHeader("Access-Control-Request-Methods", "GET, POST, DELETE, PATCH, OPTIONS")
                 .end()
         );
         router.get("/pic/:userId").produces("application/json").handler(pictureHandler::getIdsForUser);
@@ -58,6 +58,8 @@ public class ApiVerticle extends AbstractVerticle {
         router.get("/album/:userId").produces("application/json").handler(albumHandler::getAlbumsForUser);
         router.get("/album/:userId/:albumId").produces("application/json").handler(albumHandler::getAlbumContents);
         router.post("/album/:userId").consumes("application/json").handler(albumHandler::add);
+        router.patch("/album/:userId/:albumId").consumes("application/json").handler(albumHandler::renameAlbum);
+        router.delete("/album/:userId/:albumId").produces("application/json").handler(albumHandler::deleteAlbum);
 
         logger.debug("Creating HTTP server on 8081 port");
         vertx.createHttpServer().requestHandler(router)

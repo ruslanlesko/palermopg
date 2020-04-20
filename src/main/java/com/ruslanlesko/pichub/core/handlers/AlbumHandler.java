@@ -99,9 +99,64 @@ public class AlbumHandler {
         });
     }
 
+    public void renameAlbum(RoutingContext routingContext) {
+        HttpServerRequest request = routingContext.request();
+        long userId = Long.parseLong(request.getParam("userId"));
+        long albumId = Long.parseLong(request.getParam("albumId"));
+        String token = request.getHeader("Authorization");
+        JsonObject body = routingContext.getBodyAsJson();
+        if (body == null || !body.containsKey("name")) {
+            logger.debug("Body is invalid, returning 400");
+            withCORSHeaders(routingContext.response().setStatusCode(400)).end();
+            return;
+        }
+        String name = body.getString("name");
+
+        routingContext.vertx().executeBlocking(future -> {
+            try {
+                if (albumService.rename(token, userId, albumId, name)) {
+                    withCORSHeaders(routingContext.response()).end();
+                    return;
+                }
+                withCORSHeaders(routingContext.response().setStatusCode(404)).end();
+            } catch (AuthorizationException ex) {
+                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
+            } finally {
+                future.complete();
+            }
+        });
+    }
+
+    public void deleteAlbum(RoutingContext routingContext) {
+        HttpServerRequest request = routingContext.request();
+        long userId = Long.parseLong(request.getParam("userId"));
+        long albumId = Long.parseLong(request.getParam("albumId"));
+        String token = request.getHeader("Authorization");
+
+        routingContext.vertx().executeBlocking(future -> {
+            try {
+                boolean notExist = albumService.getAlbumsForUserId(token, userId).stream()
+                        .map(Album::getId).noneMatch(id -> id == albumId);
+                if (notExist) {
+                    withCORSHeaders(routingContext.response().setStatusCode(404)).end();
+                    return;
+                }
+                if (albumService.delete(token, userId, albumId)) {
+                    withCORSHeaders(routingContext.response()).end("{id:" + albumId + "}");
+                    return;
+                }
+                withCORSHeaders(routingContext.response().setStatusCode(500)).end();
+            } catch (AuthorizationException ex) {
+                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
+            } finally {
+                future.complete();
+            }
+        });
+    }
+
     private HttpServerResponse withCORSHeaders(HttpServerResponse response) {
         return response.putHeader("Access-Control-Allow-Headers", "content-type, authorization")
                 .putHeader("Access-Control-Allow-Origin", "*")
-                .putHeader("Access-Control-Request-Methods", "GET, POST, OPTIONS");
+                .putHeader("Access-Control-Request-Methods", "GET, POST, DELETE, PATCH, OPTIONS");
     }
 }

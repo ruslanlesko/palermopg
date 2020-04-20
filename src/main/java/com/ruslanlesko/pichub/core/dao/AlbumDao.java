@@ -9,4 +9,6 @@ public interface AlbumDao {
     long save(Album album);
     Optional<Album> findById(long id);
     List<Album> findAlbumsForUserId(long userId);
+    boolean renameAlbum(long id, String name);
+    boolean delete(long id);
 }

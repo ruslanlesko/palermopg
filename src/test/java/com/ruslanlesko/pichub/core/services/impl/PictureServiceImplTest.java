@@ -6,6 +6,7 @@ import com.ruslanlesko.pichub.core.entity.PictureMeta;
 import com.ruslanlesko.pichub.core.security.JWTParser;
 import com.ruslanlesko.pichub.core.services.PictureService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -75,7 +76,6 @@ class PictureServiceImplTest {
         assertEquals(expected, actual);
     }
 
-    @Test
     void testInsertingNewPicture() {
         final String token = "abc";
         final long userId = 42;

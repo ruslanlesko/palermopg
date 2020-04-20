@@ -1,9 +1,12 @@
 package com.ruslanlesko.pichub.core.dao.impl;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 import com.ruslanlesko.pichub.core.dao.AlbumDao;
 import com.ruslanlesko.pichub.core.entity.Album;
 import org.bson.Document;
@@ -58,6 +61,27 @@ public class MongoAlbumDao implements AlbumDao {
                         document.getString("name")
                 )));
         return result;
+    }
+
+    @Override
+    public boolean renameAlbum(long id, String name) {
+        BasicDBObject query = new BasicDBObject();
+        query.put("id", id);
+
+        BasicDBObject newDoc = new BasicDBObject();
+        newDoc.put("name", name);
+
+        BasicDBObject updateDoc = new BasicDBObject();
+        updateDoc.put("$set", newDoc);
+
+        UpdateResult result = getCollection().updateOne(query, updateDoc);
+        return result.getModifiedCount() == 1 && result.wasAcknowledged();
+    }
+
+    @Override
+    public boolean delete(long id) {
+        DeleteResult deleteResult = getCollection().deleteOne(eq("id", id));
+        return deleteResult.getDeletedCount() == 1 && deleteResult.wasAcknowledged();
     }
 
     private long getNextId() {

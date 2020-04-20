@@ -35,7 +35,7 @@ class AlbumServiceImplTest {
         when(parser.validateTokenForUserId(token, userId)).thenReturn(true);
         when(albumDao.save(any())).thenReturn(albumId);
 
-        AlbumService service = new AlbumServiceImpl(metDao, albumDao, parser);
+        AlbumService service = new AlbumServiceImpl(metDao, null, albumDao, parser);
 
         Optional<Long> expected = Optional.of(albumId);
         Optional<Long> actual = service.addNewAlbum(token, userId, albumName);
@@ -58,7 +58,7 @@ class AlbumServiceImplTest {
         when(parser.validateTokenForUserId(token, userId)).thenReturn(true);
         when(albumDao.findAlbumsForUserId(userId)).thenReturn(albums);
 
-        AlbumService service = new AlbumServiceImpl(metaDao, albumDao, parser);
+        AlbumService service = new AlbumServiceImpl(metaDao, null, albumDao, parser);
 
         assertEquals(albums, service.getAlbumsForUserId(token, userId));
     }
@@ -90,7 +90,7 @@ class AlbumServiceImplTest {
         when(albumDao.findById(albumId)).thenReturn(Optional.of(album));
         when(metaDao.findPictureMetasForAlbumId(albumId)).thenReturn(List.of(metaA, metaB, metaC));
 
-        AlbumService service = new AlbumServiceImpl(metaDao, albumDao, parser);
+        AlbumService service = new AlbumServiceImpl(metaDao, null, albumDao, parser);
 
         List<PictureMeta> expected = List.of(metaB, metaC, metaA);
         List<PictureMeta> actual = service.getPictureMetaForAlbum(token, userId, albumId);

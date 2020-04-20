@@ -10,4 +10,6 @@ public interface AlbumService {
     Optional<Long> addNewAlbum(String token, long userId, String albumName);
     List<Album> getAlbumsForUserId(String token, long userId);
     List<PictureMeta> getPictureMetaForAlbum(String token, long userId, long albumId);
+    boolean rename(String token, long userId, long albumId, String newName);
+    boolean delete(String token, long userId, long albumId);
 }
