@@ -47,7 +47,8 @@ public class ApiVerticle extends AbstractVerticle {
         router.options().handler(r ->r.response()
                 .putHeader("Access-Control-Allow-Headers", "content-type, authorization")
                 .putHeader("Access-Control-Allow-Origin", "*")
-                .putHeader("Access-Control-Request-Methods", "GET, POST, DELETE, PATCH, OPTIONS")
+                .putHeader("Access-Control-Allow-Methods", "GET, DELETE, PUT, POST, OPTIONS")
+                .putHeader("Access-Control-Max-Age", "-1")
                 .end()
         );
         router.get("/pic/:userId").produces("application/json").handler(pictureHandler::getIdsForUser);

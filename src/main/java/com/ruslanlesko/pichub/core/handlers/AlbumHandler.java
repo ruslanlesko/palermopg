@@ -157,6 +157,7 @@ public class AlbumHandler {
     private HttpServerResponse withCORSHeaders(HttpServerResponse response) {
         return response.putHeader("Access-Control-Allow-Headers", "content-type, authorization")
                 .putHeader("Access-Control-Allow-Origin", "*")
-                .putHeader("Access-Control-Request-Methods", "GET, POST, DELETE, PATCH, OPTIONS");
+                .putHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, PATCH, OPTIONS")
+                .putHeader("Access-Control-Max-Age", "-1");
     }
 }
