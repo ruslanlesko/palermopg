@@ -1,11 +1,7 @@
 package com.ruslanlesko.pichub.core.handlers;
 
-import com.ruslanlesko.pichub.core.dao.AlbumDao;
-import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
 import com.ruslanlesko.pichub.core.entity.Album;
-import com.ruslanlesko.pichub.core.entity.PictureMeta;
 import com.ruslanlesko.pichub.core.exception.AuthorizationException;
-import com.ruslanlesko.pichub.core.security.JWTParser;
 import com.ruslanlesko.pichub.core.services.AlbumService;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -15,7 +11,7 @@ import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -152,6 +148,38 @@ public class AlbumHandler {
                 future.complete();
             }
         });
+    }
+
+    public void shareAlbum(RoutingContext routingContext) {
+        HttpServerRequest request = routingContext.request();
+        long userId = Long.parseLong(request.getParam("userId"));
+        long albumId = Long.parseLong(request.getParam("albumId"));
+        String token = request.getHeader("Authorization");
+        JsonObject body = routingContext.getBodyAsJson();
+        List<Long> sharedUsers = extractLongArr(body.getJsonArray("sharedUsers", new JsonArray()));
+        routingContext.vertx().executeBlocking(future -> {
+            try {
+                if (albumService.shareAlbum(token, userId, albumId, sharedUsers)) {
+                    withCORSHeaders(routingContext.response()).end();
+                    return;
+                }
+                withCORSHeaders(routingContext.response().setStatusCode(500)).end();
+            } catch (AuthorizationException ex) {
+                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
+            } finally {
+                future.complete();
+            }
+        });
+    }
+
+    private List<Long> extractLongArr(JsonArray arr) {
+        List<Long> result = new ArrayList<>();
+        for (int i = 0; i < arr.size(); i++) {
+            if (arr.getLong(i) != null) {
+                result.add(arr.getLong(i));
+            }
+        }
+        return result;
     }
 
     private HttpServerResponse withCORSHeaders(HttpServerResponse response) {

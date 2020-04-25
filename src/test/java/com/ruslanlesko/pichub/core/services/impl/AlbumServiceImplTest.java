@@ -48,7 +48,7 @@ class AlbumServiceImplTest {
         final String token = "abc";
         final long userId = 42;
         final List<Album> albums = IntStream.range(1, 3)
-                .mapToObj(i -> new Album(i, userId, null))
+                .mapToObj(i -> new Album(i, userId, null, List.of()))
                 .collect(Collectors.toList());
 
         PictureMetaDao metaDao = mock(PictureMetaDao.class);
@@ -68,7 +68,7 @@ class AlbumServiceImplTest {
         final String token = "abc";
         final long userId = 42;
         final long albumId = 69;
-        final Album album = new Album(albumId, userId, null);
+        final Album album = new Album(albumId, userId, null, List.of());
         final PictureMeta metaA = new PictureMeta(69, userId, -1, null,
                 LocalDateTime.of(2019, 10, 4, 12, 4),
                 LocalDateTime.of(2019, 10, 4, 10, 22)

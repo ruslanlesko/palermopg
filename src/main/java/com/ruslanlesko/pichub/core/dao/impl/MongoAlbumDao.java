@@ -48,17 +48,18 @@ public class MongoAlbumDao implements AlbumDao {
             return Optional.empty();
         }
 
-        return Optional.of(new Album(id, result.getLong("userId"), result.getString("name")));
+        return Optional.of(new Album(id, result.getLong("userId"), result.getString("name"), result.getList("sharedUsers", Long.class)));
     }
 
     @Override
     public List<Album> findAlbumsForUserId(long userId) {
         List<Album> result = new ArrayList<>();
-        getCollection().find(eq("userId", userId))
+        getCollection().find(or(eq("userId", userId), eq("sharedUsers", userId)))
                 .forEach((Consumer<Document>) document -> result.add(new Album(
                         document.getLong("id"),
                         document.getLong("userId"),
-                        document.getString("name")
+                        document.getString("name"),
+                        document.getList("sharedUsers", Long.class)
                 )));
         return result;
     }
@@ -82,6 +83,21 @@ public class MongoAlbumDao implements AlbumDao {
     public boolean delete(long id) {
         DeleteResult deleteResult = getCollection().deleteOne(eq("id", id));
         return deleteResult.getDeletedCount() == 1 && deleteResult.wasAcknowledged();
+    }
+
+    @Override
+    public boolean updateSharedUsers(long id, List<Long> sharedIds) {
+        BasicDBObject query = new BasicDBObject();
+        query.put("id", id);
+
+        BasicDBObject newDoc = new BasicDBObject();
+        newDoc.put("sharedUsers", sharedIds);
+
+        BasicDBObject updateDoc = new BasicDBObject();
+        updateDoc.put("$set", newDoc);
+
+        UpdateResult result = getCollection().updateOne(query, updateDoc);
+        return result.getModifiedCount() == 1 && result.wasAcknowledged();
     }
 
     private long getNextId() {

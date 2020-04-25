@@ -36,7 +36,7 @@ class PictureServiceImplTest {
         when(metaDao.find(pictureId)).thenReturn(Optional.of(meta));
         when(dataDao.find(path)).thenReturn(Optional.of(data));
 
-        PictureService service = new PictureServiceImpl(metaDao, dataDao, parser);
+        PictureService service = new PictureServiceImpl(metaDao, dataDao, null, parser);
 
         Optional<byte[]> expected = Optional.of(data);
         Optional<byte[]> actual = service.getPictureData(token, userId, pictureId);
@@ -68,7 +68,7 @@ class PictureServiceImplTest {
         when(parser.validateTokenForUserId(token, userId)).thenReturn(true);
         when(metaDao.findPictureMetasForUser(userId)).thenReturn(List.of(metaA, metaB, metaC));
 
-        PictureService service = new PictureServiceImpl(metaDao, dataDao, parser);
+        PictureService service = new PictureServiceImpl(metaDao, dataDao, null, parser);
 
         List<Long> expected = List.of(27L, 25L, 69L);
         List<Long> actual = service.getPictureIdsForUserId(token, userId);
@@ -91,7 +91,7 @@ class PictureServiceImplTest {
         when(dataDao.save(data)).thenReturn(path);
         when(metaDao.save(any())).thenReturn(pictureId);
 
-        PictureService service = new PictureServiceImpl(metaDao, dataDao, parser);
+        PictureService service = new PictureServiceImpl(metaDao, dataDao, null, parser);
 
         Optional<Long> expected = Optional.of(pictureId);
         Optional<Long> actual = service.insertNewPicture(token, userId, Optional.empty(), data);

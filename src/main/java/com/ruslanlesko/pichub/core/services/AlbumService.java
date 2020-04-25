@@ -12,4 +12,5 @@ public interface AlbumService {
     List<PictureMeta> getPictureMetaForAlbum(String token, long userId, long albumId);
     boolean rename(String token, long userId, long albumId, String newName);
     boolean delete(String token, long userId, long albumId);
+    boolean shareAlbum(String token, long userId, long albumId, List<Long> sharedUsers);
 }

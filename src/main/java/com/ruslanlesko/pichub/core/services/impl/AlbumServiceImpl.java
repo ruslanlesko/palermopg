@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -39,7 +41,7 @@ public class AlbumServiceImpl implements AlbumService {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
             throw new AuthorizationException("Invalid token for userId: " + userId);
         }
-        long id = albumDao.save(new Album(-1, userId, albumName));
+        long id = albumDao.save(new Album(-1, userId, albumName, List.of()));
         logger.info("Album with id {} was created for user id {}", id, userId);
         return id > 0 ? Optional.of(id) : Optional.empty();
     }
@@ -58,7 +60,7 @@ public class AlbumServiceImpl implements AlbumService {
             throw new AuthorizationException("Invalid token for userId: " + userId);
         }
         Optional<Album> albumOptional = albumDao.findById(albumId);
-        if (albumOptional.isEmpty() || albumOptional.get().getUserId() != userId) {
+        if (albumOptional.isEmpty() || (albumOptional.get().getUserId() != userId && !albumOptional.get().getSharedUsers().contains(userId))) {
             throw new AuthorizationException("Album is missing or not available to user");
         }
 
@@ -108,5 +110,27 @@ public class AlbumServiceImpl implements AlbumService {
 
         return pictureMetaDao.findPictureMetasForAlbumId(albumId).stream()
             .allMatch(meta -> pictureMetaDao.deleteById(meta.getId()) && pictureDataDao.delete(meta.getPath()));
+    }
+
+    @Override
+    public boolean shareAlbum(String token, long userId, long albumId, List<Long> sharedUsers) {
+        if (!jwtParser.validateTokenForUserId(token, userId)) {
+            throw new AuthorizationException("Invalid token for userId: " + userId);
+        }
+
+        Optional<Album> albumOptional = albumDao.findById(albumId);
+        if (albumOptional.isEmpty() || albumOptional.get().getUserId() != userId) {
+            throw new AuthorizationException("Album is missing or not available to user");
+        }
+
+        Album album = albumOptional.get();
+        List<Long> newSharedIds = combineSharedUsers(album.getSharedUsers(), sharedUsers);
+        return albumDao.updateSharedUsers(albumId, newSharedIds);
+    }
+
+    List<Long> combineSharedUsers(List<Long> current, List<Long> toAdd) {
+        List<Long> result = new ArrayList<>(current);
+        result.addAll(toAdd);
+        return result.stream().distinct().collect(Collectors.toList());
     }
 }

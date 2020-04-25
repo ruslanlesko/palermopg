@@ -35,7 +35,7 @@ public class ApiVerticle extends AbstractVerticle {
         AlbumDao albumDao = new MongoAlbumDao(mongoClient);
         JWTParser jwtParser = new JWTParser();
 
-        PictureService pictureService = new PictureServiceImpl(pictureMetaDao, pictureDataDao, jwtParser);
+        PictureService pictureService = new PictureServiceImpl(pictureMetaDao, pictureDataDao, albumDao, jwtParser);
         AlbumService albumService = new AlbumServiceImpl(pictureMetaDao, pictureDataDao, albumDao, jwtParser);
 
         PictureHandler pictureHandler = new PictureHandler(pictureService);
@@ -61,6 +61,7 @@ public class ApiVerticle extends AbstractVerticle {
         router.post("/album/:userId").consumes("application/json").handler(albumHandler::add);
         router.patch("/album/:userId/:albumId").consumes("application/json").handler(albumHandler::renameAlbum);
         router.delete("/album/:userId/:albumId").produces("application/json").handler(albumHandler::deleteAlbum);
+        router.post("/album/:userId/:albumId/share").consumes("application/json").handler(albumHandler::shareAlbum);
 
         logger.debug("Creating HTTP server on 8081 port");
         vertx.createHttpServer().requestHandler(router)

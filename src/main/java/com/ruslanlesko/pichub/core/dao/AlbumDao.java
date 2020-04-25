@@ -11,4 +11,5 @@ public interface AlbumDao {
     List<Album> findAlbumsForUserId(long userId);
     boolean renameAlbum(long id, String name);
     boolean delete(long id);
+    boolean updateSharedUsers(long id, List<Long> sharedIds);
 }

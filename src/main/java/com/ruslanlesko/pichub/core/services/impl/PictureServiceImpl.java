@@ -1,7 +1,9 @@
 package com.ruslanlesko.pichub.core.services.impl;
 
+import com.ruslanlesko.pichub.core.dao.AlbumDao;
 import com.ruslanlesko.pichub.core.dao.PictureDataDao;
 import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
+import com.ruslanlesko.pichub.core.entity.Album;
 import com.ruslanlesko.pichub.core.entity.PictureMeta;
 import com.ruslanlesko.pichub.core.exception.AuthorizationException;
 import com.ruslanlesko.pichub.core.meta.MetaParser;
@@ -27,13 +29,16 @@ public class PictureServiceImpl implements PictureService {
 
     private final PictureMetaDao pictureMetaDao;
     private final PictureDataDao pictureDataDao;
+    private final AlbumDao albumDao;
     private final JWTParser jwtParser;
 
     public PictureServiceImpl(PictureMetaDao pictureMetaDao,
                               PictureDataDao pictureDataDao,
+                              AlbumDao albumDao,
                               JWTParser jwtParser) {
         this.pictureMetaDao = pictureMetaDao;
         this.pictureDataDao = pictureDataDao;
+        this.albumDao = albumDao;
         this.jwtParser = jwtParser;
     }
 
@@ -48,11 +53,24 @@ public class PictureServiceImpl implements PictureService {
             return Optional.empty();
         }
 
-        if (meta.get().getUserId() != userId) {
+        if (meta.get().getUserId() != userId && !checkAlbum(meta.get().getAlbumId(), userId)) {
             throw new AuthorizationException("Wrong user id");
         }
 
         return pictureDataDao.find(meta.get().getPath());
+    }
+
+    private boolean checkAlbum(long albumId, long userId) {
+        if (albumId <= 0) {
+            return false;
+        }
+
+        Optional<Album> album = albumDao.findById(albumId);
+        if (album.isEmpty()) {
+            return false;
+        }
+
+        return album.get().getUserId() == userId || album.get().getSharedUsers().contains(userId);
     }
 
     @Override
