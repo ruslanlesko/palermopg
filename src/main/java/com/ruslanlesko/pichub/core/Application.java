@@ -10,7 +10,7 @@ public class Application {
 
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx();
-        logger.info("Starting Core 1.0");
+        logger.info("Starting Core 1.1");
         vertx.deployVerticle(new ApiVerticle());
     }
 }
