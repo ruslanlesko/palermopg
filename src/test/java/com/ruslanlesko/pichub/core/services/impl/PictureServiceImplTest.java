@@ -6,7 +6,6 @@ import com.ruslanlesko.pichub.core.entity.PictureMeta;
 import com.ruslanlesko.pichub.core.security.JWTParser;
 import com.ruslanlesko.pichub.core.services.PictureService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Disabled;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,7 +25,7 @@ class PictureServiceImplTest {
         final long pictureId = 69;
         final String path = "path";
         final byte[] data = new byte[]{98, -2, 44, 25, 27};
-        final PictureMeta meta = new PictureMeta(pictureId, userId, -1, path, null, null);
+        final PictureMeta meta = new PictureMeta(pictureId, userId, -1, path, "", null, null);
 
         JWTParser parser = mock(JWTParser.class);
         PictureMetaDao metaDao = mock(PictureMetaDao.class);
@@ -49,15 +48,15 @@ class PictureServiceImplTest {
         final String token = "abc";
         final long userId = 42;
         final PictureMeta metaA = new PictureMeta(69, userId, -1, null,
-                    LocalDateTime.of(2019, 10, 4, 12, 4),
+                "", LocalDateTime.of(2019, 10, 4, 12, 4),
                     LocalDateTime.of(2019, 10, 4, 10, 22)
                 ),
                 metaB = new PictureMeta(27, userId, -1, null,
-                    LocalDateTime.of(2019, 10, 5, 12, 4),
+                        "", LocalDateTime.of(2019, 10, 5, 12, 4),
                     LocalDateTime.of(2019, 10, 4, 10, 26)
                 ),
                 metaC = new PictureMeta(25, userId, -1, null,
-                    LocalDateTime.of(2019, 10, 5, 12, 4),
+                        "", LocalDateTime.of(2019, 10, 5, 12, 4),
                     LocalDateTime.of(2019, 10, 4, 10, 22)
                 );
 

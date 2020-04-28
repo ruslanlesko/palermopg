@@ -70,15 +70,15 @@ class AlbumServiceImplTest {
         final long albumId = 69;
         final Album album = new Album(albumId, userId, null, List.of());
         final PictureMeta metaA = new PictureMeta(69, userId, -1, null,
-                LocalDateTime.of(2019, 10, 4, 12, 4),
+                "", LocalDateTime.of(2019, 10, 4, 12, 4),
                 LocalDateTime.of(2019, 10, 4, 10, 22)
             ),
             metaB = new PictureMeta(27, userId, -1, null,
-                LocalDateTime.of(2019, 10, 5, 12, 4),
+                    "", LocalDateTime.of(2019, 10, 5, 12, 4),
                 LocalDateTime.of(2019, 10, 4, 10, 26)
             ),
             metaC = new PictureMeta(25, userId, -1, null,
-                LocalDateTime.of(2019, 10, 5, 12, 4),
+                    "", LocalDateTime.of(2019, 10, 5, 12, 4),
                 LocalDateTime.of(2019, 10, 4, 10, 22)
             );
 

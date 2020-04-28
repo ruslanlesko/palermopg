@@ -38,6 +38,7 @@ public class MongoPictureMetaDao implements PictureMetaDao {
         Document document = new Document()
                 .append("id", id)
                 .append("path", pictureMeta.getPath())
+                .append("pathOptimized", pictureMeta.getPathOptimized())
                 .append("userId", pictureMeta.getUserId())
                 .append("dateUploaded", pictureMeta.getDateUploaded())
                 .append("dateCaptured", pictureMeta.getDateCaptured());
@@ -96,6 +97,7 @@ public class MongoPictureMetaDao implements PictureMetaDao {
                 document.getLong("userId"),
                 albumId == null ? -1 : albumId,
                 document.getString("path"),
+                document.getString("pathOptimized"),
                 document.getDate("dateUploaded").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
                 document.getDate("dateCaptured").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
         );

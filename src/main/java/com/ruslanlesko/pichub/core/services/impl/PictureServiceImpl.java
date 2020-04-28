@@ -27,6 +27,9 @@ import java.util.stream.Collectors;
 public class PictureServiceImpl implements PictureService {
     private static final Logger logger = LoggerFactory.getLogger("Application");
 
+    private static final int TARGET_WIDTH = 1792;
+    private static final int TARGET_HEIGHT = 1120;
+
     private final PictureMetaDao pictureMetaDao;
     private final PictureDataDao pictureDataDao;
     private final AlbumDao albumDao;
@@ -57,7 +60,10 @@ public class PictureServiceImpl implements PictureService {
             throw new AuthorizationException("Wrong user id");
         }
 
-        return pictureDataDao.find(meta.get().getPath());
+        String optimizedPath = meta.get().getPathOptimized();
+        String originalPath = meta.get().getPath();
+
+        return pictureDataDao.find(optimizedPath == null || optimizedPath.isBlank() ? originalPath : optimizedPath);
     }
 
     private boolean checkAlbum(long albumId, long userId) {
@@ -110,8 +116,15 @@ public class PictureServiceImpl implements PictureService {
 
         data = rotateImage(data, degrees);
 
+        byte[] optimizedPictureData = convertToOptimized(data);
+
         String path = pictureDataDao.save(data);
-        PictureMeta meta = new PictureMeta(-1, userId, albumId.orElseGet(() -> -1L), path, LocalDateTime.now(), dateCaptured);
+        String optimizedPath = pictureDataDao.save(optimizedPictureData);
+
+        PictureMeta meta = new PictureMeta(-1, userId, albumId.orElseGet(() -> -1L), path,
+                optimizedPath,
+                LocalDateTime.now(), dateCaptured);
+
         long id = pictureMetaDao.save(meta);
         logger.info("Inserted new picture with id {} for user id {}", id, userId);
         return id > 0 ? Optional.of(id) : Optional.empty();
@@ -168,8 +181,44 @@ public class PictureServiceImpl implements PictureService {
 
             ImageIO.write(rotatedImage, "JPEG", baos);
             baos.flush();
-            byte[] resultBytes = baos.toByteArray();
-            return resultBytes;
+            return baos.toByteArray();
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+            return null;
+        } finally {
+            try {
+                bais.close();
+                baos.close();
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+            }
+        }
+    }
+
+    private byte[] convertToOptimized(byte[] bytes) {
+        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        try {
+            BufferedImage image = ImageIO.read(bais);
+            int originalHeight = image.getHeight();
+            int originalWidth = image.getWidth();
+
+            if (originalHeight <= TARGET_HEIGHT && originalWidth <= TARGET_WIDTH) {
+                return bytes;
+            }
+
+            double percent = originalHeight > originalWidth ?
+                             (double) TARGET_HEIGHT / (double) originalHeight
+                             : (double) TARGET_WIDTH / (double) originalWidth;
+
+            AffineTransform resize = AffineTransform.getScaleInstance(percent, percent);
+            AffineTransformOp op = new AffineTransformOp (resize, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+            BufferedImage resultImage = op.filter(image, null);
+
+            ImageIO.write(resultImage, "JPEG", baos);
+            baos.flush();
+            return baos.toByteArray();
         } catch (IOException e) {
             logger.error(e.getMessage());
             return null;
