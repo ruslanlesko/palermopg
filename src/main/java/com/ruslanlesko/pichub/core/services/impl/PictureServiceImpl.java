@@ -110,11 +110,19 @@ public class PictureServiceImpl implements PictureService {
             throw new AuthorizationException("Invalid token for userId: " + userId);
         }
 
-        MetaParser metaParser = new MetaParser(data);
-        LocalDateTime dateCaptured = metaParser.getDateCaptured();
-        int degrees = metaParser.getRotation();
+        LocalDateTime dateCaptured;
 
-        data = rotateImage(data, degrees);
+        try {
+            MetaParser metaParser = new MetaParser(data);
+            dateCaptured = metaParser.getDateCaptured();
+            int degrees = metaParser.getRotation();
+
+            data = rotateImage(data, degrees);
+
+        } catch (Exception ex) {
+            dateCaptured = LocalDateTime.now();
+            logger.info("No meta");
+        }
 
         byte[] optimizedPictureData = convertToOptimized(data);
 
@@ -128,6 +136,46 @@ public class PictureServiceImpl implements PictureService {
         long id = pictureMetaDao.save(meta);
         logger.info("Inserted new picture with id {} for user id {}", id, userId);
         return id > 0 ? Optional.of(id) : Optional.empty();
+    }
+
+    @Override
+    public boolean rotatePicture(String token, long userId, long pictureId) {
+        if (!jwtParser.validateTokenForUserId(token, userId)) {
+            throw new AuthorizationException("Invalid token for userId: " + userId);
+        }
+
+        Optional<PictureMeta> optMeta = pictureMetaDao.find(pictureId);
+        if (optMeta.isEmpty()) {
+            return false;
+        }
+
+        if (optMeta.get().getUserId() != userId && !checkAlbum(optMeta.get().getAlbumId(), userId)) {
+            throw new AuthorizationException("Wrong user id");
+        }
+
+        String path = optMeta.get().getPath();
+        String pathOptimized = optMeta.get().getPathOptimized();
+
+        doRotate(pathOptimized);
+        return doRotate(path);
+    }
+
+    private boolean doRotate(String path) {
+        if (path == null) {
+            return false;
+        }
+
+        Optional<byte[]> data = pictureDataDao.find(path);
+        if (data.isEmpty()) {
+            return false;
+        }
+
+        byte[] rotated = rotateImage(data.get(), 90);
+        if (rotated == null) {
+            return false;
+        }
+
+        return pictureDataDao.replace(path, rotated);
     }
 
     @Override

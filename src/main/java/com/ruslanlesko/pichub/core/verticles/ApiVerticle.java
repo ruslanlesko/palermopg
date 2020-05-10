@@ -55,6 +55,7 @@ public class ApiVerticle extends AbstractVerticle {
         router.get("/pic/:userId/:pictureId").produces("image/jpeg").handler(pictureHandler::getById);
         router.delete("/pic/:userId/:pictureId").produces("application/json").handler(pictureHandler::deleteById);
         router.post("/pic/:userId").consumes("image/jpeg").handler(pictureHandler::add);
+        router.post("/pic/:userId/:pictureId/rotate").handler(pictureHandler::rotate);
 
         router.get("/album/:userId").produces("application/json").handler(albumHandler::getAlbumsForUser);
         router.get("/album/:userId/:albumId").produces("application/json").handler(albumHandler::getAlbumContents);

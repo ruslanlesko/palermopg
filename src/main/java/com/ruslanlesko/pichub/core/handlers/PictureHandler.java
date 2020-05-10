@@ -89,6 +89,27 @@ public class PictureHandler {
         });
     }
 
+    public void rotate(RoutingContext routingContext) {
+        HttpServerRequest request = routingContext.request();
+        long userId = Long.parseLong(request.getParam("userId"));
+        long id = Long.parseLong(request.getParam("pictureId"));
+        String token = request.getHeader("Authorization");
+
+        routingContext.vertx().executeBlocking(future -> {
+            try {
+                if (pictureService.rotatePicture(token, userId, id)) {
+                    withCORSHeaders(routingContext.response()).end();
+                    return;
+                }
+                withCORSHeaders(routingContext.response().setStatusCode(500)).end();
+            } catch (AuthorizationException ex) {
+                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
+            } finally {
+                future.complete();
+            }
+        });
+    }
+
     public void deleteById(RoutingContext routingContext) {
         HttpServerRequest request = routingContext.request();
         long userId = Long.parseLong(request.getParam("userId"));

@@ -56,6 +56,24 @@ public class FilePictureDataDao implements PictureDataDao {
     }
 
     @Override
+    public boolean replace(String path, byte[] data) {
+        Path fullPath = Path.of(path);
+
+        if (Files.notExists(fullPath)) {
+            return false;
+        }
+
+        try {
+            Files.write(fullPath, data);
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
     public boolean delete(String path) {
         Path fullPath = Path.of(path);
 
