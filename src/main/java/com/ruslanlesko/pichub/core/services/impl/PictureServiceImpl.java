@@ -126,8 +126,14 @@ public class PictureServiceImpl implements PictureService {
 
         byte[] optimizedPictureData = convertToOptimized(data);
 
+        String optimizedPath = null;
+        if (optimizedPictureData == null) {
+            logger.warn("Optimized version was not created");
+        } else {
+            optimizedPath = pictureDataDao.save(optimizedPictureData);
+        }
+
         String path = pictureDataDao.save(data);
-        String optimizedPath = pictureDataDao.save(optimizedPictureData);
 
         PictureMeta meta = new PictureMeta(-1, userId, albumId.orElseGet(() -> -1L), path,
                 optimizedPath,
