@@ -1,16 +1,19 @@
 package com.ruslanlesko.pichub.core.dao.impl;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
 import com.ruslanlesko.pichub.core.entity.PictureMeta;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +44,8 @@ public class MongoPictureMetaDao implements PictureMetaDao {
                 .append("pathOptimized", pictureMeta.getPathOptimized())
                 .append("userId", pictureMeta.getUserId())
                 .append("dateUploaded", pictureMeta.getDateUploaded())
-                .append("dateCaptured", pictureMeta.getDateCaptured());
+                .append("dateCaptured", pictureMeta.getDateCaptured())
+                .append("dateModified", pictureMeta.getDateModified());
 
         if (pictureMeta.getAlbumId() > 0) {
             document.append("albumId", pictureMeta.getAlbumId());
@@ -80,6 +84,21 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     }
 
     @Override
+    public boolean setLastModified(long id, LocalDateTime lastModified) {
+        BasicDBObject query = new BasicDBObject();
+        query.put("id", id);
+
+        BasicDBObject newDoc = new BasicDBObject();
+        newDoc.put("dateModified", lastModified);
+
+        BasicDBObject updateDoc = new BasicDBObject();
+        updateDoc.put("$set", newDoc);
+
+        UpdateResult result = getCollection().updateOne(query, updateDoc);
+        return result.getModifiedCount() == 1 && result.wasAcknowledged();
+    }
+
+    @Override
     public boolean deleteById(long id) {
         DeleteResult deleteResult = getCollection().deleteOne(eq("id", id));
         if (deleteResult.getDeletedCount() == 0) {
@@ -99,7 +118,9 @@ public class MongoPictureMetaDao implements PictureMetaDao {
                 document.getString("path"),
                 document.getString("pathOptimized"),
                 document.getDate("dateUploaded").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
-                document.getDate("dateCaptured").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+                document.getDate("dateCaptured").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
+                document.get("dateModified") == null ? document.getDate("dateUploaded").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+                : document.getDate("dateModified").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
         );
     }
 

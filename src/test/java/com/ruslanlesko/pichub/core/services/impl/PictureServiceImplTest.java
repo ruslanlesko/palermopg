@@ -3,6 +3,7 @@ package com.ruslanlesko.pichub.core.services.impl;
 import com.ruslanlesko.pichub.core.dao.PictureDataDao;
 import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
 import com.ruslanlesko.pichub.core.entity.PictureMeta;
+import com.ruslanlesko.pichub.core.entity.PictureResponse;
 import com.ruslanlesko.pichub.core.security.JWTParser;
 import com.ruslanlesko.pichub.core.services.PictureService;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ class PictureServiceImplTest {
         final long pictureId = 69;
         final String path = "path";
         final byte[] data = new byte[]{98, -2, 44, 25, 27};
-        final PictureMeta meta = new PictureMeta(pictureId, userId, -1, path, "", null, null);
+        final PictureMeta meta = new PictureMeta(pictureId, userId, -1, path, "", null, null, null);
 
         JWTParser parser = mock(JWTParser.class);
         PictureMetaDao metaDao = mock(PictureMetaDao.class);
@@ -37,8 +38,8 @@ class PictureServiceImplTest {
 
         PictureService service = new PictureServiceImpl(metaDao, dataDao, null, parser);
 
-        Optional<byte[]> expected = Optional.of(data);
-        Optional<byte[]> actual = service.getPictureData(token, userId, pictureId);
+        PictureResponse expected = new PictureResponse(Optional.of(data), false, null);
+        PictureResponse actual = service.getPictureData(token, null, userId, pictureId);
 
         assertEquals(expected, actual);
     }
@@ -49,15 +50,18 @@ class PictureServiceImplTest {
         final long userId = 42;
         final PictureMeta metaA = new PictureMeta(69, userId, -1, null,
                 "", LocalDateTime.of(2019, 10, 4, 12, 4),
-                    LocalDateTime.of(2019, 10, 4, 10, 22)
-                ),
+                    LocalDateTime.of(2019, 10, 4, 10, 22),
+                null
+        ),
                 metaB = new PictureMeta(27, userId, -1, null,
                         "", LocalDateTime.of(2019, 10, 5, 12, 4),
-                    LocalDateTime.of(2019, 10, 4, 10, 26)
+                    LocalDateTime.of(2019, 10, 4, 10, 26),
+                        null
                 ),
                 metaC = new PictureMeta(25, userId, -1, null,
                         "", LocalDateTime.of(2019, 10, 5, 12, 4),
-                    LocalDateTime.of(2019, 10, 4, 10, 22)
+                    LocalDateTime.of(2019, 10, 4, 10, 22),
+                        null
                 );
 
         JWTParser parser = mock(JWTParser.class);

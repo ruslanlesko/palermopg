@@ -11,6 +11,7 @@ public class PictureMeta {
     private final String pathOptimized;
     private final LocalDateTime dateUploaded;
     private final LocalDateTime dateCaptured;
+    private final LocalDateTime dateModified;
 
     public PictureMeta(
             long id,
@@ -19,7 +20,8 @@ public class PictureMeta {
             String path,
             String pathOptimized,
             LocalDateTime dateUploaded,
-            LocalDateTime dateCaptured
+            LocalDateTime dateCaptured,
+            LocalDateTime dateModified
     ) {
         this.id = id;
         this.userId = userId;
@@ -28,6 +30,7 @@ public class PictureMeta {
         this.pathOptimized = pathOptimized;
         this.dateUploaded = dateUploaded;
         this.dateCaptured = dateCaptured;
+        this.dateModified = dateModified;
     }
 
     public long getId() {
@@ -58,6 +61,10 @@ public class PictureMeta {
         return pathOptimized;
     }
 
+    public LocalDateTime getDateModified() {
+        return dateModified;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -71,12 +78,13 @@ public class PictureMeta {
                Objects.equals(path, that.path) &&
                Objects.equals(pathOptimized, that.pathOptimized) &&
                Objects.equals(dateUploaded, that.dateUploaded) &&
-               Objects.equals(dateCaptured, that.dateCaptured);
+               Objects.equals(dateCaptured, that.dateCaptured) &&
+               Objects.equals(dateModified, that.dateModified);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, userId, albumId, path, pathOptimized, dateUploaded, dateCaptured);
+        return Objects.hash(id, userId, albumId, path, pathOptimized, dateUploaded, dateCaptured, dateModified);
     }
 
     @Override
@@ -89,6 +97,7 @@ public class PictureMeta {
                ", pathOptimized='" + pathOptimized + '\'' +
                ", dateUploaded=" + dateUploaded +
                ", dateCaptured=" + dateCaptured +
+               ", dateModified=" + dateModified +
                '}';
     }
 }

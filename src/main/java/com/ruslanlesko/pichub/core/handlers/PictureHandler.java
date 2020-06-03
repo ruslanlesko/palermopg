@@ -2,6 +2,7 @@ package com.ruslanlesko.pichub.core.handlers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruslanlesko.pichub.core.entity.PictureResponse;
 import com.ruslanlesko.pichub.core.exception.AuthorizationException;
 import com.ruslanlesko.pichub.core.services.PictureService;
 import io.vertx.core.buffer.Buffer;
@@ -28,15 +29,26 @@ public class PictureHandler {
         long userId = Long.parseLong(request.getParam("userId"));
         long id = Long.parseLong(request.getParam("pictureId"));
         String token = request.getHeader("Authorization");
+        String clientHash = request.getHeader("If-None-Match");
 
         routingContext.vertx().executeBlocking(future -> {
             try {
-                Optional<byte[]> data = pictureService.getPictureData(token, userId, id);
-                if (data.isEmpty()) {
+                PictureResponse result = pictureService.getPictureData(token, clientHash, userId, id);
+                if (result.isNotModified()) {
+                    withCORSHeaders(routingContext.response().setStatusCode(304))
+                            .putHeader("ETag", result.getHash())
+                            .putHeader("Cache-Control", "no-cache")
+                            .end();
+                    return;
+                }
+                if (!result.isNotModified() && result.getData().isEmpty()) {
                     withCORSHeaders(routingContext.response().setStatusCode(404)).end();
                     return;
                 }
-                withCORSHeaders(routingContext.response()).end(Buffer.buffer(data.get()));
+                withCORSHeaders(routingContext.response())
+                        .putHeader("ETag", result.getHash())
+                        .putHeader("Cache-Control", "no-cache")
+                        .end(Buffer.buffer(result.getData().get()));
             } catch (AuthorizationException ex) {
                 withCORSHeaders(routingContext.response().setStatusCode(401)).end();
             } finally {
@@ -118,7 +130,7 @@ public class PictureHandler {
 
         routingContext.vertx().executeBlocking(future -> {
             try {
-                Optional<byte[]> data = pictureService.getPictureData(token, userId, id);
+                Optional<byte[]> data = pictureService.getPictureData(token, null, userId, id).getData();
                 if (data.isEmpty()) {
                     withCORSHeaders(routingContext.response().setStatusCode(404)).end();
                     return;

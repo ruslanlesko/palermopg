@@ -5,6 +5,7 @@ import com.ruslanlesko.pichub.core.dao.PictureDataDao;
 import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
 import com.ruslanlesko.pichub.core.entity.Album;
 import com.ruslanlesko.pichub.core.entity.PictureMeta;
+import com.ruslanlesko.pichub.core.entity.PictureResponse;
 import com.ruslanlesko.pichub.core.exception.AuthorizationException;
 import com.ruslanlesko.pichub.core.meta.MetaParser;
 import com.ruslanlesko.pichub.core.security.JWTParser;
@@ -20,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -46,24 +48,38 @@ public class PictureServiceImpl implements PictureService {
     }
 
     @Override
-    public Optional<byte[]> getPictureData(String token, long userId, long pictureId) {
+    public PictureResponse getPictureData(String token, String clientHash, long userId, long pictureId) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
             throw new AuthorizationException("Invalid token for userId: " + userId);
         }
 
         Optional<PictureMeta> meta = pictureMetaDao.find(pictureId);
         if (meta.isEmpty()) {
-            return Optional.empty();
+            return new PictureResponse(Optional.empty(), false, null);
         }
 
         if (meta.get().getUserId() != userId && !checkAlbum(meta.get().getAlbumId(), userId)) {
             throw new AuthorizationException("Wrong user id");
         }
 
+        String hash = calculateHash(meta.get());
+
+        if (hash.equals(clientHash)) {
+            return new PictureResponse(Optional.empty(), true, hash);
+        }
+
         String optimizedPath = meta.get().getPathOptimized();
         String originalPath = meta.get().getPath();
 
-        return pictureDataDao.find(optimizedPath == null || optimizedPath.isBlank() ? originalPath : optimizedPath);
+        return new PictureResponse(pictureDataDao.find(optimizedPath == null || optimizedPath.isBlank() ? originalPath : optimizedPath), false, hash);
+    }
+
+    private String calculateHash(PictureMeta meta) {
+        LocalDateTime dateModified = meta.getDateModified();
+        if (dateModified == null) {
+            dateModified = meta.getDateUploaded();
+        }
+        return "W/\"" + String.valueOf(dateModified.toEpochSecond(ZoneOffset.UTC)) + "\"";
     }
 
     private boolean checkAlbum(long albumId, long userId) {
@@ -137,7 +153,8 @@ public class PictureServiceImpl implements PictureService {
 
         PictureMeta meta = new PictureMeta(-1, userId, albumId.orElseGet(() -> -1L), path,
                 optimizedPath,
-                LocalDateTime.now(), dateCaptured);
+                LocalDateTime.now(), dateCaptured, LocalDateTime.now()
+        );
 
         long id = pictureMetaDao.save(meta);
         logger.info("Inserted new picture with id {} for user id {}", id, userId);
@@ -163,7 +180,11 @@ public class PictureServiceImpl implements PictureService {
         String pathOptimized = optMeta.get().getPathOptimized();
 
         doRotate(pathOptimized);
-        return doRotate(path);
+        boolean wasRotated = doRotate(path);
+        if (wasRotated) {
+            pictureMetaDao.setLastModified(pictureId, LocalDateTime.now());
+        }
+        return wasRotated;
     }
 
     private boolean doRotate(String path) {
