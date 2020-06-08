@@ -23,10 +23,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ApiVerticle extends AbstractVerticle {
-    private static String JSON_FORMAT = "application/json";
-    private static String JPEG_FORMAT = "image/jpeg";
+    private static final String JSON_FORMAT = "application/json";
+    private static final String JPEG_FORMAT = "image/jpeg";
 
-    private static Logger logger = LoggerFactory.getLogger("Application");
+    private static final Logger logger = LoggerFactory.getLogger("Application");
 
     private PictureHandler pictureHandler;
     private AlbumHandler albumHandler;
