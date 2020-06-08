@@ -10,6 +10,8 @@ import com.ruslanlesko.pichub.core.exception.AuthorizationException;
 import com.ruslanlesko.pichub.core.meta.MetaParser;
 import com.ruslanlesko.pichub.core.security.JWTParser;
 import com.ruslanlesko.pichub.core.services.PictureService;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,30 +50,53 @@ public class PictureServiceImpl implements PictureService {
     }
 
     @Override
-    public PictureResponse getPictureData(String token, String clientHash, long userId, long pictureId) {
+    public Future<PictureResponse> getPictureData(String token, String clientHash, long userId, long pictureId) {
+        Promise<PictureResponse> resultPromise = Promise.promise();
+
         if (!jwtParser.validateTokenForUserId(token, userId)) {
-            throw new AuthorizationException("Invalid token for userId: " + userId);
+            resultPromise.fail(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Optional<PictureMeta> meta = pictureMetaDao.find(pictureId);
-        if (meta.isEmpty()) {
-            return new PictureResponse(Optional.empty(), false, null);
-        }
+        pictureMetaDao.find(pictureId).setHandler(result -> {
+            if (result.failed()) {
+                resultPromise.fail(result.cause());
+                return;
+            }
 
-        if (meta.get().getUserId() != userId && !checkAlbum(meta.get().getAlbumId(), userId)) {
-            throw new AuthorizationException("Wrong user id");
-        }
+            var metaOptional = result.result();
+            if (metaOptional.isEmpty()) {
+                resultPromise.complete(new PictureResponse(Optional.empty(), false, null));
+                return;
+            }
 
-        String hash = calculateHash(meta.get());
+            var meta = metaOptional.get();
+            if (meta.getUserId() != userId && !checkAlbum(meta.getAlbumId(), userId)) {
+                resultPromise.fail(new AuthorizationException("Wrong user id"));
+            }
 
-        if (hash.equals(clientHash)) {
-            return new PictureResponse(Optional.empty(), true, hash);
-        }
+            final String hash = calculateHash(meta);
+            if (hash.equals(clientHash)) {
+                resultPromise.complete(new PictureResponse(Optional.empty(), true, hash));
+                return;
+            }
 
-        String optimizedPath = meta.get().getPathOptimized();
-        String originalPath = meta.get().getPath();
+            String optimizedPath = meta.getPathOptimized();
+            String originalPath = meta.getPath();
 
-        return new PictureResponse(pictureDataDao.find(optimizedPath == null || optimizedPath.isBlank() ? originalPath : optimizedPath), false, hash);
+            String pathToFind = optimizedPath == null || optimizedPath.isBlank() ? originalPath : optimizedPath;
+
+            pictureDataDao.find(pathToFind).setHandler(dataResult -> {
+                if (dataResult.failed()) {
+                    resultPromise.fail(dataResult.cause());
+                    return;
+                }
+
+                var dataOptional = dataResult.result();
+                resultPromise.complete(new PictureResponse(dataOptional, false, hash));
+            });
+        });
+
+        return resultPromise.future();
     }
 
     private String calculateHash(PictureMeta meta) {
@@ -167,7 +192,8 @@ public class PictureServiceImpl implements PictureService {
             throw new AuthorizationException("Invalid token for userId: " + userId);
         }
 
-        Optional<PictureMeta> optMeta = pictureMetaDao.find(pictureId);
+        var metaFuture = pictureMetaDao.find(pictureId);
+        var optMeta = metaFuture.result();
         if (optMeta.isEmpty()) {
             return false;
         }
@@ -192,7 +218,7 @@ public class PictureServiceImpl implements PictureService {
             return false;
         }
 
-        Optional<byte[]> data = pictureDataDao.find(path);
+        Optional<byte[]> data = pictureDataDao.find(path).result();
         if (data.isEmpty()) {
             return false;
         }
@@ -211,7 +237,7 @@ public class PictureServiceImpl implements PictureService {
             throw new AuthorizationException("Invalid token for userId: " + userId);
         }
 
-        Optional<PictureMeta> meta = pictureMetaDao.find(pictureId);
+        Optional<PictureMeta> meta = pictureMetaDao.find(pictureId).result();
         if (meta.isEmpty()) {
             logger.error("Picture with id {} is missing in database", pictureId);
             return false;

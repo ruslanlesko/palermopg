@@ -2,7 +2,6 @@ package com.ruslanlesko.pichub.core.handlers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ruslanlesko.pichub.core.entity.PictureResponse;
 import com.ruslanlesko.pichub.core.exception.AuthorizationException;
 import com.ruslanlesko.pichub.core.services.PictureService;
 import io.vertx.core.buffer.Buffer;
@@ -31,29 +30,29 @@ public class PictureHandler {
         String token = request.getHeader("Authorization");
         String clientHash = request.getHeader("If-None-Match");
 
-        routingContext.vertx().executeBlocking(future -> {
-            try {
-                PictureResponse result = pictureService.getPictureData(token, clientHash, userId, id);
-                if (result.isNotModified()) {
-                    withCORSHeaders(routingContext.response().setStatusCode(304))
-                            .putHeader("ETag", result.getHash())
-                            .putHeader("Cache-Control", "no-cache")
-                            .end();
-                    return;
-                }
-                if (!result.isNotModified() && result.getData().isEmpty()) {
-                    withCORSHeaders(routingContext.response().setStatusCode(404)).end();
-                    return;
-                }
-                withCORSHeaders(routingContext.response())
-                        .putHeader("ETag", result.getHash())
-                        .putHeader("Cache-Control", "no-cache")
-                        .end(Buffer.buffer(result.getData().get()));
-            } catch (AuthorizationException ex) {
-                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
-            } finally {
-                future.complete();
+        pictureService.getPictureData(token, clientHash, userId, id).setHandler(result -> {
+            if (result.failed()) {
+                handleFailure(result.cause(), routingContext.response());
+                return;
             }
+
+            var response = result.result();
+            if (response.isNotModified()) {
+                withCORSHeaders(routingContext.response().setStatusCode(304))
+                        .putHeader("ETag", response.getHash())
+                        .putHeader("Cache-Control", "no-cache")
+                        .end();
+                return;
+            }
+            if (!response.isNotModified() && response.getData().isEmpty()) {
+                withCORSHeaders(routingContext.response().setStatusCode(404)).end();
+                return;
+            }
+
+            withCORSHeaders(routingContext.response())
+                    .putHeader("ETag", response.getHash())
+                    .putHeader("Cache-Control", "no-cache")
+                    .end(Buffer.buffer(response.getData().get()));
         });
     }
 
@@ -128,24 +127,37 @@ public class PictureHandler {
         long id = Long.parseLong(request.getParam("pictureId"));
         String token = request.getHeader("Authorization");
 
-        routingContext.vertx().executeBlocking(future -> {
-            try {
-                Optional<byte[]> data = pictureService.getPictureData(token, null, userId, id).getData();
-                if (data.isEmpty()) {
-                    withCORSHeaders(routingContext.response().setStatusCode(404)).end();
-                    return;
-                }
-                if (pictureService.deletePicture(token, userId, id)) {
-                    withCORSHeaders(routingContext.response()).end("{\"id\":" + id + "}");
-                    return;
-                }
-                withCORSHeaders(routingContext.response().setStatusCode(500)).end();
-            } catch (AuthorizationException ex) {
-                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
-            } finally {
-                future.complete();
+        pictureService.getPictureData(token, null, userId, id).setHandler(result -> {
+            if (result.failed()) {
+                handleFailure(result.cause(), routingContext.response());
+                return;
             }
+
+            var data = result.result().getData();
+            routingContext.vertx().executeBlocking(future -> {
+                try {
+                    if (data.isEmpty()) {
+                        withCORSHeaders(routingContext.response().setStatusCode(404)).end();
+                        return;
+                    }
+                    if (pictureService.deletePicture(token, userId, id)) {
+                        withCORSHeaders(routingContext.response()).end("{\"id\":" + id + "}");
+                        return;
+                    }
+                    withCORSHeaders(routingContext.response().setStatusCode(500)).end();
+                } finally {
+                    future.complete();
+                }
+            });
         });
+    }
+
+    private void handleFailure(Throwable cause, HttpServerResponse response) {
+        if (cause instanceof AuthorizationException) {
+            withCORSHeaders(response.setStatusCode(401)).end();
+            return;
+        }
+        withCORSHeaders(response.setStatusCode(500)).end();
     }
 
     private HttpServerResponse withCORSHeaders(HttpServerResponse response) {

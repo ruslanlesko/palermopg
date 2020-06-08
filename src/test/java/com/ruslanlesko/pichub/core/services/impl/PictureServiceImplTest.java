@@ -6,16 +6,17 @@ import com.ruslanlesko.pichub.core.entity.PictureMeta;
 import com.ruslanlesko.pichub.core.entity.PictureResponse;
 import com.ruslanlesko.pichub.core.security.JWTParser;
 import com.ruslanlesko.pichub.core.services.PictureService;
+import io.vertx.core.Future;
 import org.junit.jupiter.api.Test;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
 class PictureServiceImplTest {
 
@@ -33,13 +34,13 @@ class PictureServiceImplTest {
         PictureDataDao dataDao = mock(PictureDataDao.class);
 
         when(parser.validateTokenForUserId(token, userId)).thenReturn(true);
-        when(metaDao.find(pictureId)).thenReturn(Optional.of(meta));
-        when(dataDao.find(path)).thenReturn(Optional.of(data));
+        when(metaDao.find(pictureId)).thenReturn(Future.succeededFuture(Optional.of(meta)));
+        when(dataDao.find(path)).thenReturn(Future.succeededFuture(Optional.of(data)));
 
         PictureService service = new PictureServiceImpl(metaDao, dataDao, null, parser);
 
         PictureResponse expected = new PictureResponse(Optional.of(data), false, null);
-        PictureResponse actual = service.getPictureData(token, null, userId, pictureId);
+        PictureResponse actual = service.getPictureData(token, null, userId, pictureId).result();
 
         assertEquals(expected, actual);
     }

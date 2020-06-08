@@ -9,6 +9,9 @@ import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
 import com.ruslanlesko.pichub.core.entity.PictureMeta;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Filters.eq;
 
 public class MongoPictureMetaDao implements PictureMetaDao {
     private static Logger logger = LoggerFactory.getLogger("Application");
@@ -55,14 +58,26 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     }
 
     @Override
-    public Optional<PictureMeta> find(long id) {
-        Document result = getCollection().find(eq("id", id)).first();
+    public Future<Optional<PictureMeta>> find(long id) {
+        Promise<Optional<PictureMeta>> resultPromise = Promise.promise();
 
-        if (result == null) {
-            return Optional.empty();
-        }
+        Vertx.factory.context().executeBlocking(call -> {
+           try {
+               Document result = getCollection().find(eq("id", id)).first();
 
-        return Optional.of(mapToPicture(result));
+               if (result == null) {
+                   resultPromise.complete(Optional.empty());
+                   return;
+               }
+
+               resultPromise.complete(Optional.of(mapToPicture(result)));
+               return;
+           } finally {
+               call.complete();
+           }
+        });
+
+        return resultPromise.future();
     }
 
     @Override

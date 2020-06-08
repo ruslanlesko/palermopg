@@ -1,6 +1,9 @@
 package com.ruslanlesko.pichub.core.dao.impl;
 
 import com.ruslanlesko.pichub.core.dao.PictureDataDao;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,19 +43,30 @@ public class FilePictureDataDao implements PictureDataDao {
     }
 
     @Override
-    public Optional<byte[]> find(String path) {
-        Path fullPath = Path.of(path);
+    public Future<Optional<byte[]>> find(String path) {
+        Promise<Optional<byte[]>> resultPromise = Promise.promise();
 
-        if (Files.notExists(fullPath)) {
-            return Optional.empty();
-        }
+        Vertx.factory.context().executeBlocking(call -> {
+           try {
+               Path fullPath = Path.of(path);
 
-        try {
-            return Optional.of(Files.readAllBytes(fullPath));
-        } catch (IOException e) {
-            logger.error(e.getMessage());
-            return Optional.empty();
-        }
+               if (Files.notExists(fullPath)) {
+                   resultPromise.complete(Optional.empty());
+                   return;
+               }
+
+               try {
+                   resultPromise.complete(Optional.of(Files.readAllBytes(fullPath)));
+               } catch (IOException e) {
+                   logger.error(e.getMessage());
+                   resultPromise.complete(Optional.empty());
+               }
+           } finally {
+               call.complete();
+           }
+        });
+
+        return resultPromise.future();
     }
 
     @Override
