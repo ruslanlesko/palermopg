@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -109,7 +108,7 @@ public class AlbumServiceImpl implements AlbumService {
         }
 
         return pictureMetaDao.findPictureMetasForAlbumId(albumId).stream()
-            .allMatch(meta -> pictureMetaDao.deleteById(meta.getId()) && pictureDataDao.delete(meta.getPath()));
+            .allMatch(meta -> pictureMetaDao.deleteById(meta.getId()).result() && pictureDataDao.delete(meta.getPath()).result());
     }
 
     @Override

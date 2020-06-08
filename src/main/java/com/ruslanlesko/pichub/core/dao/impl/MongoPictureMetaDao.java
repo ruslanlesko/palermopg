@@ -114,13 +114,24 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     }
 
     @Override
-    public boolean deleteById(long id) {
-        DeleteResult deleteResult = getCollection().deleteOne(eq("id", id));
-        if (deleteResult.getDeletedCount() == 0) {
-            logger.error("Delete failed due to the absence of document to delete");
-            return false;
-        }
-        return deleteResult.wasAcknowledged();
+    public Future<Boolean> deleteById(long id) {
+        Promise<Boolean> resultPromise = Promise.promise();
+
+        Vertx.factory.context().executeBlocking(call -> {
+            try {
+                DeleteResult deleteResult = getCollection().deleteOne(eq("id", id));
+                if (deleteResult.getDeletedCount() == 0) {
+                    logger.error("Delete failed due to the absence of document to delete");
+                    resultPromise.complete(false);
+                    return;
+                }
+                resultPromise.complete(deleteResult.wasAcknowledged());
+            } finally {
+                call.complete();
+            }
+        });
+
+        return resultPromise.future();
     }
 
     private PictureMeta mapToPicture(Document document) {

@@ -12,5 +12,5 @@ public interface PictureMetaDao {
     Future<Optional<PictureMeta>> find(long id);
     List<PictureMeta> findPictureMetasForAlbumId(long albumId);
     Future<Boolean> setLastModified(long id, LocalDateTime lastModified);
-    boolean deleteById(long id);
+    Future<Boolean> deleteById(long id);
 }

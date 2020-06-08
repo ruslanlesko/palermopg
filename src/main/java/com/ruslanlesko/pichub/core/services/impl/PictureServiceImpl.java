@@ -168,12 +168,12 @@ public class PictureServiceImpl implements PictureService {
         Promise<Boolean> resultPromise = Promise.promise();
 
         pictureMetaDao.find(pictureId).setHandler(metaResult -> {
-           if (metaResult.failed()) {
-               resultPromise.fail(metaResult.cause());
-               return;
-           }
+            if (metaResult.failed()) {
+                resultPromise.fail(metaResult.cause());
+                return;
+            }
 
-           var optMeta = metaResult.result();
+            var optMeta = metaResult.result();
             if (optMeta.isEmpty()) {
                 resultPromise.complete(false);
                 return;
@@ -237,30 +237,64 @@ public class PictureServiceImpl implements PictureService {
     }
 
     @Override
-    public boolean deletePicture(String token, long userId, long pictureId) {
+    public Future<Boolean> deletePicture(String token, long userId, long pictureId) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
-            throw new AuthorizationException("Invalid token for userId: " + userId);
+            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Optional<PictureMeta> meta = pictureMetaDao.find(pictureId).result();
-        if (meta.isEmpty()) {
-            logger.error("Picture with id {} is missing in database", pictureId);
-            return false;
-        }
+        Promise<Boolean> resultPromise = Promise.promise();
 
-        boolean wasDeleted = pictureMetaDao.deleteById(pictureId);
-        if (!wasDeleted) {
-            logger.error("Cannot delete picture with id {} for user id {}", pictureId, userId);
-            return false;
-        }
+        pictureMetaDao.find(pictureId).setHandler(metaResult -> {
+            if (metaResult.failed()) {
+                resultPromise.fail(metaResult.cause());
+                return;
+            }
 
-        if (!pictureDataDao.delete(meta.get().getPath())) {
-            logger.error("Cannot delete picture id {} data", pictureId);
-            return false;
-        }
+            var meta = metaResult.result();
 
-        logger.info("Successfully deleted picture id {}", pictureId);
-        return true;
+            if (meta.isEmpty()) {
+                logger.error("Picture with id {} is missing in database", pictureId);
+                resultPromise.complete(false);
+                return;
+            }
+
+            pictureMetaDao.deleteById(pictureId).setHandler(deleteDbResult -> {
+                if (deleteDbResult.failed()) {
+                    resultPromise.fail(deleteDbResult.cause());
+                    return;
+                }
+
+                if (!deleteDbResult.result()) {
+                    logger.error("Cannot delete picture with id {} for user id {}", pictureId, userId);
+                    resultPromise.complete(false);
+                    return;
+                }
+
+                pictureDataDao.delete(meta.get().getPath()).setHandler(deleteOriginalResult -> {
+                    if (deleteOriginalResult.failed()) {
+                        logger.error("Cannot delete picture id {} data", pictureId);
+                        resultPromise.fail(deleteOriginalResult.cause());
+                        return;
+                    }
+
+                    if (!deleteOriginalResult.result()) {
+                        resultPromise.complete(false);
+                        return;
+                    }
+
+                    logger.info("Successfully deleted picture id {}", pictureId);
+
+                    String optimized = meta.get().getPathOptimized();
+                    if (optimized != null) {
+                        pictureDataDao.delete(optimized).setHandler(resultPromise);
+                        return;
+                    }
+                    resultPromise.complete(true);
+                });
+            });
+        });
+
+        return resultPromise.future();
     }
 
     private byte[] rotateImage(byte[] bytes, int degrees) {
@@ -280,7 +314,7 @@ public class PictureServiceImpl implements PictureService {
             final BufferedImage rotatedImage = new BufferedImage(w, h, image.getType());
             final AffineTransform at = new AffineTransform();
             at.translate(w / 2.0, h / 2.0);
-            at.rotate(rads,0, 0);
+            at.rotate(rads, 0, 0);
             at.translate(-image.getWidth() / 2.0, -image.getHeight() / 2.0);
             final AffineTransformOp rotateOp = new AffineTransformOp(at, AffineTransformOp.TYPE_BICUBIC);
             rotateOp.filter(image, rotatedImage);
@@ -316,10 +350,10 @@ public class PictureServiceImpl implements PictureService {
 
             double percent = originalHeight > originalWidth ?
                              (double) TARGET_HEIGHT / (double) originalHeight
-                             : (double) TARGET_WIDTH / (double) originalWidth;
+                                                            : (double) TARGET_WIDTH / (double) originalWidth;
 
             AffineTransform resize = AffineTransform.getScaleInstance(percent, percent);
-            AffineTransformOp op = new AffineTransformOp (resize, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+            AffineTransformOp op = new AffineTransformOp(resize, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
             BufferedImage resultImage = op.filter(image, null);
 
             ImageIO.write(resultImage, "JPEG", baos);

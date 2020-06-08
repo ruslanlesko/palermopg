@@ -86,7 +86,6 @@ public class FilePictureDataDao implements PictureDataDao {
             } catch (IOException e) {
                 logger.error(e.getMessage());
                 resultPromise.complete(false);
-                return;
             } finally {
                 call.complete();
             }
@@ -96,15 +95,23 @@ public class FilePictureDataDao implements PictureDataDao {
     }
 
     @Override
-    public boolean delete(String path) {
+    public Future<Boolean> delete(String path) {
+        Promise<Boolean> resultPromise = Promise.promise();
+
         Path fullPath = Path.of(path);
 
-        try {
-            return Files.deleteIfExists(fullPath);
-        } catch (IOException e) {
-            logger.error(e.getMessage());
-            return false;
-        }
+        Vertx.factory.context().executeBlocking(call -> {
+            try {
+                resultPromise.complete(Files.deleteIfExists(fullPath));
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+                resultPromise.complete(false);
+            } finally {
+                call.complete();
+            }
+        });
+
+        return resultPromise.future();
     }
 
     private long extractId(Path p) {

@@ -106,20 +106,22 @@ public class PictureHandler {
             }
 
             var data = result.result().getData();
-            routingContext.vertx().executeBlocking(future -> {
-                try {
-                    if (data.isEmpty()) {
-                        withCORSHeaders(routingContext.response().setStatusCode(404)).end();
-                        return;
-                    }
-                    if (pictureService.deletePicture(token, userId, id)) {
-                        withCORSHeaders(routingContext.response()).end("{\"id\":" + id + "}");
-                        return;
-                    }
-                    withCORSHeaders(routingContext.response().setStatusCode(500)).end();
-                } finally {
-                    future.complete();
+            if (data.isEmpty()) {
+                withCORSHeaders(routingContext.response().setStatusCode(404)).end();
+                return;
+            }
+
+            pictureService.deletePicture(token, userId, id).setHandler(deleteResult -> {
+                if (deleteResult.failed()) {
+                    handleFailure(deleteResult.cause(), routingContext.response());
+                    return;
                 }
+
+                if (deleteResult.result()) {
+                    withCORSHeaders(routingContext.response()).end("{\"id\":" + id + "}");
+                    return;
+                }
+                withCORSHeaders(routingContext.response().setStatusCode(500)).end();
             });
         });
     }
