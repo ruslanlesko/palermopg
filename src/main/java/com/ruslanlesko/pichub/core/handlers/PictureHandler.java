@@ -6,14 +6,10 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
 public class PictureHandler {
-    private static final Logger logger = LoggerFactory.getLogger("Application");
-
     private final PictureService pictureService;
 
     public PictureHandler(PictureService pictureService) {
@@ -82,18 +78,18 @@ public class PictureHandler {
         long id = Long.parseLong(request.getParam("pictureId"));
         String token = request.getHeader("Authorization");
 
-        routingContext.vertx().executeBlocking(future -> {
-            try {
-                if (pictureService.rotatePicture(token, userId, id)) {
-                    withCORSHeaders(routingContext.response()).end();
-                    return;
-                }
-                withCORSHeaders(routingContext.response().setStatusCode(500)).end();
-            } catch (AuthorizationException ex) {
-                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
-            } finally {
-                future.complete();
+        pictureService.rotatePicture(token, userId, id).setHandler(result -> {
+            if (result.failed()) {
+                handleFailure(result.cause(), routingContext.response());
+                return;
             }
+
+            if (result.result()) {
+                withCORSHeaders(routingContext.response()).end();
+                return;
+            }
+
+            withCORSHeaders(routingContext.response().setStatusCode(500)).end();
         });
     }
 

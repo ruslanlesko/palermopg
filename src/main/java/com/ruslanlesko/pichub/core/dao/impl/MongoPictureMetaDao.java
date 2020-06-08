@@ -71,7 +71,6 @@ public class MongoPictureMetaDao implements PictureMetaDao {
                }
 
                resultPromise.complete(Optional.of(mapToPicture(result)));
-               return;
            } finally {
                call.complete();
            }
@@ -90,18 +89,28 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     }
 
     @Override
-    public boolean setLastModified(long id, LocalDateTime lastModified) {
-        BasicDBObject query = new BasicDBObject();
-        query.put("id", id);
+    public Future<Boolean> setLastModified(long id, LocalDateTime lastModified) {
+        Promise<Boolean> resultPromise = Promise.promise();
 
-        BasicDBObject newDoc = new BasicDBObject();
-        newDoc.put("dateModified", lastModified);
+        Vertx.factory.context().executeBlocking(call -> {
+            try {
+                BasicDBObject query = new BasicDBObject();
+                query.put("id", id);
 
-        BasicDBObject updateDoc = new BasicDBObject();
-        updateDoc.put("$set", newDoc);
+                BasicDBObject newDoc = new BasicDBObject();
+                newDoc.put("dateModified", lastModified);
 
-        UpdateResult result = getCollection().updateOne(query, updateDoc);
-        return result.getModifiedCount() == 1 && result.wasAcknowledged();
+                BasicDBObject updateDoc = new BasicDBObject();
+                updateDoc.put("$set", newDoc);
+
+                UpdateResult result = getCollection().updateOne(query, updateDoc);
+                resultPromise.complete(result.getModifiedCount() == 1 && result.wasAcknowledged());
+            } finally {
+                call.complete();
+            }
+        });
+
+        return resultPromise.future();
     }
 
     @Override

@@ -70,21 +70,29 @@ public class FilePictureDataDao implements PictureDataDao {
     }
 
     @Override
-    public boolean replace(String path, byte[] data) {
+    public Future<Boolean> replace(String path, byte[] data) {
         Path fullPath = Path.of(path);
 
         if (Files.notExists(fullPath)) {
-            return false;
+            return Future.succeededFuture(false);
         }
 
-        try {
-            Files.write(fullPath, data);
-        } catch (IOException e) {
-            logger.error(e.getMessage());
-            return false;
-        }
+        Promise<Boolean> resultPromise = Promise.promise();
 
-        return true;
+        Vertx.factory.context().executeBlocking(call -> {
+            try {
+                Files.write(fullPath, data);
+                resultPromise.complete(true);
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+                resultPromise.complete(false);
+                return;
+            } finally {
+                call.complete();
+            }
+        });
+
+        return resultPromise.future();
     }
 
     @Override

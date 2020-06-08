@@ -7,6 +7,6 @@ import java.util.Optional;
 public interface PictureDataDao {
     String save(byte[] data);
     Future<Optional<byte[]>> find(String path);
-    boolean replace(String path, byte[] data);
+    Future<Boolean> replace(String path, byte[] data);
     boolean delete(String path);
 }

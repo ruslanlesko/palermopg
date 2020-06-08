@@ -49,11 +49,11 @@ public class PictureServiceImpl implements PictureService {
 
     @Override
     public Future<PictureResponse> getPictureData(String token, String clientHash, long userId, long pictureId) {
-        Promise<PictureResponse> resultPromise = Promise.promise();
-
         if (!jwtParser.validateTokenForUserId(token, userId)) {
-            resultPromise.fail(new AuthorizationException("Invalid token for userId: " + userId));
+            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
+
+        Promise<PictureResponse> resultPromise = Promise.promise();
 
         pictureMetaDao.find(pictureId).setHandler(result -> {
             if (result.failed()) {
@@ -68,7 +68,7 @@ public class PictureServiceImpl implements PictureService {
             }
 
             var meta = metaOptional.get();
-            if (meta.getUserId() != userId && !checkAlbum(meta.getAlbumId(), userId)) {
+            if (meta.getUserId() != userId && isAlbumNotAccessible(meta.getAlbumId(), userId)) {
                 resultPromise.fail(new AuthorizationException("Wrong user id"));
             }
 
@@ -102,20 +102,20 @@ public class PictureServiceImpl implements PictureService {
         if (dateModified == null) {
             dateModified = meta.getDateUploaded();
         }
-        return "W/\"" + String.valueOf(dateModified.toEpochSecond(ZoneOffset.UTC)) + "\"";
+        return "W/\"" + dateModified.toEpochSecond(ZoneOffset.UTC) + "\"";
     }
 
-    private boolean checkAlbum(long albumId, long userId) {
+    private boolean isAlbumNotAccessible(long albumId, long userId) {
         if (albumId <= 0) {
-            return false;
+            return true;
         }
 
         Optional<Album> album = albumDao.findById(albumId);
         if (album.isEmpty()) {
-            return false;
+            return true;
         }
 
-        return album.get().getUserId() == userId || album.get().getSharedUsers().contains(userId);
+        return album.get().getUserId() != userId && !album.get().getSharedUsers().contains(userId);
     }
 
     @Override
@@ -149,7 +149,7 @@ public class PictureServiceImpl implements PictureService {
 
         String path = pictureDataDao.save(data);
 
-        PictureMeta meta = new PictureMeta(-1, userId, albumId.orElseGet(() -> -1L), path,
+        PictureMeta meta = new PictureMeta(-1, userId, albumId.orElse(-1L), path,
                 optimizedPath,
                 LocalDateTime.now(), dateCaptured, LocalDateTime.now()
         );
@@ -160,48 +160,80 @@ public class PictureServiceImpl implements PictureService {
     }
 
     @Override
-    public boolean rotatePicture(String token, long userId, long pictureId) {
+    public Future<Boolean> rotatePicture(String token, long userId, long pictureId) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
-            throw new AuthorizationException("Invalid token for userId: " + userId);
+            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        var metaFuture = pictureMetaDao.find(pictureId);
-        var optMeta = metaFuture.result();
-        if (optMeta.isEmpty()) {
-            return false;
-        }
+        Promise<Boolean> resultPromise = Promise.promise();
 
-        if (optMeta.get().getUserId() != userId && !checkAlbum(optMeta.get().getAlbumId(), userId)) {
-            throw new AuthorizationException("Wrong user id");
-        }
+        pictureMetaDao.find(pictureId).setHandler(metaResult -> {
+           if (metaResult.failed()) {
+               resultPromise.fail(metaResult.cause());
+               return;
+           }
 
-        String path = optMeta.get().getPath();
-        String pathOptimized = optMeta.get().getPathOptimized();
+           var optMeta = metaResult.result();
+            if (optMeta.isEmpty()) {
+                resultPromise.complete(false);
+                return;
+            }
 
-        doRotate(pathOptimized);
-        boolean wasRotated = doRotate(path);
-        if (wasRotated) {
-            pictureMetaDao.setLastModified(pictureId, LocalDateTime.now());
-        }
-        return wasRotated;
+            if (optMeta.get().getUserId() != userId && isAlbumNotAccessible(optMeta.get().getAlbumId(), userId)) {
+                resultPromise.fail(new AuthorizationException("Wrong user id"));
+                return;
+            }
+
+            String path = optMeta.get().getPath();
+            String pathOptimized = optMeta.get().getPathOptimized();
+
+            doRotate(pathOptimized);
+            doRotate(path).setHandler(rotateResult -> {
+                if (rotateResult.failed()) {
+                    resultPromise.fail(rotateResult.cause());
+                    return;
+                }
+
+                var wasRotated = rotateResult.result();
+                if (wasRotated) {
+                    pictureMetaDao.setLastModified(pictureId, LocalDateTime.now());
+                }
+                resultPromise.complete(wasRotated);
+            });
+        });
+
+        return resultPromise.future();
     }
 
-    private boolean doRotate(String path) {
+    private Future<Boolean> doRotate(String path) {
         if (path == null) {
-            return false;
+            return Future.succeededFuture(false);
         }
 
-        Optional<byte[]> data = pictureDataDao.find(path).result();
-        if (data.isEmpty()) {
-            return false;
-        }
+        Promise<Boolean> resultPromise = Promise.promise();
 
-        byte[] rotated = rotateImage(data.get(), 90);
-        if (rotated == null) {
-            return false;
-        }
+        pictureDataDao.find(path).setHandler(dataResult -> {
+            if (dataResult.failed()) {
+                resultPromise.fail(dataResult.cause());
+                return;
+            }
 
-        return pictureDataDao.replace(path, rotated);
+            var data = dataResult.result();
+            if (data.isEmpty()) {
+                resultPromise.complete(false);
+                return;
+            }
+
+            byte[] rotated = rotateImage(data.get(), 90);
+            if (rotated == null) {
+                resultPromise.complete(false);
+                return;
+            }
+
+            pictureDataDao.replace(path, rotated).setHandler(resultPromise);
+        });
+
+        return resultPromise.future();
     }
 
     @Override
@@ -247,9 +279,9 @@ public class PictureServiceImpl implements PictureService {
             final int h = (int) Math.floor(image.getHeight() * cos + image.getWidth() * sin);
             final BufferedImage rotatedImage = new BufferedImage(w, h, image.getType());
             final AffineTransform at = new AffineTransform();
-            at.translate(w / 2, h / 2);
+            at.translate(w / 2.0, h / 2.0);
             at.rotate(rads,0, 0);
-            at.translate(-image.getWidth() / 2, -image.getHeight() / 2);
+            at.translate(-image.getWidth() / 2.0, -image.getHeight() / 2.0);
             final AffineTransformOp rotateOp = new AffineTransformOp(at, AffineTransformOp.TYPE_BICUBIC);
             rotateOp.filter(image, rotatedImage);
 
