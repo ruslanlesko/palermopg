@@ -14,32 +14,40 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 public class FilePictureDataDao implements PictureDataDao {
-    private static Logger logger = LoggerFactory.getLogger("Application");
+    private static final Logger logger = LoggerFactory.getLogger("Application");
 
-    private String folderPath = System.getenv("PIC_DATA");
+    private static final String folderPath = System.getenv("PIC_DATA");
 
     @Override
-    public String save(byte[] data) {
-        try {
-            long largestId = Files.walk(Paths.get(folderPath), 2)
-                    .map(this::extractId)
-                    .map(Number::longValue)
-                    .filter(n -> n > 0).reduce(0L, (a, b) -> a > b ? a : b);
-            if (largestId < 0) {
-                logger.error("Cannot create an id");
-                return null;
+    public Future<String> save(byte[] data) {
+        Promise<String> resultPromise = Promise.promise();
+
+        Vertx.factory.context().executeBlocking(call -> {
+            try {
+                long largestId = Files.walk(Paths.get(folderPath), 2)
+                        .map(this::extractId)
+                        .map(Number::longValue)
+                        .filter(n -> n > 0).reduce(0L, (a, b) -> a > b ? a : b);
+                if (largestId < 0) {
+                    logger.error("Cannot create an id");
+                    resultPromise.complete(null);
+                    return;
+                }
+
+                long newId = largestId + 1;
+
+                Path target = Paths.get(folderPath + "/" + newId + ".jpg");
+                Files.write(target, data);
+                resultPromise.complete(target.toString());
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+                resultPromise.complete(null);
+            } finally {
+                call.complete();
             }
+        });
 
-            long newId = largestId + 1;
-
-            Path target = Paths.get(folderPath + "/" + newId + ".jpg");
-            Files.write(target, data);
-
-            return target.toString();
-        } catch (IOException e) {
-            logger.error(e.getMessage());
-            return null;
-        }
+        return resultPromise.future();
     }
 
     @Override

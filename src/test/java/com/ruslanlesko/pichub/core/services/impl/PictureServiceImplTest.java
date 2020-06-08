@@ -55,13 +55,13 @@ class PictureServiceImplTest {
         PictureDataDao dataDao = mock(PictureDataDao.class);
 
         when(parser.validateTokenForUserId(token, userId)).thenReturn(true);
-        when(dataDao.save(data)).thenReturn(path);
-        when(metaDao.save(any())).thenReturn(pictureId);
+        when(dataDao.save(data)).thenReturn(Future.succeededFuture(path));
+        when(metaDao.save(any())).thenReturn(Future.succeededFuture(pictureId));
 
         PictureService service = new PictureServiceImpl(metaDao, dataDao, null, parser);
 
         Optional<Long> expected = Optional.of(pictureId);
-        Optional<Long> actual = service.insertNewPicture(token, userId, Optional.empty(), data);
+        Optional<Long> actual = service.insertNewPicture(token, userId, Optional.empty(), data).result();
 
         assertEquals(expected, actual);
     }

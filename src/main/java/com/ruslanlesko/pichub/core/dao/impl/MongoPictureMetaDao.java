@@ -38,23 +38,29 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     }
 
     @Override
-    public long save(PictureMeta pictureMeta) {
-        long id = getNextId();
+    public Future<Long> save(PictureMeta pictureMeta) {
+        Promise<Long> resultPromise = Promise.promise();
 
-        Document document = new Document()
-                .append("id", id)
-                .append("path", pictureMeta.getPath())
-                .append("pathOptimized", pictureMeta.getPathOptimized())
-                .append("userId", pictureMeta.getUserId())
-                .append("dateUploaded", pictureMeta.getDateUploaded())
-                .append("dateCaptured", pictureMeta.getDateCaptured())
-                .append("dateModified", pictureMeta.getDateModified());
+        Vertx.factory.context().executeBlocking(call -> {
+            long id = getNextId();
 
-        if (pictureMeta.getAlbumId() > 0) {
-            document.append("albumId", pictureMeta.getAlbumId());
-        }
-        getCollection().insertOne(document);
-        return id;
+            Document document = new Document()
+                    .append("id", id)
+                    .append("path", pictureMeta.getPath())
+                    .append("pathOptimized", pictureMeta.getPathOptimized())
+                    .append("userId", pictureMeta.getUserId())
+                    .append("dateUploaded", pictureMeta.getDateUploaded())
+                    .append("dateCaptured", pictureMeta.getDateCaptured())
+                    .append("dateModified", pictureMeta.getDateModified());
+
+            if (pictureMeta.getAlbumId() > 0) {
+                document.append("albumId", pictureMeta.getAlbumId());
+            }
+            getCollection().insertOne(document);
+            resultPromise.complete(id);
+        });
+
+        return resultPromise.future();
     }
 
     @Override

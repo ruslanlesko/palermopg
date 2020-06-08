@@ -56,19 +56,18 @@ public class PictureHandler {
         String token = request.getHeader("Authorization");
         byte[] data = routingContext.getBody().getBytes();
 
-        routingContext.vertx().executeBlocking(future -> {
-            try {
-                Optional<Long> id = pictureService.insertNewPicture(token, userId, albumId, data);
-                if (id.isEmpty()) {
-                    withCORSHeaders(routingContext.response().setStatusCode(500)).end();
-                    return;
-                }
-                withCORSHeaders(routingContext.response()).end(String.valueOf(id.get()));
-            } catch (AuthorizationException ex) {
-                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
-            } finally {
-                future.complete();
+        pictureService.insertNewPicture(token, userId, albumId, data).setHandler(insertResult -> {
+           if (insertResult.failed()) {
+               handleFailure(insertResult.cause(), routingContext.response());
+               return;
+           }
+
+           var id = insertResult.result();
+            if (id.isEmpty()) {
+                withCORSHeaders(routingContext.response().setStatusCode(500)).end();
+                return;
             }
+            withCORSHeaders(routingContext.response()).end(String.valueOf(id.get()));
         });
     }
 

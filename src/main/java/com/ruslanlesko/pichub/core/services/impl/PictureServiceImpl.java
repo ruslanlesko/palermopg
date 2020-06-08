@@ -10,6 +10,7 @@ import com.ruslanlesko.pichub.core.exception.AuthorizationException;
 import com.ruslanlesko.pichub.core.meta.MetaParser;
 import com.ruslanlesko.pichub.core.security.JWTParser;
 import com.ruslanlesko.pichub.core.services.PictureService;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.slf4j.Logger;
@@ -119,44 +120,76 @@ public class PictureServiceImpl implements PictureService {
     }
 
     @Override
-    public Optional<Long> insertNewPicture(String token, long userId, Optional<Long> albumId, byte[] data) {
+    public Future<Optional<Long>> insertNewPicture(String token, long userId, Optional<Long> albumId, byte[] data) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
-            throw new AuthorizationException("Invalid token for userId: " + userId);
+            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        LocalDateTime dateCaptured;
+        Promise<Optional<Long>> resultPromise = Promise.promise();
 
-        try {
-            MetaParser metaParser = new MetaParser(data);
-            dateCaptured = metaParser.getDateCaptured();
-            int degrees = metaParser.getRotation();
-
-            data = rotateImage(data, degrees);
-
-        } catch (Exception ex) {
-            dateCaptured = LocalDateTime.now();
-            logger.info("No meta");
-        }
-
+        final LocalDateTime dateCaptured = extractDateCaptured(data);
+        data = getProperlyRotatedData(data);
         byte[] optimizedPictureData = convertToOptimized(data);
 
-        String optimizedPath = null;
+        Future<String> optimizedPathFuture;
         if (optimizedPictureData == null) {
             logger.warn("Optimized version was not created");
+            optimizedPathFuture = Future.succeededFuture(null);
         } else {
-            optimizedPath = pictureDataDao.save(optimizedPictureData);
+            optimizedPathFuture = pictureDataDao.save(optimizedPictureData);
         }
 
-        String path = pictureDataDao.save(data);
+        Future<String> originalPathFuture = pictureDataDao.save(data);
 
-        PictureMeta meta = new PictureMeta(-1, userId, albumId.orElse(-1L), path,
-                optimizedPath,
-                LocalDateTime.now(), dateCaptured, LocalDateTime.now()
-        );
+        CompositeFuture.all(optimizedPathFuture, originalPathFuture).setHandler(pathResults -> {
+            if (pathResults.failed()) {
+                resultPromise.fail(pathResults.cause());
+                return;
+            }
 
-        long id = pictureMetaDao.save(meta);
-        logger.info("Inserted new picture with id {} for user id {}", id, userId);
-        return id > 0 ? Optional.of(id) : Optional.empty();
+            String optimizedPath = pathResults.result().resultAt(0);
+            String originalPath = pathResults.result().resultAt(1);
+
+            PictureMeta meta = new PictureMeta(-1, userId, albumId.orElse(-1L), originalPath,
+                    optimizedPath,
+                    LocalDateTime.now(), dateCaptured, LocalDateTime.now()
+            );
+
+            pictureMetaDao.save(meta).setHandler(metaResult -> {
+                if (metaResult.failed()) {
+                    resultPromise.fail(metaResult.cause());
+                    return;
+                }
+
+                var id = metaResult.result();
+
+                logger.info("Inserted new picture with id {} for user id {}", id, userId);
+                resultPromise.complete(id > 0 ? Optional.of(id) : Optional.empty());
+            });
+        });
+
+        return resultPromise.future();
+    }
+
+    private LocalDateTime extractDateCaptured(byte[] data) {
+        try {
+            MetaParser metaParser = new MetaParser(data);
+            return metaParser.getDateCaptured();
+
+        } catch (Exception ex) {
+            logger.info("No meta");
+            return LocalDateTime.now();
+        }
+    }
+
+    private byte[] getProperlyRotatedData(byte[] data) {
+        try {
+            MetaParser metaParser = new MetaParser(data);
+            int degrees = metaParser.getRotation();
+            return rotateImage(data, degrees);
+        } catch (Exception ex) {
+            return data;
+        }
     }
 
     @Override
