@@ -24,9 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class PictureServiceImpl implements PictureService {
     private static final Logger logger = LoggerFactory.getLogger("Application");
@@ -118,31 +116,6 @@ public class PictureServiceImpl implements PictureService {
         }
 
         return album.get().getUserId() == userId || album.get().getSharedUsers().contains(userId);
-    }
-
-    @Override
-    public List<Long> getPictureIdsForUserId(String token, long userId) {
-        if (!jwtParser.validateTokenForUserId(token, userId)) {
-            throw new AuthorizationException("Invalid token for userId: " + userId);
-        }
-
-        return pictureMetaDao.findPictureMetasForUser(userId).stream()
-                .filter(p -> p.getAlbumId() <= 0)
-                .sorted((picA, picB) -> {
-                    LocalDateTime uploadedA = picA.getDateUploaded();
-                    LocalDateTime uploadedB = picB.getDateUploaded();
-                    LocalDateTime capturedA = picA.getDateCaptured();
-                    LocalDateTime capturedB = picB.getDateCaptured();
-
-                    if (uploadedA.getYear() == uploadedB.getYear()
-                            && uploadedA.getDayOfYear() == uploadedB.getDayOfYear()) {
-                        return capturedB.compareTo(capturedA);
-                    }
-
-                    return uploadedB.compareTo(uploadedA);
-                })
-                .map(PictureMeta::getId)
-                .collect(Collectors.toList());
     }
 
     @Override

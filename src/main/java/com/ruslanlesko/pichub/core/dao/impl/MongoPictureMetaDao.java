@@ -81,15 +81,6 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     }
 
     @Override
-    public List<PictureMeta> findPictureMetasForUser(long userId) {
-        logger.debug("Finding pictures for user id " + userId);
-        List<PictureMeta> result = new ArrayList<>();
-        getCollection().find(eq("userId", userId))
-                .forEach((Consumer<Document>) document -> result.add(mapToPicture(document)));
-        return result;
-    }
-
-    @Override
     public List<PictureMeta> findPictureMetasForAlbumId(long albumId) {
         logger.debug("Finding pictures for album id " + albumId);
         List<PictureMeta> result = new ArrayList<>();

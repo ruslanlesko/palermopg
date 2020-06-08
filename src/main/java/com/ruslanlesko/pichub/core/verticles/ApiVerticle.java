@@ -77,7 +77,6 @@ public class ApiVerticle extends AbstractVerticle {
         );
 
         router.route("/pic/:userId*").handler(BodyHandler.create());
-        router.get("/pic/:userId").produces(JSON_FORMAT).handler(pictureHandler::getIdsForUser);
         router.get("/pic/:userId/:pictureId").produces(JPEG_FORMAT).handler(pictureHandler::getById);
         router.post("/pic/:userId").consumes(JPEG_FORMAT).handler(pictureHandler::add);
         router.post("/pic/:userId/:pictureId/rotate").handler(pictureHandler::rotate);

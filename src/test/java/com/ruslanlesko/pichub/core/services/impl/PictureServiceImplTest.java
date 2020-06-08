@@ -9,8 +9,6 @@ import com.ruslanlesko.pichub.core.services.PictureService;
 import io.vertx.core.Future;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,41 +39,6 @@ class PictureServiceImplTest {
 
         PictureResponse expected = new PictureResponse(Optional.of(data), false, null);
         PictureResponse actual = service.getPictureData(token, null, userId, pictureId).result();
-
-        assertEquals(expected, actual);
-    }
-
-    @Test
-    void testPictureIdsForUserId() {
-        final String token = "abc";
-        final long userId = 42;
-        final PictureMeta metaA = new PictureMeta(69, userId, -1, null,
-                "", LocalDateTime.of(2019, 10, 4, 12, 4),
-                    LocalDateTime.of(2019, 10, 4, 10, 22),
-                null
-        ),
-                metaB = new PictureMeta(27, userId, -1, null,
-                        "", LocalDateTime.of(2019, 10, 5, 12, 4),
-                    LocalDateTime.of(2019, 10, 4, 10, 26),
-                        null
-                ),
-                metaC = new PictureMeta(25, userId, -1, null,
-                        "", LocalDateTime.of(2019, 10, 5, 12, 4),
-                    LocalDateTime.of(2019, 10, 4, 10, 22),
-                        null
-                );
-
-        JWTParser parser = mock(JWTParser.class);
-        PictureMetaDao metaDao = mock(PictureMetaDao.class);
-        PictureDataDao dataDao = mock(PictureDataDao.class);
-
-        when(parser.validateTokenForUserId(token, userId)).thenReturn(true);
-        when(metaDao.findPictureMetasForUser(userId)).thenReturn(List.of(metaA, metaB, metaC));
-
-        PictureService service = new PictureServiceImpl(metaDao, dataDao, null, parser);
-
-        List<Long> expected = List.of(27L, 25L, 69L);
-        List<Long> actual = service.getPictureIdsForUserId(token, userId);
 
         assertEquals(expected, actual);
     }
