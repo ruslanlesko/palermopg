@@ -1,15 +1,16 @@
 package com.ruslanlesko.pichub.core.dao;
 
 import com.ruslanlesko.pichub.core.entity.Album;
+import io.vertx.core.Future;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface AlbumDao {
-    long save(Album album);
-    Optional<Album> findById(long id);
-    List<Album> findAlbumsForUserId(long userId);
-    boolean renameAlbum(long id, String name);
-    boolean delete(long id);
-    boolean updateSharedUsers(long id, List<Long> sharedIds);
+    Future<Long> save(Album album);
+    Future<Optional<Album>> findById(long id);
+    Future<List<Album>> findAlbumsForUserId(long userId);
+    Future<Boolean> renameAlbum(long id, String name);
+    Future<Boolean> delete(long id);
+    Future<Boolean> updateSharedUsers(long id, List<Long> sharedIds);
 }

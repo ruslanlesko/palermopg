@@ -3,7 +3,6 @@ package com.ruslanlesko.pichub.core.services.impl;
 import com.ruslanlesko.pichub.core.dao.AlbumDao;
 import com.ruslanlesko.pichub.core.dao.PictureDataDao;
 import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
-import com.ruslanlesko.pichub.core.entity.Album;
 import com.ruslanlesko.pichub.core.entity.PictureMeta;
 import com.ruslanlesko.pichub.core.entity.PictureResponse;
 import com.ruslanlesko.pichub.core.exception.AuthorizationException;
@@ -69,29 +68,38 @@ public class PictureServiceImpl implements PictureService {
             }
 
             var meta = metaOptional.get();
-            if (meta.getUserId() != userId && isAlbumNotAccessible(meta.getAlbumId(), userId)) {
-                resultPromise.fail(new AuthorizationException("Wrong user id"));
-            }
 
-            final String hash = calculateHash(meta);
-            if (hash.equals(clientHash)) {
-                resultPromise.complete(new PictureResponse(Optional.empty(), true, hash));
-                return;
-            }
-
-            String optimizedPath = meta.getPathOptimized();
-            String originalPath = meta.getPath();
-
-            String pathToFind = optimizedPath == null || optimizedPath.isBlank() ? originalPath : optimizedPath;
-
-            pictureDataDao.find(pathToFind).setHandler(dataResult -> {
-                if (dataResult.failed()) {
-                    resultPromise.fail(dataResult.cause());
+            isAlbumNotAccessible(meta.getAlbumId(), userId).setHandler(albumAccessResult -> {
+                if (albumAccessResult.failed()) {
+                    resultPromise.fail(albumAccessResult.cause());
                     return;
                 }
 
-                var dataOptional = dataResult.result();
-                resultPromise.complete(new PictureResponse(dataOptional, false, hash));
+                var albumNotAccessible = albumAccessResult.result();
+                if (meta.getUserId() != userId && albumNotAccessible) {
+                    resultPromise.fail(new AuthorizationException("Wrong user id"));
+                }
+
+                final String hash = calculateHash(meta);
+                if (hash.equals(clientHash)) {
+                    resultPromise.complete(new PictureResponse(Optional.empty(), true, hash));
+                    return;
+                }
+
+                String optimizedPath = meta.getPathOptimized();
+                String originalPath = meta.getPath();
+
+                String pathToFind = optimizedPath == null || optimizedPath.isBlank() ? originalPath : optimizedPath;
+
+                pictureDataDao.find(pathToFind).setHandler(dataResult -> {
+                    if (dataResult.failed()) {
+                        resultPromise.fail(dataResult.cause());
+                        return;
+                    }
+
+                    var dataOptional = dataResult.result();
+                    resultPromise.complete(new PictureResponse(dataOptional, false, hash));
+                });
             });
         });
 
@@ -106,17 +114,30 @@ public class PictureServiceImpl implements PictureService {
         return "W/\"" + dateModified.toEpochSecond(ZoneOffset.UTC) + "\"";
     }
 
-    private boolean isAlbumNotAccessible(long albumId, long userId) {
+    private Future<Boolean> isAlbumNotAccessible(long albumId, long userId) {
+        Promise<Boolean> resultPromise = Promise.promise();
+
         if (albumId <= 0) {
-            return true;
+            return Future.succeededFuture(true);
         }
 
-        Optional<Album> album = albumDao.findById(albumId);
-        if (album.isEmpty()) {
-            return true;
-        }
+        albumDao.findById(albumId).setHandler(albumResult -> {
+            if (albumResult.failed()) {
+                resultPromise.fail(albumResult.cause());
+                return;
+            }
 
-        return album.get().getUserId() != userId && !album.get().getSharedUsers().contains(userId);
+            var album = albumResult.result();
+
+            if (album.isEmpty()) {
+                resultPromise.complete(true);
+                return;
+            }
+
+            resultPromise.complete(album.get().getUserId() != userId && !album.get().getSharedUsers().contains(userId));
+        });
+
+        return resultPromise.future();
     }
 
     @Override
@@ -212,26 +233,34 @@ public class PictureServiceImpl implements PictureService {
                 return;
             }
 
-            if (optMeta.get().getUserId() != userId && isAlbumNotAccessible(optMeta.get().getAlbumId(), userId)) {
-                resultPromise.fail(new AuthorizationException("Wrong user id"));
-                return;
-            }
-
-            String path = optMeta.get().getPath();
-            String pathOptimized = optMeta.get().getPathOptimized();
-
-            doRotate(pathOptimized);
-            doRotate(path).setHandler(rotateResult -> {
-                if (rotateResult.failed()) {
-                    resultPromise.fail(rotateResult.cause());
+            isAlbumNotAccessible(optMeta.get().getAlbumId(), userId).setHandler(albumAccessResult -> {
+                if (albumAccessResult.failed()) {
+                    resultPromise.fail(albumAccessResult.cause());
                     return;
                 }
 
-                var wasRotated = rotateResult.result();
-                if (wasRotated) {
-                    pictureMetaDao.setLastModified(pictureId, LocalDateTime.now());
+                var albumNotAccessible = albumAccessResult.result();
+                if (optMeta.get().getUserId() != userId && albumNotAccessible) {
+                    resultPromise.fail(new AuthorizationException("Wrong user id"));
+                    return;
                 }
-                resultPromise.complete(wasRotated);
+
+                String path = optMeta.get().getPath();
+                String pathOptimized = optMeta.get().getPathOptimized();
+
+                doRotate(pathOptimized);
+                doRotate(path).setHandler(rotateResult -> {
+                    if (rotateResult.failed()) {
+                        resultPromise.fail(rotateResult.cause());
+                        return;
+                    }
+
+                    var wasRotated = rotateResult.result();
+                    if (wasRotated) {
+                        pictureMetaDao.setLastModified(pictureId, LocalDateTime.now());
+                    }
+                    resultPromise.complete(wasRotated);
+                });
             });
         });
 

@@ -9,6 +9,9 @@ import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.ruslanlesko.pichub.core.dao.AlbumDao;
 import com.ruslanlesko.pichub.core.entity.Album;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import org.bson.Document;
 
 import java.util.ArrayList;
@@ -16,100 +19,154 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.or;
 
 public class MongoAlbumDao implements AlbumDao {
     private final static String DB = "pichubdb";
     private final static String COLLECTION = "albums";
 
-    private MongoClient mongoClient;
+    private final MongoClient mongoClient;
 
     public MongoAlbumDao(MongoClient mongoClient) {
         this.mongoClient = mongoClient;
     }
 
     @Override
-    public long save(Album album) {
-        long id = getNextId();
+    public Future<Long> save(Album album) {
+        Promise<Long> resultPromise = Promise.promise();
 
-        Document document = new Document()
-                .append("id", id)
-                .append("userId", album.getUserId())
-                .append("name", album.getName());
-        getCollection().insertOne(document);
-        return id;
+        getNextId().setHandler(idResult -> Vertx.factory.context().executeBlocking(call -> {
+            if (idResult.failed()) {
+                resultPromise.fail(idResult.cause());
+                return;
+            }
+
+            long id = idResult.result();
+
+            Document document = new Document()
+                    .append("id", id)
+                    .append("userId", album.getUserId())
+                    .append("name", album.getName());
+            getCollection().insertOne(document);
+            resultPromise.complete(id);
+        }));
+
+        return resultPromise.future();
     }
 
     @Override
-    public Optional<Album> findById(long id) {
-        Document result = getCollection().find(eq("id", id)).first();
+    public Future<Optional<Album>> findById(long id) {
+        Promise<Optional<Album>> resultPromise = Promise.promise();
 
-        if (result == null) {
-            return Optional.empty();
-        }
+        Vertx.factory.context().executeBlocking(call -> {
+            Document result = getCollection().find(eq("id", id)).first();
 
-        return Optional.of(new Album(id, result.getLong("userId"), result.getString("name"), result.getList("sharedUsers", Long.class)));
+            if (result == null) {
+                resultPromise.complete(Optional.empty());
+                return;
+            }
+
+            resultPromise.complete(Optional.of(new Album(
+                    id,
+                    result.getLong("userId"),
+                    result.getString("name"),
+                    result.getList("sharedUsers", Long.class)
+            )));
+        });
+
+        return resultPromise.future();
     }
 
     @Override
-    public List<Album> findAlbumsForUserId(long userId) {
-        List<Album> result = new ArrayList<>();
-        getCollection().find(or(eq("userId", userId), eq("sharedUsers", userId)))
-                .forEach((Consumer<Document>) document -> result.add(new Album(
-                        document.getLong("id"),
-                        document.getLong("userId"),
-                        document.getString("name"),
-                        document.getList("sharedUsers", Long.class)
-                )));
-        return result;
+    public Future<List<Album>> findAlbumsForUserId(long userId) {
+        Promise<List<Album>> resultPromise = Promise.promise();
+
+        Vertx.factory.context().executeBlocking(call -> {
+            List<Album> result = new ArrayList<>();
+            getCollection().find(or(eq("userId", userId), eq("sharedUsers", userId)))
+                    .forEach((Consumer<Document>) document -> result.add(new Album(
+                            document.getLong("id"),
+                            document.getLong("userId"),
+                            document.getString("name"),
+                            document.getList("sharedUsers", Long.class)
+                    )));
+            resultPromise.complete(result);
+        });
+
+        return resultPromise.future();
     }
 
     @Override
-    public boolean renameAlbum(long id, String name) {
-        BasicDBObject query = new BasicDBObject();
-        query.put("id", id);
+    public Future<Boolean> renameAlbum(long id, String name) {
+        Promise<Boolean> resultPromise = Promise.promise();
 
-        BasicDBObject newDoc = new BasicDBObject();
-        newDoc.put("name", name);
+        Vertx.factory.context().executeBlocking(call -> {
+            BasicDBObject query = new BasicDBObject();
+            query.put("id", id);
 
-        BasicDBObject updateDoc = new BasicDBObject();
-        updateDoc.put("$set", newDoc);
+            BasicDBObject newDoc = new BasicDBObject();
+            newDoc.put("name", name);
 
-        UpdateResult result = getCollection().updateOne(query, updateDoc);
-        return result.getModifiedCount() == 1 && result.wasAcknowledged();
+            BasicDBObject updateDoc = new BasicDBObject();
+            updateDoc.put("$set", newDoc);
+
+            UpdateResult result = getCollection().updateOne(query, updateDoc);
+            resultPromise.complete(result.getModifiedCount() == 1 && result.wasAcknowledged());
+        });
+
+        return resultPromise.future();
     }
 
     @Override
-    public boolean delete(long id) {
-        DeleteResult deleteResult = getCollection().deleteOne(eq("id", id));
-        return deleteResult.getDeletedCount() == 1 && deleteResult.wasAcknowledged();
+    public Future<Boolean> delete(long id) {
+        Promise<Boolean> resultPromise = Promise.promise();
+
+        Vertx.factory.context().executeBlocking(call -> {
+            DeleteResult deleteResult = getCollection().deleteOne(eq("id", id));
+            resultPromise.complete(deleteResult.getDeletedCount() == 1 && deleteResult.wasAcknowledged());
+        });
+
+        return resultPromise.future();
     }
 
     @Override
-    public boolean updateSharedUsers(long id, List<Long> sharedIds) {
-        BasicDBObject query = new BasicDBObject();
-        query.put("id", id);
+    public Future<Boolean> updateSharedUsers(long id, List<Long> sharedIds) {
+        Promise<Boolean> resultPromise = Promise.promise();
 
-        BasicDBObject newDoc = new BasicDBObject();
-        newDoc.put("sharedUsers", sharedIds);
+        Vertx.factory.context().executeBlocking(call -> {
+            BasicDBObject query = new BasicDBObject();
+            query.put("id", id);
 
-        BasicDBObject updateDoc = new BasicDBObject();
-        updateDoc.put("$set", newDoc);
+            BasicDBObject newDoc = new BasicDBObject();
+            newDoc.put("sharedUsers", sharedIds);
 
-        UpdateResult result = getCollection().updateOne(query, updateDoc);
-        return result.getModifiedCount() == 1 && result.wasAcknowledged();
+            BasicDBObject updateDoc = new BasicDBObject();
+            updateDoc.put("$set", newDoc);
+
+            UpdateResult result = getCollection().updateOne(query, updateDoc);
+            resultPromise.complete(result.getModifiedCount() == 1 && result.wasAcknowledged());
+        });
+
+        return resultPromise.future();
     }
 
-    private long getNextId() {
-        Document result = getCollection()
-                .aggregate(List.of(Aggregates.group(null, Accumulators.max("maxId", "$id"))))
-                .first();
+    private Future<Long> getNextId() {
+        Promise<Long> resultPromise = Promise.promise();
 
-        if (result == null) {
-            return 1;
-        } else {
-            return result.getLong("maxId") + 1;
-        }
+        Vertx.factory.context().executeBlocking(call -> {
+            Document result = getCollection()
+                    .aggregate(List.of(Aggregates.group(null, Accumulators.max("maxId", "$id"))))
+                    .first();
+
+            if (result == null) {
+                resultPromise.complete(1L);
+            } else {
+                resultPromise.complete(result.getLong("maxId") + 1);
+            }
+        });
+
+        return resultPromise.future();
     }
 
     private MongoCollection<Document> getCollection() {

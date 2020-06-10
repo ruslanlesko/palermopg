@@ -86,12 +86,23 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     }
 
     @Override
-    public List<PictureMeta> findPictureMetasForAlbumId(long albumId) {
+    public Future<List<PictureMeta>> findPictureMetasForAlbumId(long albumId) {
         logger.debug("Finding pictures for album id " + albumId);
-        List<PictureMeta> result = new ArrayList<>();
-        getCollection().find(eq("albumId", albumId))
-                .forEach((Consumer<Document>) document -> result.add(mapToPicture(document)));
-        return result;
+
+        Promise<List<PictureMeta>> resultPromise = Promise.promise();
+
+        Vertx.factory.context().executeBlocking(call -> {
+            try {
+                List<PictureMeta> result = new ArrayList<>();
+                getCollection().find(eq("albumId", albumId))
+                        .forEach((Consumer<Document>) document -> result.add(mapToPicture(document)));
+                resultPromise.complete(result);
+            } finally {
+                call.complete();
+            }
+        });
+
+        return resultPromise.future();
     }
 
     @Override

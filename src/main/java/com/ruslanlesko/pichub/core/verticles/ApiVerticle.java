@@ -41,7 +41,7 @@ public class ApiVerticle extends AbstractVerticle {
         JWTParser jwtParser = new JWTParser();
 
         PictureService pictureService = new PictureServiceImpl(pictureMetaDao, pictureDataDao, albumDao, jwtParser);
-        AlbumService albumService = new AlbumServiceImpl(pictureMetaDao, pictureDataDao, albumDao, jwtParser);
+        AlbumService albumService = new AlbumServiceImpl(pictureMetaDao, albumDao, pictureService, jwtParser);
 
         pictureHandler = new PictureHandler(pictureService);
         albumHandler = new AlbumHandler(albumService);

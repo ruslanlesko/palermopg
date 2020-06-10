@@ -10,7 +10,7 @@ import java.util.Optional;
 public interface PictureMetaDao {
     Future<Long> save(PictureMeta pictureMeta);
     Future<Optional<PictureMeta>> find(long id);
-    List<PictureMeta> findPictureMetasForAlbumId(long albumId);
+    Future<List<PictureMeta>> findPictureMetasForAlbumId(long albumId);
     Future<Boolean> setLastModified(long id, LocalDateTime lastModified);
     Future<Boolean> deleteById(long id);
 }

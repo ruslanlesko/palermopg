@@ -1,13 +1,16 @@
 package com.ruslanlesko.pichub.core.services.impl;
 
 import com.ruslanlesko.pichub.core.dao.AlbumDao;
-import com.ruslanlesko.pichub.core.dao.PictureDataDao;
 import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
 import com.ruslanlesko.pichub.core.entity.Album;
 import com.ruslanlesko.pichub.core.entity.PictureMeta;
 import com.ruslanlesko.pichub.core.exception.AuthorizationException;
 import com.ruslanlesko.pichub.core.security.JWTParser;
 import com.ruslanlesko.pichub.core.services.AlbumService;
+import com.ruslanlesko.pichub.core.services.PictureService;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,110 +24,217 @@ public class AlbumServiceImpl implements AlbumService {
     private static final Logger logger = LoggerFactory.getLogger("Application");
 
     private final PictureMetaDao pictureMetaDao;
-    private final PictureDataDao pictureDataDao;
     private final AlbumDao albumDao;
+    private final PictureService pictureService;
     private final JWTParser jwtParser;
 
-    public AlbumServiceImpl(PictureMetaDao pictureMetaDao,
-                            PictureDataDao pictureDataDao,
-                            AlbumDao albumDao,
-                            JWTParser jwtParser) {
+    public AlbumServiceImpl(
+            PictureMetaDao pictureMetaDao,
+            AlbumDao albumDao,
+            PictureService pictureService, JWTParser jwtParser
+    ) {
         this.pictureMetaDao = pictureMetaDao;
-        this.pictureDataDao = pictureDataDao;
         this.albumDao = albumDao;
+        this.pictureService = pictureService;
         this.jwtParser = jwtParser;
     }
 
     @Override
-    public Optional<Long> addNewAlbum(String token, long userId, String albumName) {
+    public Future<Optional<Long>> addNewAlbum(String token, long userId, String albumName) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
-            throw new AuthorizationException("Invalid token for userId: " + userId);
+            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
-        long id = albumDao.save(new Album(-1, userId, albumName, List.of()));
-        logger.info("Album with id {} was created for user id {}", id, userId);
-        return id > 0 ? Optional.of(id) : Optional.empty();
+
+        Promise<Optional<Long>> resultPromise = Promise.promise();
+
+        albumDao.save(new Album(-1, userId, albumName, List.of())).setHandler(saveResult -> {
+            if (saveResult.failed()) {
+                resultPromise.fail(saveResult.cause());
+                return;
+            }
+
+            var id = saveResult.result();
+
+            logger.info("Album with id {} was created for user id {}", id, userId);
+            resultPromise.complete(id > 0 ? Optional.of(id) : Optional.empty());
+        });
+
+        return resultPromise.future();
     }
 
     @Override
-    public List<Album> getAlbumsForUserId(String token, long userId) {
+    public Future<List<Album>> getAlbumsForUserId(String token, long userId) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
-            throw new AuthorizationException("Invalid token for userId: " + userId);
+            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
         return albumDao.findAlbumsForUserId(userId);
     }
 
     @Override
-    public List<PictureMeta> getPictureMetaForAlbum(String token, long userId, long albumId) {
+    public Future<List<PictureMeta>> getPictureMetaForAlbum(String token, long userId, long albumId) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
-            throw new AuthorizationException("Invalid token for userId: " + userId);
-        }
-        Optional<Album> albumOptional = albumDao.findById(albumId);
-        if (albumOptional.isEmpty() || (albumOptional.get().getUserId() != userId && !albumOptional.get().getSharedUsers().contains(userId))) {
-            throw new AuthorizationException("Album is missing or not available to user");
+            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        return pictureMetaDao.findPictureMetasForAlbumId(albumId).stream()
-                .sorted((picA, picB) -> {
-                    LocalDateTime uploadedA = picA.getDateUploaded();
-                    LocalDateTime uploadedB = picB.getDateUploaded();
-                    LocalDateTime capturedA = picA.getDateCaptured();
-                    LocalDateTime capturedB = picB.getDateCaptured();
+        Promise<List<PictureMeta>> resultPromise = Promise.promise();
 
-                    if (uploadedA.getYear() == uploadedB.getYear()
-                            && uploadedA.getDayOfYear() == uploadedB.getDayOfYear()) {
-                        return capturedB.compareTo(capturedA);
+        albumDao.findById(albumId).setHandler(albumResult -> {
+            if (albumResult.failed()) {
+                resultPromise.fail(albumResult.cause());
+                return;
+            }
+
+            var albumOptional = albumResult.result();
+            if (albumOptional.isEmpty() ||
+                (albumOptional.get().getUserId() != userId && !albumOptional.get().getSharedUsers().contains(userId))) {
+                resultPromise.fail(new AuthorizationException("Album is missing or not available to user"));
+                return;
+            }
+
+            pictureMetaDao.findPictureMetasForAlbumId(albumId).setHandler(metaResult -> {
+                if (metaResult.failed()) {
+                    resultPromise.fail(metaResult.cause());
+                    return;
+                }
+
+                var results = metaResult.result().stream()
+                        .sorted((picA, picB) -> {
+                            LocalDateTime uploadedA = picA.getDateUploaded();
+                            LocalDateTime uploadedB = picB.getDateUploaded();
+                            LocalDateTime capturedA = picA.getDateCaptured();
+                            LocalDateTime capturedB = picB.getDateCaptured();
+
+                            if (uploadedA.getYear() == uploadedB.getYear()
+                                && uploadedA.getDayOfYear() == uploadedB.getDayOfYear()) {
+                                return capturedB.compareTo(capturedA);
+                            }
+
+                            return uploadedB.compareTo(uploadedA);
+                        }).collect(Collectors.toList());
+
+                resultPromise.complete(results);
+            });
+        });
+
+        return resultPromise.future();
+    }
+
+    @Override
+    public Future<Boolean> rename(String token, long userId, long albumId, String newName) {
+        if (!jwtParser.validateTokenForUserId(token, userId)) {
+            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
+        }
+
+        Promise<Boolean> resultPromise = Promise.promise();
+
+        albumDao.findById(albumId).setHandler(findResult -> {
+            if (findResult.failed()) {
+                resultPromise.fail(findResult.cause());
+                return;
+            }
+
+            var albumOptional = findResult.result();
+            if (albumOptional.isEmpty() || albumOptional.get().getUserId() != userId) {
+                resultPromise.fail(new AuthorizationException("Album is missing or not available to user"));
+                return;
+            }
+
+            albumDao.renameAlbum(albumId, newName).setHandler(resultPromise);
+        });
+
+        return resultPromise.future();
+    }
+
+    @Override
+    public Future<Boolean> delete(String token, long userId, long albumId) {
+        if (!jwtParser.validateTokenForUserId(token, userId)) {
+            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
+        }
+
+        Promise<Boolean> resultPromise = Promise.promise();
+
+        albumDao.findById(albumId).setHandler(albumResult -> {
+            if (albumResult.failed()) {
+                resultPromise.fail(albumResult.cause());
+                return;
+            }
+
+            var albumOptional = albumResult.result();
+            if (albumOptional.isEmpty() || albumOptional.get().getUserId() != userId) {
+                resultPromise.fail(new AuthorizationException("Album is missing or not available to user"));
+                return;
+            }
+
+            albumDao.delete(albumId).setHandler(deleteResult -> {
+                if (deleteResult.failed()) {
+                    resultPromise.fail(deleteResult.cause());
+                    return;
+                }
+
+                if (!deleteResult.result()) {
+                    resultPromise.complete(false);
+                    return;
+                }
+
+                pictureMetaDao.findPictureMetasForAlbumId(albumId).setHandler(metaResult -> {
+                    if (metaResult.failed()) {
+                        resultPromise.fail(metaResult.cause());
+                        return;
                     }
 
-                    return uploadedB.compareTo(uploadedA);
-                }).collect(Collectors.toList());
+                    var deleteFutures = metaResult.result().stream().map(meta -> pictureService.deletePicture(token, userId, meta.getId()))
+                            .map(fut -> {
+                                Promise promise = Promise.promise();
+
+                                fut.setHandler(futRes -> {
+                                    if (futRes.succeeded()) {
+                                        promise.complete();
+                                    } else {
+                                        promise.fail("Not deleted");
+                                    }
+                                });
+
+                                return promise.future();
+                            })
+                            .collect(Collectors.toList());
+
+                    CompositeFuture.all(deleteFutures).setHandler(compositeResults -> {
+                        resultPromise.complete(!compositeResults.failed());
+                    });
+                });
+            });
+        });
+
+        return resultPromise.future();
     }
 
     @Override
-    public boolean rename(String token, long userId, long albumId, String newName) {
+    public Future<Boolean> shareAlbum(String token, long userId, long albumId, List<Long> sharedUsers) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
-            throw new AuthorizationException("Invalid token for userId: " + userId);
-        }
-        Optional<Album> albumOptional = albumDao.findById(albumId);
-        if (albumOptional.isEmpty() || albumOptional.get().getUserId() != userId) {
-            throw new AuthorizationException("Album is missing or not available to user");
+            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        return albumDao.renameAlbum(albumId, newName);
-    }
+        Promise<Boolean> resultPromise = Promise.promise();
 
-    @Override
-    public boolean delete(String token, long userId, long albumId) {
-        if (!jwtParser.validateTokenForUserId(token, userId)) {
-            throw new AuthorizationException("Invalid token for userId: " + userId);
-        }
+        albumDao.findById(albumId).setHandler(albumResult -> {
+            if (albumResult.failed()) {
+                resultPromise.fail(albumResult.cause());
+                return;
+            }
 
-        Optional<Album> albumOptional = albumDao.findById(albumId);
-        if (albumOptional.isEmpty() || albumOptional.get().getUserId() != userId) {
-            throw new AuthorizationException("Album is missing or not available to user");
-        }
+            var albumOptional = albumResult.result();
+            if (albumOptional.isEmpty() || albumOptional.get().getUserId() != userId) {
+                resultPromise.fail(new AuthorizationException("Album is missing or not available to user"));
+                return;
+            }
 
-        if (!albumDao.delete(albumId)) {
-            return false;
-        }
+            Album album = albumOptional.get();
+            List<Long> newSharedIds = combineSharedUsers(album.getSharedUsers(), sharedUsers);
 
-        return pictureMetaDao.findPictureMetasForAlbumId(albumId).stream()
-            .allMatch(meta -> pictureMetaDao.deleteById(meta.getId()).result() && pictureDataDao.delete(meta.getPath()).result());
-    }
+            albumDao.updateSharedUsers(albumId, newSharedIds).setHandler(resultPromise);
+        });
 
-    @Override
-    public boolean shareAlbum(String token, long userId, long albumId, List<Long> sharedUsers) {
-        if (!jwtParser.validateTokenForUserId(token, userId)) {
-            throw new AuthorizationException("Invalid token for userId: " + userId);
-        }
-
-        Optional<Album> albumOptional = albumDao.findById(albumId);
-        if (albumOptional.isEmpty() || albumOptional.get().getUserId() != userId) {
-            throw new AuthorizationException("Album is missing or not available to user");
-        }
-
-        Album album = albumOptional.get();
-        List<Long> newSharedIds = combineSharedUsers(album.getSharedUsers(), sharedUsers);
-        return albumDao.updateSharedUsers(albumId, newSharedIds);
+        return resultPromise.future();
     }
 
     List<Long> combineSharedUsers(List<Long> current, List<Long> toAdd) {

@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class AlbumHandler {
@@ -39,19 +38,18 @@ public class AlbumHandler {
 
         logger.debug("Creating new album for userId " + userId);
 
-        routingContext.vertx().executeBlocking(future -> {
-            try {
-                Optional<Long> id = albumService.addNewAlbum(token, userId, name);
-                if (id.isEmpty()) {
-                    withCORSHeaders(routingContext.response().setStatusCode(500)).end();
-                    return;
-                }
-                withCORSHeaders(routingContext.response()).end(String.valueOf(id.get()));
-            } catch (AuthorizationException ex) {
-                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
-            } finally {
-                future.complete();
+        albumService.addNewAlbum(token, userId, name).setHandler(addResult -> {
+            if (addResult.failed()) {
+                handleFailure(addResult.cause(), routingContext.response());
+                return;
             }
+
+            var id = addResult.result();
+            if (id.isEmpty()) {
+                withCORSHeaders(routingContext.response().setStatusCode(500)).end();
+                return;
+            }
+            withCORSHeaders(routingContext.response()).end(String.valueOf(id.get()));
         });
     }
 
@@ -62,16 +60,15 @@ public class AlbumHandler {
 
         logger.debug("Getting albums for userId " + userId);
 
-        routingContext.vertx().executeBlocking(future -> {
-            try {
-                List<Album> albums = albumService.getAlbumsForUserId(token, userId);
-                JsonArray result = new JsonArray(albums);
-                withCORSHeaders(routingContext.response()).end(result.encode());
-            } catch (AuthorizationException ex) {
-                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
-            } finally {
-                future.complete();
+        albumService.getAlbumsForUserId(token, userId).setHandler(getResult -> {
+            if (getResult.failed()) {
+                handleFailure(getResult.cause(), routingContext.response());
+                return;
             }
+
+            var albums = getResult.result();
+            JsonArray result = new JsonArray(albums);
+            withCORSHeaders(routingContext.response()).end(result.encode());
         });
     }
 
@@ -81,17 +78,16 @@ public class AlbumHandler {
         long userId = Long.parseLong(request.getParam("userId"));
         String token = request.getHeader("Authorization");
 
-        routingContext.vertx().executeBlocking(future -> {
-            try {
-                List<JsonObject> data = albumService.getPictureMetaForAlbum(token, userId, albumId).stream()
-                        .map(p -> new JsonObject().put("userId", p.getUserId()).put("pictureId", p.getId()))
-                        .collect(Collectors.toList());
-                withCORSHeaders(routingContext.response()).end(new JsonArray(data).encode());
-            } catch (AuthorizationException ex) {
-                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
-            } finally {
-                future.complete();
+        albumService.getPictureMetaForAlbum(token, userId, albumId).setHandler(getResult -> {
+            if (getResult.failed()) {
+                handleFailure(getResult.cause(), routingContext.response());
+                return;
             }
+
+            List<JsonObject> data = getResult.result().stream()
+                    .map(p -> new JsonObject().put("userId", p.getUserId()).put("pictureId", p.getId()))
+                    .collect(Collectors.toList());
+            withCORSHeaders(routingContext.response()).end(new JsonArray(data).encode());
         });
     }
 
@@ -108,18 +104,17 @@ public class AlbumHandler {
         }
         String name = body.getString("name");
 
-        routingContext.vertx().executeBlocking(future -> {
-            try {
-                if (albumService.rename(token, userId, albumId, name)) {
-                    withCORSHeaders(routingContext.response()).end();
-                    return;
-                }
-                withCORSHeaders(routingContext.response().setStatusCode(404)).end();
-            } catch (AuthorizationException ex) {
-                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
-            } finally {
-                future.complete();
+        albumService.rename(token, userId, albumId, name).setHandler(renameResult -> {
+            if (renameResult.failed()) {
+                handleFailure(renameResult.cause(), routingContext.response());
+                return;
             }
+
+            if (renameResult.result()) {
+                withCORSHeaders(routingContext.response()).end();
+                return;
+            }
+            withCORSHeaders(routingContext.response().setStatusCode(404)).end();
         });
     }
 
@@ -129,24 +124,30 @@ public class AlbumHandler {
         long albumId = Long.parseLong(request.getParam("albumId"));
         String token = request.getHeader("Authorization");
 
-        routingContext.vertx().executeBlocking(future -> {
-            try {
-                boolean notExist = albumService.getAlbumsForUserId(token, userId).stream()
-                        .map(Album::getId).noneMatch(id -> id == albumId);
-                if (notExist) {
-                    withCORSHeaders(routingContext.response().setStatusCode(404)).end();
+        albumService.getAlbumsForUserId(token, userId).setHandler(getResult -> {
+            if (getResult.failed()) {
+                handleFailure(getResult.cause(), routingContext.response());
+                return;
+            }
+
+            boolean notExist = getResult.result().stream()
+                    .map(Album::getId).noneMatch(id -> id == albumId);
+            if (notExist) {
+                withCORSHeaders(routingContext.response().setStatusCode(404)).end();
+                return;
+            }
+            albumService.delete(token, userId, albumId).setHandler(deleteResult -> {
+                if (deleteResult.failed()) {
+                    handleFailure(deleteResult.cause(), routingContext.response());
                     return;
                 }
-                if (albumService.delete(token, userId, albumId)) {
+
+                if (deleteResult.result()) {
                     withCORSHeaders(routingContext.response()).end("{id:" + albumId + "}");
                     return;
                 }
                 withCORSHeaders(routingContext.response().setStatusCode(500)).end();
-            } catch (AuthorizationException ex) {
-                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
-            } finally {
-                future.complete();
-            }
+            });
         });
     }
 
@@ -157,18 +158,18 @@ public class AlbumHandler {
         String token = request.getHeader("Authorization");
         JsonObject body = routingContext.getBodyAsJson();
         List<Long> sharedUsers = extractLongArr(body.getJsonArray("sharedUsers", new JsonArray()));
-        routingContext.vertx().executeBlocking(future -> {
-            try {
-                if (albumService.shareAlbum(token, userId, albumId, sharedUsers)) {
-                    withCORSHeaders(routingContext.response()).end();
-                    return;
-                }
-                withCORSHeaders(routingContext.response().setStatusCode(500)).end();
-            } catch (AuthorizationException ex) {
-                withCORSHeaders(routingContext.response().setStatusCode(401)).end();
-            } finally {
-                future.complete();
+
+        albumService.shareAlbum(token, userId, albumId, sharedUsers).setHandler(shareResult -> {
+            if (shareResult.failed()) {
+                handleFailure(shareResult.cause(), routingContext.response());
+                return;
             }
+
+            if (shareResult.result()) {
+                withCORSHeaders(routingContext.response()).end();
+                return;
+            }
+            withCORSHeaders(routingContext.response().setStatusCode(500)).end();
         });
     }
 
@@ -180,6 +181,14 @@ public class AlbumHandler {
             }
         }
         return result;
+    }
+
+    private void handleFailure(Throwable cause, HttpServerResponse response) {
+        if (cause instanceof AuthorizationException) {
+            withCORSHeaders(response.setStatusCode(401)).end();
+            return;
+        }
+        withCORSHeaders(response.setStatusCode(500)).end();
     }
 
     private HttpServerResponse withCORSHeaders(HttpServerResponse response) {
