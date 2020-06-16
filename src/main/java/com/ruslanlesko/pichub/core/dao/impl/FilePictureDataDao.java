@@ -1,9 +1,9 @@
 package com.ruslanlesko.pichub.core.dao.impl;
 
 import com.ruslanlesko.pichub.core.dao.PictureDataDao;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,11 +18,17 @@ public class FilePictureDataDao implements PictureDataDao {
 
     private static final String folderPath = System.getenv("PIC_DATA");
 
+    private final Context context;
+
+    public FilePictureDataDao(Context context) {
+        this.context = context;
+    }
+
     @Override
     public Future<String> save(byte[] data) {
         Promise<String> resultPromise = Promise.promise();
 
-        Vertx.factory.context().executeBlocking(call -> {
+        context.executeBlocking(call -> {
             try {
                 long largestId = Files.walk(Paths.get(folderPath), 2)
                         .map(this::extractId)
@@ -54,7 +60,7 @@ public class FilePictureDataDao implements PictureDataDao {
     public Future<Optional<byte[]>> find(String path) {
         Promise<Optional<byte[]>> resultPromise = Promise.promise();
 
-        Vertx.factory.context().executeBlocking(call -> {
+        context.executeBlocking(call -> {
            try {
                Path fullPath = Path.of(path);
 
@@ -87,7 +93,7 @@ public class FilePictureDataDao implements PictureDataDao {
 
         Promise<Boolean> resultPromise = Promise.promise();
 
-        Vertx.factory.context().executeBlocking(call -> {
+        context.executeBlocking(call -> {
             try {
                 Files.write(fullPath, data);
                 resultPromise.complete(true);
@@ -108,7 +114,7 @@ public class FilePictureDataDao implements PictureDataDao {
 
         Path fullPath = Path.of(path);
 
-        Vertx.factory.context().executeBlocking(call -> {
+        context.executeBlocking(call -> {
             try {
                 resultPromise.complete(Files.deleteIfExists(fullPath));
             } catch (IOException e) {

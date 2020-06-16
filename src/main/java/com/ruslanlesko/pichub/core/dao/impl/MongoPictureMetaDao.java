@@ -1,37 +1,35 @@
 package com.ruslanlesko.pichub.core.dao.impl;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.result.DeleteResult;
-import com.mongodb.client.result.UpdateResult;
+import com.mongodb.reactivestreams.client.MongoClient;
+import com.mongodb.reactivestreams.client.MongoCollection;
 import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
+import com.ruslanlesko.pichub.core.dao.util.ReactiveListSubscriber;
 import com.ruslanlesko.pichub.core.entity.PictureMeta;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import static com.mongodb.client.model.Filters.eq;
+import static com.ruslanlesko.pichub.core.dao.util.ReactiveSubscriber.forPromise;
 
 public class MongoPictureMetaDao implements PictureMetaDao {
-    private static Logger logger = LoggerFactory.getLogger("Application");
+    private static final Logger logger = LoggerFactory.getLogger("Application");
 
     private final static String DB = "pichubdb";
     private final static String COLLECTION = "pictures";
 
-    private MongoClient mongoClient;
+    private final MongoClient mongoClient;
 
     public MongoPictureMetaDao(MongoClient mongoClient) {
         this.mongoClient = mongoClient;
@@ -41,11 +39,9 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     public Future<Long> save(PictureMeta pictureMeta) {
         Promise<Long> resultPromise = Promise.promise();
 
-        Vertx.factory.context().executeBlocking(call -> {
-            long id = getNextId();
-
+        getNextIdAsync().setHandler(id -> {
             Document document = new Document()
-                    .append("id", id)
+                    .append("id", id.result())
                     .append("path", pictureMeta.getPath())
                     .append("pathOptimized", pictureMeta.getPathOptimized())
                     .append("userId", pictureMeta.getUserId())
@@ -56,8 +52,8 @@ public class MongoPictureMetaDao implements PictureMetaDao {
             if (pictureMeta.getAlbumId() > 0) {
                 document.append("albumId", pictureMeta.getAlbumId());
             }
-            getCollection().insertOne(document);
-            resultPromise.complete(id);
+
+            getCollection().insertOne(document).subscribe(forPromise(resultPromise, success -> id.result()));
         });
 
         return resultPromise.future();
@@ -67,20 +63,10 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     public Future<Optional<PictureMeta>> find(long id) {
         Promise<Optional<PictureMeta>> resultPromise = Promise.promise();
 
-        Vertx.factory.context().executeBlocking(call -> {
-           try {
-               Document result = getCollection().find(eq("id", id)).first();
-
-               if (result == null) {
-                   resultPromise.complete(Optional.empty());
-                   return;
-               }
-
-               resultPromise.complete(Optional.of(mapToPicture(result)));
-           } finally {
-               call.complete();
-           }
-        });
+        getCollection()
+                .find(eq("id", id))
+                .first()
+                .subscribe(forPromise(resultPromise, doc -> Optional.of(mapToPicture(doc)), Optional.empty()));
 
         return resultPromise.future();
     }
@@ -91,16 +77,9 @@ public class MongoPictureMetaDao implements PictureMetaDao {
 
         Promise<List<PictureMeta>> resultPromise = Promise.promise();
 
-        Vertx.factory.context().executeBlocking(call -> {
-            try {
-                List<PictureMeta> result = new ArrayList<>();
-                getCollection().find(eq("albumId", albumId))
-                        .forEach((Consumer<Document>) document -> result.add(mapToPicture(document)));
-                resultPromise.complete(result);
-            } finally {
-                call.complete();
-            }
-        });
+        getCollection()
+                .find(eq("albumId", albumId))
+                .subscribe(ReactiveListSubscriber.forPromise(resultPromise, this::mapToPicture));
 
         return resultPromise.future();
     }
@@ -109,23 +88,18 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     public Future<Boolean> setLastModified(long id, LocalDateTime lastModified) {
         Promise<Boolean> resultPromise = Promise.promise();
 
-        Vertx.factory.context().executeBlocking(call -> {
-            try {
-                BasicDBObject query = new BasicDBObject();
-                query.put("id", id);
+        BasicDBObject query = new BasicDBObject();
+        query.put("id", id);
 
-                BasicDBObject newDoc = new BasicDBObject();
-                newDoc.put("dateModified", lastModified);
+        BasicDBObject newDoc = new BasicDBObject();
+        newDoc.put("dateModified", lastModified);
 
-                BasicDBObject updateDoc = new BasicDBObject();
-                updateDoc.put("$set", newDoc);
+        BasicDBObject updateDoc = new BasicDBObject();
+        updateDoc.put("$set", newDoc);
 
-                UpdateResult result = getCollection().updateOne(query, updateDoc);
-                resultPromise.complete(result.getModifiedCount() == 1 && result.wasAcknowledged());
-            } finally {
-                call.complete();
-            }
-        });
+        getCollection()
+                .updateOne(query, updateDoc)
+                .subscribe(forPromise(resultPromise, res -> res.getModifiedCount() == 1 && res.wasAcknowledged()));
 
         return resultPromise.future();
     }
@@ -134,19 +108,9 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     public Future<Boolean> deleteById(long id) {
         Promise<Boolean> resultPromise = Promise.promise();
 
-        Vertx.factory.context().executeBlocking(call -> {
-            try {
-                DeleteResult deleteResult = getCollection().deleteOne(eq("id", id));
-                if (deleteResult.getDeletedCount() == 0) {
-                    logger.error("Delete failed due to the absence of document to delete");
-                    resultPromise.complete(false);
-                    return;
-                }
-                resultPromise.complete(deleteResult.wasAcknowledged());
-            } finally {
-                call.complete();
-            }
-        });
+        getCollection()
+                .deleteOne(eq("id", id))
+                .subscribe(forPromise(resultPromise, DeleteResult::wasAcknowledged));
 
         return resultPromise.future();
     }
@@ -167,16 +131,17 @@ public class MongoPictureMetaDao implements PictureMetaDao {
         );
     }
 
-    private long getNextId() {
-        Document result = getCollection()
-                .aggregate(List.of(Aggregates.group(null, Accumulators.max("maxId", "$id"))))
-        .first();
+    private Future<Long> getNextIdAsync() {
+        Promise<Long> resultPromise = Promise.promise();
 
-        if (result == null) {
-            return 1;
-        } else {
-            return result.getLong("maxId") + 1;
-        }
+        var aggregation = List.of(Aggregates.group(null, Accumulators.max("maxId", "$id")));
+
+        getCollection()
+                .aggregate(aggregation)
+                .first()
+                .subscribe(forPromise(resultPromise, doc -> doc.getLong("maxId") + 1, 1L));
+
+        return resultPromise.future();
     }
 
     private MongoCollection<Document> getCollection() {

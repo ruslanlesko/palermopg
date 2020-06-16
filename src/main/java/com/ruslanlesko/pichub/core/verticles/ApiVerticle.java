@@ -1,7 +1,7 @@
 package com.ruslanlesko.pichub.core.verticles;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
+import com.mongodb.reactivestreams.client.MongoClient;
+import com.mongodb.reactivestreams.client.MongoClients;
 import com.ruslanlesko.pichub.core.dao.AlbumDao;
 import com.ruslanlesko.pichub.core.dao.PictureDataDao;
 import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
@@ -17,6 +17,7 @@ import com.ruslanlesko.pichub.core.services.impl.AlbumServiceImpl;
 import com.ruslanlesko.pichub.core.services.impl.PictureServiceImpl;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import org.slf4j.Logger;
@@ -33,11 +34,11 @@ public class ApiVerticle extends AbstractVerticle {
 
     private void setup() {
         final String dbUrl = System.getenv("PIC_DB");
-        final MongoClient mongoClient = MongoClients.create(dbUrl);
+        final MongoClient asyncMongoClient = MongoClients.create(dbUrl);
 
-        PictureDataDao pictureDataDao = new FilePictureDataDao();
-        PictureMetaDao pictureMetaDao = new MongoPictureMetaDao(mongoClient);
-        AlbumDao albumDao = new MongoAlbumDao(mongoClient);
+        PictureDataDao pictureDataDao = new FilePictureDataDao(vertx.getOrCreateContext());
+        PictureMetaDao pictureMetaDao = new MongoPictureMetaDao(asyncMongoClient);
+        AlbumDao albumDao = new MongoAlbumDao(asyncMongoClient);
         JWTParser jwtParser = new JWTParser();
 
         PictureService pictureService = new PictureServiceImpl(pictureMetaDao, pictureDataDao, albumDao, jwtParser);
@@ -45,6 +46,11 @@ public class ApiVerticle extends AbstractVerticle {
 
         pictureHandler = new PictureHandler(pictureService);
         albumHandler = new AlbumHandler(albumService);
+    }
+
+    private JsonObject getDbConfig() {
+        return new JsonObject()
+                .put("connection_string", System.getenv("PIC_DB"));
     }
 
     @Override
