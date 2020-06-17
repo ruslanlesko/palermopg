@@ -10,7 +10,7 @@ public interface AlbumDao {
     Future<Long> save(Album album);
     Future<Optional<Album>> findById(long id);
     Future<List<Album>> findAlbumsForUserId(long userId);
-    Future<Boolean> renameAlbum(long id, String name);
-    Future<Boolean> delete(long id);
-    Future<Boolean> updateSharedUsers(long id, List<Long> sharedIds);
+    Future<Void> renameAlbum(long id, String name);
+    Future<Void> delete(long id);
+    Future<Void> updateSharedUsers(long id, List<Long> sharedIds);
 }

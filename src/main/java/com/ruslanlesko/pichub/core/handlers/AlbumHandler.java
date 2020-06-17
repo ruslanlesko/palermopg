@@ -2,6 +2,7 @@ package com.ruslanlesko.pichub.core.handlers;
 
 import com.ruslanlesko.pichub.core.entity.Album;
 import com.ruslanlesko.pichub.core.exception.AuthorizationException;
+import com.ruslanlesko.pichub.core.exception.MissingItemException;
 import com.ruslanlesko.pichub.core.services.AlbumService;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -45,11 +46,7 @@ public class AlbumHandler {
             }
 
             var id = addResult.result();
-            if (id.isEmpty()) {
-                withCORSHeaders(routingContext.response().setStatusCode(500)).end();
-                return;
-            }
-            withCORSHeaders(routingContext.response()).end(String.valueOf(id.get()));
+            withCORSHeaders(routingContext.response()).end(String.valueOf(id));
         });
     }
 
@@ -110,11 +107,7 @@ public class AlbumHandler {
                 return;
             }
 
-            if (renameResult.result()) {
-                withCORSHeaders(routingContext.response()).end();
-                return;
-            }
-            withCORSHeaders(routingContext.response().setStatusCode(404)).end();
+            withCORSHeaders(routingContext.response()).end();
         });
     }
 
@@ -142,11 +135,7 @@ public class AlbumHandler {
                     return;
                 }
 
-                if (deleteResult.result()) {
-                    withCORSHeaders(routingContext.response()).end("{id:" + albumId + "}");
-                    return;
-                }
-                withCORSHeaders(routingContext.response().setStatusCode(500)).end();
+                withCORSHeaders(routingContext.response()).end("{id:" + albumId + "}");
             });
         });
     }
@@ -165,11 +154,7 @@ public class AlbumHandler {
                 return;
             }
 
-            if (shareResult.result()) {
-                withCORSHeaders(routingContext.response()).end();
-                return;
-            }
-            withCORSHeaders(routingContext.response().setStatusCode(500)).end();
+            withCORSHeaders(routingContext.response()).end();
         });
     }
 
@@ -187,6 +172,9 @@ public class AlbumHandler {
         if (cause instanceof AuthorizationException) {
             withCORSHeaders(response.setStatusCode(401)).end();
             return;
+        }
+        if (cause instanceof MissingItemException) {
+            withCORSHeaders(response.setStatusCode(404)).end();
         }
         withCORSHeaders(response.setStatusCode(500)).end();
     }

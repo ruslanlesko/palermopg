@@ -37,15 +37,10 @@ public class PictureHandler {
                         .end();
                 return;
             }
-            if (!response.isNotModified() && response.getData().isEmpty()) {
-                withCORSHeaders(routingContext.response().setStatusCode(404)).end();
-                return;
-            }
-
             withCORSHeaders(routingContext.response())
                     .putHeader("ETag", response.getHash())
                     .putHeader("Cache-Control", "no-cache")
-                    .end(Buffer.buffer(response.getData().get()));
+                    .end(Buffer.buffer(response.getData()));
         });
     }
 
@@ -57,17 +52,11 @@ public class PictureHandler {
         byte[] data = routingContext.getBody().getBytes();
 
         pictureService.insertNewPicture(token, userId, albumId, data).setHandler(insertResult -> {
-           if (insertResult.failed()) {
-               handleFailure(insertResult.cause(), routingContext.response());
-               return;
-           }
-
-           var id = insertResult.result();
-            if (id.isEmpty()) {
-                withCORSHeaders(routingContext.response().setStatusCode(500)).end();
+            if (insertResult.failed()) {
+                handleFailure(insertResult.cause(), routingContext.response());
                 return;
             }
-            withCORSHeaders(routingContext.response()).end(String.valueOf(id.get()));
+            withCORSHeaders(routingContext.response()).end(String.valueOf(insertResult.result()));
         });
     }
 
@@ -82,13 +71,7 @@ public class PictureHandler {
                 handleFailure(result.cause(), routingContext.response());
                 return;
             }
-
-            if (result.result()) {
-                withCORSHeaders(routingContext.response()).end();
-                return;
-            }
-
-            withCORSHeaders(routingContext.response().setStatusCode(500)).end();
+            withCORSHeaders(routingContext.response()).end();
         });
     }
 
@@ -104,23 +87,12 @@ public class PictureHandler {
                 return;
             }
 
-            var data = result.result().getData();
-            if (data.isEmpty()) {
-                withCORSHeaders(routingContext.response().setStatusCode(404)).end();
-                return;
-            }
-
             pictureService.deletePicture(token, userId, id).setHandler(deleteResult -> {
                 if (deleteResult.failed()) {
                     handleFailure(deleteResult.cause(), routingContext.response());
                     return;
                 }
-
-                if (deleteResult.result()) {
-                    withCORSHeaders(routingContext.response()).end("{\"id\":" + id + "}");
-                    return;
-                }
-                withCORSHeaders(routingContext.response().setStatusCode(500)).end();
+                withCORSHeaders(routingContext.response()).end("{\"id\":" + id + "}");
             });
         });
     }

@@ -7,8 +7,9 @@ import com.mongodb.client.result.DeleteResult;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoCollection;
 import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
-import com.ruslanlesko.pichub.core.dao.util.ReactiveListSubscriber;
+import com.ruslanlesko.pichub.core.util.ReactiveListSubscriber;
 import com.ruslanlesko.pichub.core.entity.PictureMeta;
+import com.ruslanlesko.pichub.core.exception.MissingItemException;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.bson.Document;
@@ -21,7 +22,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.mongodb.client.model.Filters.eq;
-import static com.ruslanlesko.pichub.core.dao.util.ReactiveSubscriber.forPromise;
+import static com.ruslanlesko.pichub.core.util.ReactiveSubscriber.forPromise;
+import static com.ruslanlesko.pichub.core.util.ReactiveSubscriber.forVoidPromise;
 
 public class MongoPictureMetaDao implements PictureMetaDao {
     private static final Logger logger = LoggerFactory.getLogger("Application");
@@ -85,8 +87,8 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     }
 
     @Override
-    public Future<Boolean> setLastModified(long id, LocalDateTime lastModified) {
-        Promise<Boolean> resultPromise = Promise.promise();
+    public Future<Void> setLastModified(long id, LocalDateTime lastModified) {
+        Promise<Void> resultPromise = Promise.promise();
 
         BasicDBObject query = new BasicDBObject();
         query.put("id", id);
@@ -99,18 +101,18 @@ public class MongoPictureMetaDao implements PictureMetaDao {
 
         getCollection()
                 .updateOne(query, updateDoc)
-                .subscribe(forPromise(resultPromise, res -> res.getModifiedCount() == 1 && res.wasAcknowledged()));
+                .subscribe(forVoidPromise(resultPromise, res -> res.getModifiedCount() == 1 && res.wasAcknowledged(), new MissingItemException()));
 
         return resultPromise.future();
     }
 
     @Override
-    public Future<Boolean> deleteById(long id) {
-        Promise<Boolean> resultPromise = Promise.promise();
+    public Future<Void> deleteById(long id) {
+        Promise<Void> resultPromise = Promise.promise();
 
         getCollection()
                 .deleteOne(eq("id", id))
-                .subscribe(forPromise(resultPromise, DeleteResult::wasAcknowledged));
+                .subscribe(forVoidPromise(resultPromise, DeleteResult::wasAcknowledged, new MissingItemException()));
 
         return resultPromise.future();
     }

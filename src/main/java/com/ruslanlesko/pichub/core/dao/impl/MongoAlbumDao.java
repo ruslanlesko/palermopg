@@ -6,8 +6,9 @@ import com.mongodb.client.model.Aggregates;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoCollection;
 import com.ruslanlesko.pichub.core.dao.AlbumDao;
-import com.ruslanlesko.pichub.core.dao.util.ReactiveSubscriber;
+import com.ruslanlesko.pichub.core.util.ReactiveSubscriber;
 import com.ruslanlesko.pichub.core.entity.Album;
+import com.ruslanlesko.pichub.core.exception.MissingItemException;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.bson.Document;
@@ -18,7 +19,8 @@ import java.util.Optional;
 
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.or;
-import static com.ruslanlesko.pichub.core.dao.util.ReactiveListSubscriber.forPromise;
+import static com.ruslanlesko.pichub.core.util.ReactiveListSubscriber.forPromise;
+import static com.ruslanlesko.pichub.core.util.ReactiveSubscriber.forVoidPromise;
 
 public class MongoAlbumDao implements AlbumDao {
     private final static String DB = "pichubdb";
@@ -88,8 +90,8 @@ public class MongoAlbumDao implements AlbumDao {
     }
 
     @Override
-    public Future<Boolean> renameAlbum(long id, String name) {
-        Promise<Boolean> resultPromise = Promise.promise();
+    public Future<Void> renameAlbum(long id, String name) {
+        Promise<Void> resultPromise = Promise.promise();
 
         BasicDBObject query = new BasicDBObject();
         query.put("id", id);
@@ -101,30 +103,30 @@ public class MongoAlbumDao implements AlbumDao {
         updateDoc.put("$set", newDoc);
 
         getCollection().updateOne(query, updateDoc)
-                .subscribe(ReactiveSubscriber.forPromise(
+                .subscribe(forVoidPromise(
                         resultPromise,
-                        result -> result.getModifiedCount() == 1 && result.wasAcknowledged(),
-                        false));
+                        result ->  result.getModifiedCount() == 1 && result.wasAcknowledged(),
+                        new MissingItemException()));
 
         return resultPromise.future();
     }
 
     @Override
-    public Future<Boolean> delete(long id) {
-        Promise<Boolean> resultPromise = Promise.promise();
+    public Future<Void> delete(long id) {
+        Promise<Void> resultPromise = Promise.promise();
 
         getCollection().deleteOne(eq("id", id))
-                .subscribe(ReactiveSubscriber.forPromise(
+                .subscribe(forVoidPromise(
                         resultPromise,
                         deleteResult -> deleteResult.getDeletedCount() == 1 && deleteResult.wasAcknowledged(),
-                        false));
+                        new MissingItemException()));
 
         return resultPromise.future();
     }
 
     @Override
-    public Future<Boolean> updateSharedUsers(long id, List<Long> sharedIds) {
-        Promise<Boolean> resultPromise = Promise.promise();
+    public Future<Void> updateSharedUsers(long id, List<Long> sharedIds) {
+        Promise<Void> resultPromise = Promise.promise();
 
         BasicDBObject query = new BasicDBObject();
         query.put("id", id);
@@ -136,7 +138,10 @@ public class MongoAlbumDao implements AlbumDao {
         updateDoc.put("$set", newDoc);
 
         getCollection().updateOne(query, updateDoc)
-                .subscribe(ReactiveSubscriber.forPromise(resultPromise, result -> result.getModifiedCount() == 1 && result.wasAcknowledged(), false));
+                .subscribe(forVoidPromise(
+                        resultPromise,
+                        result -> result.getModifiedCount() == 1 && result.wasAcknowledged(),
+                        new MissingItemException()));
         return resultPromise.future();
     }
 

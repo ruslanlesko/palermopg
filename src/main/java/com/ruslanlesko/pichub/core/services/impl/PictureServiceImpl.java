@@ -6,6 +6,7 @@ import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
 import com.ruslanlesko.pichub.core.entity.PictureMeta;
 import com.ruslanlesko.pichub.core.entity.PictureResponse;
 import com.ruslanlesko.pichub.core.exception.AuthorizationException;
+import com.ruslanlesko.pichub.core.exception.MissingItemException;
 import com.ruslanlesko.pichub.core.meta.MetaParser;
 import com.ruslanlesko.pichub.core.security.JWTParser;
 import com.ruslanlesko.pichub.core.services.PictureService;
@@ -63,7 +64,7 @@ public class PictureServiceImpl implements PictureService {
 
             var metaOptional = result.result();
             if (metaOptional.isEmpty()) {
-                resultPromise.complete(new PictureResponse(Optional.empty(), false, null));
+                resultPromise.fail(new MissingItemException());
                 return;
             }
 
@@ -82,7 +83,7 @@ public class PictureServiceImpl implements PictureService {
 
                 final String hash = calculateHash(meta);
                 if (hash.equals(clientHash)) {
-                    resultPromise.complete(new PictureResponse(Optional.empty(), true, hash));
+                    resultPromise.complete(new PictureResponse(null, true, hash));
                     return;
                 }
 
@@ -97,8 +98,7 @@ public class PictureServiceImpl implements PictureService {
                         return;
                     }
 
-                    var dataOptional = dataResult.result();
-                    resultPromise.complete(new PictureResponse(dataOptional, false, hash));
+                    resultPromise.complete(new PictureResponse(dataResult.result(), false, hash));
                 });
             });
         });
@@ -141,12 +141,12 @@ public class PictureServiceImpl implements PictureService {
     }
 
     @Override
-    public Future<Optional<Long>> insertNewPicture(String token, long userId, Optional<Long> albumId, byte[] data) {
+    public Future<Long> insertNewPicture(String token, long userId, Optional<Long> albumId, byte[] data) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
             return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<Optional<Long>> resultPromise = Promise.promise();
+        Promise<Long> resultPromise = Promise.promise();
 
         final LocalDateTime dateCaptured = extractDateCaptured(data);
         data = getProperlyRotatedData(data);
@@ -155,7 +155,7 @@ public class PictureServiceImpl implements PictureService {
         Future<String> optimizedPathFuture;
         if (optimizedPictureData == null) {
             logger.warn("Optimized version was not created");
-            optimizedPathFuture = Future.succeededFuture(null);
+            optimizedPathFuture = Future.failedFuture("Optimized version was not created");
         } else {
             optimizedPathFuture = pictureDataDao.save(optimizedPictureData);
         }
@@ -185,7 +185,7 @@ public class PictureServiceImpl implements PictureService {
                 var id = metaResult.result();
 
                 logger.info("Inserted new picture with id {} for user id {}", id, userId);
-                resultPromise.complete(id > 0 ? Optional.of(id) : Optional.empty());
+                resultPromise.complete(id);
             });
         });
 
@@ -214,12 +214,12 @@ public class PictureServiceImpl implements PictureService {
     }
 
     @Override
-    public Future<Boolean> rotatePicture(String token, long userId, long pictureId) {
+    public Future<Void> rotatePicture(String token, long userId, long pictureId) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
             return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<Boolean> resultPromise = Promise.promise();
+        Promise<Void> resultPromise = Promise.promise();
 
         pictureMetaDao.find(pictureId).setHandler(metaResult -> {
             if (metaResult.failed()) {
@@ -229,7 +229,7 @@ public class PictureServiceImpl implements PictureService {
 
             var optMeta = metaResult.result();
             if (optMeta.isEmpty()) {
-                resultPromise.complete(false);
+                resultPromise.fail(new MissingItemException());
                 return;
             }
 
@@ -255,11 +255,12 @@ public class PictureServiceImpl implements PictureService {
                         return;
                     }
 
-                    var wasRotated = rotateResult.result();
-                    if (wasRotated) {
-                        pictureMetaDao.setLastModified(pictureId, LocalDateTime.now());
-                    }
-                    resultPromise.complete(wasRotated);
+                    pictureMetaDao.setLastModified(pictureId, LocalDateTime.now()).setHandler(modificationResult -> {
+                        if (modificationResult.failed()) {
+                            logger.warn("Cannot set last modified");
+                        }
+                    });
+                    resultPromise.complete();
                 });
             });
         });
@@ -267,12 +268,12 @@ public class PictureServiceImpl implements PictureService {
         return resultPromise.future();
     }
 
-    private Future<Boolean> doRotate(String path) {
+    private Future<Void> doRotate(String path) {
         if (path == null) {
-            return Future.succeededFuture(false);
+            return Future.failedFuture(new MissingItemException());
         }
 
-        Promise<Boolean> resultPromise = Promise.promise();
+        Promise<Void> resultPromise = Promise.promise();
 
         pictureDataDao.find(path).setHandler(dataResult -> {
             if (dataResult.failed()) {
@@ -280,15 +281,9 @@ public class PictureServiceImpl implements PictureService {
                 return;
             }
 
-            var data = dataResult.result();
-            if (data.isEmpty()) {
-                resultPromise.complete(false);
-                return;
-            }
-
-            byte[] rotated = rotateImage(data.get(), 90);
+            byte[] rotated = rotateImage(dataResult.result(), 90);
             if (rotated == null) {
-                resultPromise.complete(false);
+                resultPromise.fail("Cannot rotate image");
                 return;
             }
 
@@ -299,12 +294,12 @@ public class PictureServiceImpl implements PictureService {
     }
 
     @Override
-    public Future<Boolean> deletePicture(String token, long userId, long pictureId) {
+    public Future<Void> deletePicture(String token, long userId, long pictureId) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
             return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<Boolean> resultPromise = Promise.promise();
+        Promise<Void> resultPromise = Promise.promise();
 
         pictureMetaDao.find(pictureId).setHandler(metaResult -> {
             if (metaResult.failed()) {
@@ -316,19 +311,13 @@ public class PictureServiceImpl implements PictureService {
 
             if (meta.isEmpty()) {
                 logger.error("Picture with id {} is missing in database", pictureId);
-                resultPromise.complete(false);
+                resultPromise.fail(new MissingItemException());
                 return;
             }
 
             pictureMetaDao.deleteById(pictureId).setHandler(deleteDbResult -> {
                 if (deleteDbResult.failed()) {
                     resultPromise.fail(deleteDbResult.cause());
-                    return;
-                }
-
-                if (!deleteDbResult.result()) {
-                    logger.error("Cannot delete picture with id {} for user id {}", pictureId, userId);
-                    resultPromise.complete(false);
                     return;
                 }
 
@@ -339,11 +328,6 @@ public class PictureServiceImpl implements PictureService {
                         return;
                     }
 
-                    if (!deleteOriginalResult.result()) {
-                        resultPromise.complete(false);
-                        return;
-                    }
-
                     logger.info("Successfully deleted picture id {}", pictureId);
 
                     String optimized = meta.get().getPathOptimized();
@@ -351,7 +335,7 @@ public class PictureServiceImpl implements PictureService {
                         pictureDataDao.delete(optimized).setHandler(resultPromise);
                         return;
                     }
-                    resultPromise.complete(true);
+                    resultPromise.complete();
                 });
             });
         });

@@ -5,6 +5,7 @@ import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
 import com.ruslanlesko.pichub.core.entity.Album;
 import com.ruslanlesko.pichub.core.entity.PictureMeta;
 import com.ruslanlesko.pichub.core.exception.AuthorizationException;
+import com.ruslanlesko.pichub.core.exception.MissingItemException;
 import com.ruslanlesko.pichub.core.security.JWTParser;
 import com.ruslanlesko.pichub.core.services.AlbumService;
 import com.ruslanlesko.pichub.core.services.PictureService;
@@ -17,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class AlbumServiceImpl implements AlbumService {
@@ -40,12 +40,12 @@ public class AlbumServiceImpl implements AlbumService {
     }
 
     @Override
-    public Future<Optional<Long>> addNewAlbum(String token, long userId, String albumName) {
+    public Future<Long> addNewAlbum(String token, long userId, String albumName) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
             return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<Optional<Long>> resultPromise = Promise.promise();
+        Promise<Long> resultPromise = Promise.promise();
 
         albumDao.save(new Album(-1, userId, albumName, List.of())).setHandler(saveResult -> {
             if (saveResult.failed()) {
@@ -56,7 +56,7 @@ public class AlbumServiceImpl implements AlbumService {
             var id = saveResult.result();
 
             logger.info("Album with id {} was created for user id {}", id, userId);
-            resultPromise.complete(id > 0 ? Optional.of(id) : Optional.empty());
+            resultPromise.complete(id);
         });
 
         return resultPromise.future();
@@ -85,8 +85,11 @@ public class AlbumServiceImpl implements AlbumService {
             }
 
             var albumOptional = albumResult.result();
-            if (albumOptional.isEmpty() ||
-                (albumOptional.get().getUserId() != userId && !albumOptional.get().getSharedUsers().contains(userId))) {
+            if (albumOptional.isEmpty()) {
+                resultPromise.fail(new MissingItemException());
+                return;
+            }
+            if (albumOptional.get().getUserId() != userId && !albumOptional.get().getSharedUsers().contains(userId)) {
                 resultPromise.fail(new AuthorizationException("Album is missing or not available to user"));
                 return;
             }
@@ -120,12 +123,12 @@ public class AlbumServiceImpl implements AlbumService {
     }
 
     @Override
-    public Future<Boolean> rename(String token, long userId, long albumId, String newName) {
+    public Future<Void> rename(String token, long userId, long albumId, String newName) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
             return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<Boolean> resultPromise = Promise.promise();
+        Promise<Void> resultPromise = Promise.promise();
 
         albumDao.findById(albumId).setHandler(findResult -> {
             if (findResult.failed()) {
@@ -134,8 +137,12 @@ public class AlbumServiceImpl implements AlbumService {
             }
 
             var albumOptional = findResult.result();
-            if (albumOptional.isEmpty() || albumOptional.get().getUserId() != userId) {
-                resultPromise.fail(new AuthorizationException("Album is missing or not available to user"));
+            if (albumOptional.isEmpty()) {
+                resultPromise.fail(new MissingItemException());
+                return;
+            }
+            if (albumOptional.get().getUserId() != userId) {
+                resultPromise.fail(new AuthorizationException("Album is not available to user"));
                 return;
             }
 
@@ -146,12 +153,12 @@ public class AlbumServiceImpl implements AlbumService {
     }
 
     @Override
-    public Future<Boolean> delete(String token, long userId, long albumId) {
+    public Future<Void> delete(String token, long userId, long albumId) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
             return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<Boolean> resultPromise = Promise.promise();
+        Promise<Void> resultPromise = Promise.promise();
 
         albumDao.findById(albumId).setHandler(albumResult -> {
             if (albumResult.failed()) {
@@ -160,19 +167,18 @@ public class AlbumServiceImpl implements AlbumService {
             }
 
             var albumOptional = albumResult.result();
-            if (albumOptional.isEmpty() || albumOptional.get().getUserId() != userId) {
-                resultPromise.fail(new AuthorizationException("Album is missing or not available to user"));
+            if (albumOptional.isEmpty()) {
+                resultPromise.fail(new MissingItemException());
+                return;
+            }
+            if (albumOptional.get().getUserId() != userId) {
+                resultPromise.fail(new AuthorizationException("Album is not available to user"));
                 return;
             }
 
             albumDao.delete(albumId).setHandler(deleteResult -> {
                 if (deleteResult.failed()) {
                     resultPromise.fail(deleteResult.cause());
-                    return;
-                }
-
-                if (!deleteResult.result()) {
-                    resultPromise.complete(false);
                     return;
                 }
 
@@ -199,7 +205,11 @@ public class AlbumServiceImpl implements AlbumService {
                             .collect(Collectors.toList());
 
                     CompositeFuture.all(deleteFutures).setHandler(compositeResults -> {
-                        resultPromise.complete(!compositeResults.failed());
+                        if (compositeResults.failed()) {
+                            resultPromise.fail(compositeResults.cause());
+                            return;
+                        }
+                        resultPromise.complete();
                     });
                 });
             });
@@ -209,12 +219,12 @@ public class AlbumServiceImpl implements AlbumService {
     }
 
     @Override
-    public Future<Boolean> shareAlbum(String token, long userId, long albumId, List<Long> sharedUsers) {
+    public Future<Void> shareAlbum(String token, long userId, long albumId, List<Long> sharedUsers) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
             return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<Boolean> resultPromise = Promise.promise();
+        Promise<Void> resultPromise = Promise.promise();
 
         albumDao.findById(albumId).setHandler(albumResult -> {
             if (albumResult.failed()) {
@@ -223,8 +233,12 @@ public class AlbumServiceImpl implements AlbumService {
             }
 
             var albumOptional = albumResult.result();
-            if (albumOptional.isEmpty() || albumOptional.get().getUserId() != userId) {
-                resultPromise.fail(new AuthorizationException("Album is missing or not available to user"));
+            if (albumOptional.isEmpty()) {
+                resultPromise.fail(new MissingItemException());
+                return;
+            }
+            if (albumOptional.get().getUserId() != userId) {
+                resultPromise.fail(new AuthorizationException("Album is not available to user"));
                 return;
             }
 

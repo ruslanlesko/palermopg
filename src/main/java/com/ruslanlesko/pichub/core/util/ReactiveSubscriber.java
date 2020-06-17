@@ -1,4 +1,4 @@
-package com.ruslanlesko.pichub.core.dao.util;
+package com.ruslanlesko.pichub.core.util;
 
 import io.vertx.core.Promise;
 import org.reactivestreams.Subscriber;

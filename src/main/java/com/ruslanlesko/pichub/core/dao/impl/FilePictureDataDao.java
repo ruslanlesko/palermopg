@@ -1,6 +1,7 @@
 package com.ruslanlesko.pichub.core.dao.impl;
 
 import com.ruslanlesko.pichub.core.dao.PictureDataDao;
+import com.ruslanlesko.pichub.core.exception.MissingItemException;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -36,7 +37,7 @@ public class FilePictureDataDao implements PictureDataDao {
                         .filter(n -> n > 0).reduce(0L, (a, b) -> a > b ? a : b);
                 if (largestId < 0) {
                     logger.error("Cannot create an id");
-                    resultPromise.complete(null);
+                    resultPromise.fail("Cannot create an id");
                     return;
                 }
 
@@ -47,7 +48,7 @@ public class FilePictureDataDao implements PictureDataDao {
                 resultPromise.complete(target.toString());
             } catch (IOException e) {
                 logger.error(e.getMessage());
-                resultPromise.complete(null);
+                resultPromise.fail(e);
             } finally {
                 call.complete();
             }
@@ -57,23 +58,23 @@ public class FilePictureDataDao implements PictureDataDao {
     }
 
     @Override
-    public Future<Optional<byte[]>> find(String path) {
-        Promise<Optional<byte[]>> resultPromise = Promise.promise();
+    public Future<byte[]> find(String path) {
+        Promise<byte[]> resultPromise = Promise.promise();
 
         context.executeBlocking(call -> {
            try {
                Path fullPath = Path.of(path);
 
                if (Files.notExists(fullPath)) {
-                   resultPromise.complete(Optional.empty());
+                   resultPromise.fail(new MissingItemException());
                    return;
                }
 
                try {
-                   resultPromise.complete(Optional.of(Files.readAllBytes(fullPath)));
+                   resultPromise.complete(Files.readAllBytes(fullPath));
                } catch (IOException e) {
                    logger.error(e.getMessage());
-                   resultPromise.complete(Optional.empty());
+                   resultPromise.fail(e);
                }
            } finally {
                call.complete();
@@ -84,22 +85,22 @@ public class FilePictureDataDao implements PictureDataDao {
     }
 
     @Override
-    public Future<Boolean> replace(String path, byte[] data) {
+    public Future<Void> replace(String path, byte[] data) {
         Path fullPath = Path.of(path);
 
         if (Files.notExists(fullPath)) {
-            return Future.succeededFuture(false);
+            return Future.failedFuture(new MissingItemException());
         }
 
-        Promise<Boolean> resultPromise = Promise.promise();
+        Promise<Void> resultPromise = Promise.promise();
 
         context.executeBlocking(call -> {
             try {
                 Files.write(fullPath, data);
-                resultPromise.complete(true);
+                resultPromise.complete();
             } catch (IOException e) {
                 logger.error(e.getMessage());
-                resultPromise.complete(false);
+                resultPromise.fail(e);
             } finally {
                 call.complete();
             }
@@ -109,17 +110,21 @@ public class FilePictureDataDao implements PictureDataDao {
     }
 
     @Override
-    public Future<Boolean> delete(String path) {
-        Promise<Boolean> resultPromise = Promise.promise();
+    public Future<Void> delete(String path) {
+        Promise<Void> resultPromise = Promise.promise();
 
         Path fullPath = Path.of(path);
 
         context.executeBlocking(call -> {
             try {
-                resultPromise.complete(Files.deleteIfExists(fullPath));
+                if (Files.deleteIfExists(fullPath)) {
+                    resultPromise.complete();
+                } else {
+                    resultPromise.fail(new MissingItemException());
+                }
             } catch (IOException e) {
                 logger.error(e.getMessage());
-                resultPromise.complete(false);
+                resultPromise.fail(e);
             } finally {
                 call.complete();
             }

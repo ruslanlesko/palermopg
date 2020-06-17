@@ -11,6 +11,6 @@ public interface PictureMetaDao {
     Future<Long> save(PictureMeta pictureMeta);
     Future<Optional<PictureMeta>> find(long id);
     Future<List<PictureMeta>> findPictureMetasForAlbumId(long albumId);
-    Future<Boolean> setLastModified(long id, LocalDateTime lastModified);
-    Future<Boolean> deleteById(long id);
+    Future<Void> setLastModified(long id, LocalDateTime lastModified);
+    Future<Void> deleteById(long id);
 }
