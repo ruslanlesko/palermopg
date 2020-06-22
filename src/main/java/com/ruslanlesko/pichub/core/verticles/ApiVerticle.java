@@ -17,7 +17,6 @@ import com.ruslanlesko.pichub.core.services.impl.AlbumServiceImpl;
 import com.ruslanlesko.pichub.core.services.impl.PictureServiceImpl;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import org.slf4j.Logger;
@@ -46,11 +45,6 @@ public class ApiVerticle extends AbstractVerticle {
 
         pictureHandler = new PictureHandler(pictureService);
         albumHandler = new AlbumHandler(albumService);
-    }
-
-    private JsonObject getDbConfig() {
-        return new JsonObject()
-                .put("connection_string", System.getenv("PIC_DB"));
     }
 
     @Override

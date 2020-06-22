@@ -7,9 +7,9 @@ import com.mongodb.client.result.DeleteResult;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoCollection;
 import com.ruslanlesko.pichub.core.dao.PictureMetaDao;
-import com.ruslanlesko.pichub.core.util.ReactiveListSubscriber;
 import com.ruslanlesko.pichub.core.entity.PictureMeta;
 import com.ruslanlesko.pichub.core.exception.MissingItemException;
+import com.ruslanlesko.pichub.core.util.ReactiveSubscriber;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.bson.Document;
@@ -22,7 +22,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.mongodb.client.model.Filters.eq;
-import static com.ruslanlesko.pichub.core.util.ReactiveSubscriber.forPromise;
+import static com.ruslanlesko.pichub.core.util.ReactiveListSubscriber.forPromise;
+import static com.ruslanlesko.pichub.core.util.ReactiveSubscriber.forSinglePromise;
 import static com.ruslanlesko.pichub.core.util.ReactiveSubscriber.forVoidPromise;
 
 public class MongoPictureMetaDao implements PictureMetaDao {
@@ -55,7 +56,7 @@ public class MongoPictureMetaDao implements PictureMetaDao {
                 document.append("albumId", pictureMeta.getAlbumId());
             }
 
-            getCollection().insertOne(document).subscribe(forPromise(resultPromise, success -> id.result()));
+            getCollection().insertOne(document).subscribe(ReactiveSubscriber.forSinglePromise(resultPromise, success -> id.result()));
         });
 
         return resultPromise.future();
@@ -68,7 +69,7 @@ public class MongoPictureMetaDao implements PictureMetaDao {
         getCollection()
                 .find(eq("id", id))
                 .first()
-                .subscribe(forPromise(resultPromise, doc -> Optional.of(mapToPicture(doc)), Optional.empty()));
+                .subscribe(forSinglePromise(resultPromise, doc -> Optional.of(mapToPicture(doc)), Optional.empty()));
 
         return resultPromise.future();
     }
@@ -81,7 +82,7 @@ public class MongoPictureMetaDao implements PictureMetaDao {
 
         getCollection()
                 .find(eq("albumId", albumId))
-                .subscribe(ReactiveListSubscriber.forPromise(resultPromise, this::mapToPicture));
+                .subscribe(forPromise(resultPromise, this::mapToPicture));
 
         return resultPromise.future();
     }
@@ -141,7 +142,7 @@ public class MongoPictureMetaDao implements PictureMetaDao {
         getCollection()
                 .aggregate(aggregation)
                 .first()
-                .subscribe(forPromise(resultPromise, doc -> doc.getLong("maxId") + 1, 1L));
+                .subscribe(forSinglePromise(resultPromise, doc -> doc.getLong("maxId") + 1, 1L));
 
         return resultPromise.future();
     }

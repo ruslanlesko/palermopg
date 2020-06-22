@@ -3,15 +3,11 @@ package com.ruslanlesko.pichub.core.util;
 import io.vertx.core.Promise;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class ReactiveSubscriber<T, R> implements Subscriber<T> {
-    private static final Logger logger = LoggerFactory.getLogger("Application");
-
     private final Promise<R> promise;
     private final Function<T, R> onResult;
     private final Predicate<T> successCriteria;
@@ -23,11 +19,11 @@ public class ReactiveSubscriber<T, R> implements Subscriber<T> {
     private R result = null;
     private boolean succeeded;
 
-    public static <T, R> ReactiveSubscriber<T, R> forPromise(Promise<R> promise, Function<T, R> onResult) {
+    public static <T, R> ReactiveSubscriber<T, R> forSinglePromise(Promise<R> promise, Function<T, R> onResult) {
         return new ReactiveSubscriber<>(promise, onResult, null, false, null, null);
     }
 
-    public static <T, R> ReactiveSubscriber<T, R> forPromise(Promise<R> promise, Function<T, R> onResult, R defaultValue) {
+    public static <T, R> ReactiveSubscriber<T, R> forSinglePromise(Promise<R> promise, Function<T, R> onResult, R defaultValue) {
         return new ReactiveSubscriber<>(promise, onResult, null, false, defaultValue, null);
     }
 
@@ -57,7 +53,6 @@ public class ReactiveSubscriber<T, R> implements Subscriber<T> {
 
     @Override
     public void onNext(T next) {
-        logger.debug("Next arrived");
         if (isVoid) {
             succeeded = successCriteria.test(next);
             return;
@@ -67,14 +62,12 @@ public class ReactiveSubscriber<T, R> implements Subscriber<T> {
 
     @Override
     public void onError(Throwable throwable) {
-        logger.debug("Error arrived");
         error = throwable;
         promise.fail(throwable);
     }
 
     @Override
     public void onComplete() {
-        logger.debug("Completing...");
         if (error == null) {
             if (isVoid) {
                 if (succeeded) {

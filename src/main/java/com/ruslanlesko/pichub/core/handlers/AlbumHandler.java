@@ -1,11 +1,8 @@
 package com.ruslanlesko.pichub.core.handlers;
 
 import com.ruslanlesko.pichub.core.entity.Album;
-import com.ruslanlesko.pichub.core.exception.AuthorizationException;
-import com.ruslanlesko.pichub.core.exception.MissingItemException;
 import com.ruslanlesko.pichub.core.services.AlbumService;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -16,8 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.ruslanlesko.pichub.core.util.ApiUtils.cors;
+import static com.ruslanlesko.pichub.core.util.ApiUtils.handleFailure;
+
 public class AlbumHandler {
-    private static Logger logger = LoggerFactory.getLogger("Application");
+    private static final Logger logger = LoggerFactory.getLogger("Application");
 
     private final AlbumService albumService;
 
@@ -32,7 +32,7 @@ public class AlbumHandler {
         JsonObject body = routingContext.getBodyAsJson();
         if (body == null || !body.containsKey("name")) {
             logger.debug("Body is invalid, returning 404");
-            withCORSHeaders(routingContext.response().setStatusCode(404)).end();
+            cors(routingContext.response().setStatusCode(404)).end();
             return;
         }
         String name = body.getString("name");
@@ -46,7 +46,8 @@ public class AlbumHandler {
             }
 
             var id = addResult.result();
-            withCORSHeaders(routingContext.response()).end(String.valueOf(id));
+            JsonObject response = new JsonObject().put("id", id);
+            cors(routingContext.response()).end(response.encode());
         });
     }
 
@@ -65,7 +66,7 @@ public class AlbumHandler {
 
             var albums = getResult.result();
             JsonArray result = new JsonArray(albums);
-            withCORSHeaders(routingContext.response()).end(result.encode());
+            cors(routingContext.response()).end(result.encode());
         });
     }
 
@@ -84,7 +85,7 @@ public class AlbumHandler {
             List<JsonObject> data = getResult.result().stream()
                     .map(p -> new JsonObject().put("userId", p.getUserId()).put("pictureId", p.getId()))
                     .collect(Collectors.toList());
-            withCORSHeaders(routingContext.response()).end(new JsonArray(data).encode());
+            cors(routingContext.response()).end(new JsonArray(data).encode());
         });
     }
 
@@ -96,7 +97,7 @@ public class AlbumHandler {
         JsonObject body = routingContext.getBodyAsJson();
         if (body == null || !body.containsKey("name")) {
             logger.debug("Body is invalid, returning 400");
-            withCORSHeaders(routingContext.response().setStatusCode(400)).end();
+            cors(routingContext.response().setStatusCode(400)).end();
             return;
         }
         String name = body.getString("name");
@@ -107,7 +108,7 @@ public class AlbumHandler {
                 return;
             }
 
-            withCORSHeaders(routingContext.response()).end();
+            cors(routingContext.response()).end();
         });
     }
 
@@ -126,7 +127,7 @@ public class AlbumHandler {
             boolean notExist = getResult.result().stream()
                     .map(Album::getId).noneMatch(id -> id == albumId);
             if (notExist) {
-                withCORSHeaders(routingContext.response().setStatusCode(404)).end();
+                cors(routingContext.response().setStatusCode(404)).end();
                 return;
             }
             albumService.delete(token, userId, albumId).setHandler(deleteResult -> {
@@ -135,7 +136,8 @@ public class AlbumHandler {
                     return;
                 }
 
-                withCORSHeaders(routingContext.response()).end("{id:" + albumId + "}");
+                JsonObject response = new JsonObject().put("id", albumId);
+                cors(routingContext.response()).end(response.encode());
             });
         });
     }
@@ -154,7 +156,7 @@ public class AlbumHandler {
                 return;
             }
 
-            withCORSHeaders(routingContext.response()).end();
+            cors(routingContext.response()).end();
         });
     }
 
@@ -166,23 +168,5 @@ public class AlbumHandler {
             }
         }
         return result;
-    }
-
-    private void handleFailure(Throwable cause, HttpServerResponse response) {
-        if (cause instanceof AuthorizationException) {
-            withCORSHeaders(response.setStatusCode(401)).end();
-            return;
-        }
-        if (cause instanceof MissingItemException) {
-            withCORSHeaders(response.setStatusCode(404)).end();
-        }
-        withCORSHeaders(response.setStatusCode(500)).end();
-    }
-
-    private HttpServerResponse withCORSHeaders(HttpServerResponse response) {
-        return response.putHeader("Access-Control-Allow-Headers", "content-type, authorization")
-                .putHeader("Access-Control-Allow-Origin", "*")
-                .putHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, PATCH, OPTIONS")
-                .putHeader("Access-Control-Max-Age", "-1");
     }
 }

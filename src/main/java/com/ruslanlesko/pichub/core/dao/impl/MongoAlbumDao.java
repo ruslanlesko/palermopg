@@ -6,7 +6,6 @@ import com.mongodb.client.model.Aggregates;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoCollection;
 import com.ruslanlesko.pichub.core.dao.AlbumDao;
-import com.ruslanlesko.pichub.core.util.ReactiveSubscriber;
 import com.ruslanlesko.pichub.core.entity.Album;
 import com.ruslanlesko.pichub.core.exception.MissingItemException;
 import io.vertx.core.Future;
@@ -20,6 +19,7 @@ import java.util.Optional;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.or;
 import static com.ruslanlesko.pichub.core.util.ReactiveListSubscriber.forPromise;
+import static com.ruslanlesko.pichub.core.util.ReactiveSubscriber.forSinglePromise;
 import static com.ruslanlesko.pichub.core.util.ReactiveSubscriber.forVoidPromise;
 
 public class MongoAlbumDao implements AlbumDao {
@@ -50,7 +50,7 @@ public class MongoAlbumDao implements AlbumDao {
                     .append("name", album.getName());
 
             getCollection().insertOne(document)
-                    .subscribe(ReactiveSubscriber.forPromise(resultPromise, success -> nextId));
+                    .subscribe(forSinglePromise(resultPromise, success -> nextId));
         });
 
         return resultPromise.future();
@@ -63,7 +63,7 @@ public class MongoAlbumDao implements AlbumDao {
         getCollection()
                 .find(eq("id", id))
                 .first()
-                .subscribe(ReactiveSubscriber.forPromise(resultPromise, doc -> Optional.of(new Album(
+                .subscribe(forSinglePromise(resultPromise, doc -> Optional.of(new Album(
                         id,
                         doc.getLong("userId"),
                         doc.getString("name"),
@@ -153,7 +153,7 @@ public class MongoAlbumDao implements AlbumDao {
         getCollection()
                 .aggregate(aggregation)
                 .first()
-                .subscribe(ReactiveSubscriber.forPromise(resultPromise, doc -> doc.getLong("maxId") + 1, 1L));
+                .subscribe(forSinglePromise(resultPromise, doc -> doc.getLong("maxId") + 1, 1L));
 
         return resultPromise.future();
     }

@@ -17,9 +17,9 @@ import java.time.ZoneId;
 import java.util.Date;
 
 public class MetaParser {
-    private static Logger logger = LoggerFactory.getLogger("Application");
+    private static final Logger logger = LoggerFactory.getLogger("Application");
 
-    private Metadata metadata;
+    private final Metadata metadata;
 
     public MetaParser(byte[] data) {
         try {

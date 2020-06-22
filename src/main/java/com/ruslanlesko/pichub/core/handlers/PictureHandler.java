@@ -1,13 +1,15 @@
 package com.ruslanlesko.pichub.core.handlers;
 
-import com.ruslanlesko.pichub.core.exception.AuthorizationException;
 import com.ruslanlesko.pichub.core.services.PictureService;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 import java.util.Optional;
+
+import static com.ruslanlesko.pichub.core.util.ApiUtils.cors;
+import static com.ruslanlesko.pichub.core.util.ApiUtils.handleFailure;
 
 public class PictureHandler {
     private final PictureService pictureService;
@@ -31,13 +33,13 @@ public class PictureHandler {
 
             var response = result.result();
             if (response.isNotModified()) {
-                withCORSHeaders(routingContext.response().setStatusCode(304))
+                cors(routingContext.response().setStatusCode(304))
                         .putHeader("ETag", response.getHash())
                         .putHeader("Cache-Control", "no-cache")
                         .end();
                 return;
             }
-            withCORSHeaders(routingContext.response())
+            cors(routingContext.response())
                     .putHeader("ETag", response.getHash())
                     .putHeader("Cache-Control", "no-cache")
                     .end(Buffer.buffer(response.getData()));
@@ -56,7 +58,8 @@ public class PictureHandler {
                 handleFailure(insertResult.cause(), routingContext.response());
                 return;
             }
-            withCORSHeaders(routingContext.response()).end(String.valueOf(insertResult.result()));
+            JsonObject response = new JsonObject().put("id", insertResult.result());
+            cors(routingContext.response()).end(response.encode());
         });
     }
 
@@ -71,7 +74,7 @@ public class PictureHandler {
                 handleFailure(result.cause(), routingContext.response());
                 return;
             }
-            withCORSHeaders(routingContext.response()).end();
+            cors(routingContext.response()).end();
         });
     }
 
@@ -92,23 +95,9 @@ public class PictureHandler {
                     handleFailure(deleteResult.cause(), routingContext.response());
                     return;
                 }
-                withCORSHeaders(routingContext.response()).end("{\"id\":" + id + "}");
+                JsonObject response = new JsonObject().put("id", id);
+                cors(routingContext.response()).end(response.encode());
             });
         });
-    }
-
-    private void handleFailure(Throwable cause, HttpServerResponse response) {
-        if (cause instanceof AuthorizationException) {
-            withCORSHeaders(response.setStatusCode(401)).end();
-            return;
-        }
-        withCORSHeaders(response.setStatusCode(500)).end();
-    }
-
-    private HttpServerResponse withCORSHeaders(HttpServerResponse response) {
-        return response.putHeader("Access-Control-Allow-Headers", "content-type, authorization")
-                .putHeader("Access-Control-Allow-Origin", "*")
-                .putHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
-                .putHeader("Access-Control-Max-Age", "-1");
     }
 }
