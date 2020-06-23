@@ -79,6 +79,7 @@ public class PictureServiceImpl implements PictureService {
                 var albumNotAccessible = albumAccessResult.result();
                 if (meta.getUserId() != userId && albumNotAccessible) {
                     resultPromise.fail(new AuthorizationException("Wrong user id"));
+                    return;
                 }
 
                 final String hash = calculateHash(meta);
