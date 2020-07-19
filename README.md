@@ -82,6 +82,7 @@ Run `mvn package` in the project root to get application jar with dependencies.
 * `PIC_DATA` - path directory which will be used as a storage for pictures
 * `PIC_DB` - URL to mongo DB (mongodb://username:password@localhost/db)
 * `PIC_DB_NAME` - database name
+* `PIC_ADMIN_ID` - admin's user ID
 
 ## RSA Key Generation On Linux
 1. Generate a private key `openssl genrsa -out private.pem 2048`

@@ -26,6 +26,7 @@ public class JWTParser {
     private static final String SECURITY_DISABLED = System.getenv("SECURITY_DISABLED");
     private static final String USER_ID_ATTR = "userId";
     private static final String BEARER = "Bearer ";
+    private static final Long ADMIN_ID = Long.parseLong(System.getenv("PIC_ADMIN_ID"));
 
     private JwtConsumer consumer;
 
@@ -87,5 +88,9 @@ public class JWTParser {
             logger.warn("JWT is invalid: " + e.getMessage());
             return false;
         }
+    }
+
+    public boolean isAdmin(String token) {
+        return validateTokenForUserId(token, ADMIN_ID);
     }
 }
