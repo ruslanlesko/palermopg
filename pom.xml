@@ -16,7 +16,7 @@
     <exec.mainClass>com.ruslanlesko.palermopg.core.Application</exec.mainClass>
     <vertx.version>4.0.0-milestone3</vertx.version>
     <logging.slf4f-api.version>1.7.29</logging.slf4f-api.version>
-    <logging.log4j2.version>2.12.1</logging.log4j2.version>
+    <logging.log4j2.version>2.13.3</logging.log4j2.version>
   </properties>
 
   <dependencies>
