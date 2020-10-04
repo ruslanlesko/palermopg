@@ -54,7 +54,7 @@ class PictureServiceImplTest {
         PictureDataDao dataDao = mock(PictureDataDao.class);
         AlbumDao albumDao = mock(AlbumDao.class);
 
-        PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, PATH, null, TIME, TIME, TIME);
+        PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME);
         Album album = new Album(ALBUM_ID, USER_ID, "album", List.of());
 
         when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
@@ -78,7 +78,7 @@ class PictureServiceImplTest {
         PictureDataDao dataDao = mock(PictureDataDao.class);
         AlbumDao albumDao = mock(AlbumDao.class);
 
-        PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID_2, ALBUM_ID, PATH, null, TIME, TIME, TIME);
+        PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID_2, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME);
         Album album = new Album(ALBUM_ID, USER_ID_2, "album", List.of(USER_ID_3));
 
         when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);

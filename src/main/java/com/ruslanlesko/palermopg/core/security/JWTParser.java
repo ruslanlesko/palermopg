@@ -26,7 +26,7 @@ public class JWTParser {
     private static final String SECURITY_DISABLED = System.getenv("SECURITY_DISABLED");
     private static final String USER_ID_ATTR = "userId";
     private static final String BEARER = "Bearer ";
-    private static final Long ADMIN_ID = Long.parseLong(System.getenv("PIC_ADMIN_ID"));
+    private static final Long ADMIN_ID = Long.parseLong(System.getenv("PIC_ADMIN_ID") == null ? "-1" : System.getenv("PIC_ADMIN_ID"));
 
     private JwtConsumer consumer;
 

@@ -20,6 +20,10 @@ Port number: 8081
 * POST `/album/{userId}/{albumId}/share` shares album with provided list of users
 * DELETE `/album/{userId}/{albumId}` deletes album, returns deleted album id on success
 
+### Storage operations
+
+* GET `/storage/{userId}` returns consumed by user storage in megabytes
+
 #### Payload of album list
 ```
 [

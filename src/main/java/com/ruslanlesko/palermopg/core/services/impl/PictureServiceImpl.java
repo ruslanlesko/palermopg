@@ -152,6 +152,7 @@ public class PictureServiceImpl implements PictureService {
         final LocalDateTime dateCaptured = extractDateCaptured(data);
         data = getProperlyRotatedData(data);
         byte[] optimizedPictureData = convertToOptimized(data);
+        long size = data.length + optimizedPictureData.length;
 
         Future<String> optimizedPathFuture;
         if (optimizedPictureData == null) {
@@ -172,7 +173,7 @@ public class PictureServiceImpl implements PictureService {
             String optimizedPath = pathResults.result().resultAt(0);
             String originalPath = pathResults.result().resultAt(1);
 
-            PictureMeta meta = new PictureMeta(-1, userId, albumId.orElse(-1L), originalPath,
+            PictureMeta meta = new PictureMeta(-1, userId, albumId.orElse(-1L), size, originalPath,
                     optimizedPath,
                     LocalDateTime.now(), dateCaptured, LocalDateTime.now()
             );

@@ -45,6 +45,7 @@ public class MongoPictureMetaDao implements PictureMetaDao {
         getNextIdAsync().setHandler(id -> {
             Document document = new Document()
                     .append("id", id.result())
+                    .append("size", pictureMeta.getSize())
                     .append("path", pictureMeta.getPath())
                     .append("pathOptimized", pictureMeta.getPathOptimized())
                     .append("userId", pictureMeta.getUserId())
@@ -118,6 +119,37 @@ public class MongoPictureMetaDao implements PictureMetaDao {
         return resultPromise.future();
     }
 
+    @Override
+    public Future<List<PictureMeta>> findPictureMetasForUserId(long userId) {
+        Promise<List<PictureMeta>> resultPromise = Promise.promise();
+
+        getCollection()
+                .find(eq("userId", userId))
+                .subscribe(forPromise(resultPromise, this::mapToPicture));
+
+        return resultPromise.future();
+    }
+
+    @Override
+    public Future<Void> setSize(long id, long size) {
+        Promise<Void> resultPromise = Promise.promise();
+
+        BasicDBObject query = new BasicDBObject();
+        query.put("id", id);
+
+        BasicDBObject newDoc = new BasicDBObject();
+        newDoc.put("size", size);
+
+        BasicDBObject updateDoc = new BasicDBObject();
+        updateDoc.put("$set", newDoc);
+
+        getCollection()
+                .updateOne(query, updateDoc)
+                .subscribe(forVoidPromise(resultPromise, res -> res.getModifiedCount() == 1 && res.wasAcknowledged(), new MissingItemException()));
+
+        return resultPromise.future();
+    }
+
     private PictureMeta mapToPicture(Document document) {
         Long albumId = document.getLong("albumId");
 
@@ -125,6 +157,7 @@ public class MongoPictureMetaDao implements PictureMetaDao {
                 document.getLong("id"),
                 document.getLong("userId"),
                 albumId == null ? -1 : albumId,
+                document.getLong("size") == null ? -1L : document.getLong("size"),
                 document.getString("path"),
                 document.getString("pathOptimized"),
                 document.getDate("dateUploaded").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),

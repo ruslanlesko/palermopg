@@ -10,11 +10,15 @@ import com.ruslanlesko.palermopg.core.dao.impl.MongoAlbumDao;
 import com.ruslanlesko.palermopg.core.dao.impl.MongoPictureMetaDao;
 import com.ruslanlesko.palermopg.core.handlers.AlbumHandler;
 import com.ruslanlesko.palermopg.core.handlers.PictureHandler;
+import com.ruslanlesko.palermopg.core.handlers.StorageHandler;
 import com.ruslanlesko.palermopg.core.security.JWTParser;
 import com.ruslanlesko.palermopg.core.services.AlbumService;
 import com.ruslanlesko.palermopg.core.services.PictureService;
+import com.ruslanlesko.palermopg.core.services.StorageService;
 import com.ruslanlesko.palermopg.core.services.impl.AlbumServiceImpl;
 import com.ruslanlesko.palermopg.core.services.impl.PictureServiceImpl;
+import com.ruslanlesko.palermopg.core.services.impl.StorageServiceImpl;
+
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.ext.web.Router;
@@ -30,6 +34,7 @@ public class ApiVerticle extends AbstractVerticle {
 
     private PictureHandler pictureHandler;
     private AlbumHandler albumHandler;
+    private StorageHandler storageHandler;
 
     private void setup() {
         final String dbUrl = System.getenv("PIC_DB");
@@ -42,9 +47,11 @@ public class ApiVerticle extends AbstractVerticle {
 
         PictureService pictureService = new PictureServiceImpl(pictureMetaDao, pictureDataDao, albumDao, jwtParser);
         AlbumService albumService = new AlbumServiceImpl(pictureMetaDao, albumDao, pictureService, jwtParser);
+        StorageService storageService = new StorageServiceImpl(pictureMetaDao, pictureDataDao, jwtParser);
 
         pictureHandler = new PictureHandler(pictureService);
         albumHandler = new AlbumHandler(albumService);
+        storageHandler = new StorageHandler(storageService);
     }
 
     @Override
@@ -89,6 +96,9 @@ public class ApiVerticle extends AbstractVerticle {
         router.patch("/album/:userId/:albumId").consumes(JSON_FORMAT).handler(albumHandler::renameAlbum);
         router.post("/album/:userId/:albumId/share").consumes(JSON_FORMAT).handler(albumHandler::shareAlbum);
         router.delete("/album/:userId/:albumId").produces(JSON_FORMAT).handler(albumHandler::deleteAlbum);
+
+        router.route("/storage/:userId*").handler(BodyHandler.create());
+        router.get("/storage/:userId").produces(JSON_FORMAT).handler(storageHandler::storageByUser);
 
         return router;
     }

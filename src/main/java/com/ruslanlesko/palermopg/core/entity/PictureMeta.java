@@ -7,6 +7,7 @@ public class PictureMeta {
     private final long id;
     private final long userId;
     private final long albumId;
+    private final long size;
     private final String path;
     private final String pathOptimized;
     private final LocalDateTime dateUploaded;
@@ -17,6 +18,7 @@ public class PictureMeta {
             long id,
             long userId,
             long albumId,
+            long size,
             String path,
             String pathOptimized,
             LocalDateTime dateUploaded,
@@ -26,6 +28,7 @@ public class PictureMeta {
         this.id = id;
         this.userId = userId;
         this.albumId = albumId;
+        this.size = size;
         this.path = path;
         this.pathOptimized = pathOptimized;
         this.dateUploaded = dateUploaded;
@@ -43,6 +46,10 @@ public class PictureMeta {
 
     public long getAlbumId() {
         return albumId;
+    }
+
+    public long getSize() {
+        return size;
     }
 
     public String getPath() {
@@ -75,6 +82,7 @@ public class PictureMeta {
         return id == that.id &&
                userId == that.userId &&
                albumId == that.albumId &&
+               size == that.size &&
                Objects.equals(path, that.path) &&
                Objects.equals(pathOptimized, that.pathOptimized) &&
                Objects.equals(dateUploaded, that.dateUploaded) &&
@@ -84,7 +92,7 @@ public class PictureMeta {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, userId, albumId, path, pathOptimized, dateUploaded, dateCaptured, dateModified);
+        return Objects.hash(id, userId, albumId, size, path, pathOptimized, dateUploaded, dateCaptured, dateModified);
     }
 
     @Override
@@ -93,6 +101,7 @@ public class PictureMeta {
                "id=" + id +
                ", userId=" + userId +
                ", albumId=" + albumId +
+               ", size=" + size +
                ", path='" + path + '\'' +
                ", pathOptimized='" + pathOptimized + '\'' +
                ", dateUploaded=" + dateUploaded +

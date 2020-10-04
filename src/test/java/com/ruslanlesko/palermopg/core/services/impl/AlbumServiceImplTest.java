@@ -1,4 +1,4 @@
-package com.ruslanlesko.palermopg;
+package com.ruslanlesko.palermopg.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -15,7 +15,6 @@ import com.ruslanlesko.palermopg.core.exception.AuthorizationException;
 import com.ruslanlesko.palermopg.core.security.JWTParser;
 import com.ruslanlesko.palermopg.core.services.AlbumService;
 import com.ruslanlesko.palermopg.core.services.PictureService;
-import com.ruslanlesko.palermopg.core.services.impl.AlbumServiceImpl;
 
 import org.junit.jupiter.api.Test;
 
