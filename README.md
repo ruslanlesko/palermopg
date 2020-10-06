@@ -2,6 +2,8 @@
 # PalermoPG - picture gallery server
 Created by [Ruslan Lesko](https://leskor.com)
 
+![badge](https://action-badges.now.sh/ruslanlesko/palermopg)
+
 PalermoPG provides a solution for a self-hosted picture gallery using JWT as an authentication mechanism. Please note that the front-end (and authentication service) for this API is not present. PalermoPG is designed to be a building block for custom picture management systems.
 
 ## API
@@ -22,8 +24,7 @@ Port number: 8081
 * DELETE `/album/{userId}/{albumId}` deletes album, returns deleted album id on success
 
 ### Storage operations
-
-* GET `/storage/{userId}` returns consumed by user storage in megabytes
+* GET `/storage/{userId}` returns consumed by user storage in bytes
 
 #### Payload of album list
 ```
@@ -85,7 +86,7 @@ Run `mvn package` in the project root to get application jar with dependencies.
 ### Required Environment Variables
 * `PIC_KEY` - path to RSA public key in PEM format
 * `PIC_DATA` - path directory which will be used as a storage for pictures
-* `PIC_DB` - URL to mongo DB (mongodb://username:password@localhost/db)
+* `PIC_DB` - URL to Mongo DB (mongodb://username:password@localhost/db)
 * `PIC_DB_NAME` - database name
 * `PIC_ADMIN_ID` - admin's user ID
 
