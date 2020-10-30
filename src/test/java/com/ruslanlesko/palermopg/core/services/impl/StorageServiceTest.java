@@ -1,23 +1,23 @@
 package com.ruslanlesko.palermopg.core.services.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.List;
-
+import com.ruslanlesko.palermopg.core.dao.LimitsDao;
 import com.ruslanlesko.palermopg.core.dao.PictureDataDao;
 import com.ruslanlesko.palermopg.core.dao.PictureMetaDao;
-import com.ruslanlesko.palermopg.core.entity.StorageConsuption;
 import com.ruslanlesko.palermopg.core.entity.PictureMeta;
+import com.ruslanlesko.palermopg.core.entity.StorageConsuption;
 import com.ruslanlesko.palermopg.core.security.JWTParser;
 import com.ruslanlesko.palermopg.core.services.StorageService;
-
+import io.vertx.core.Future;
 import org.junit.jupiter.api.Test;
 
-import io.vertx.core.Future;
+import java.util.List;
+import java.util.Optional;
 
-public class StorageServiceImplTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.*;
+
+public class StorageServiceTest {
     private static final String 
         TOKEN = "Bearer abcxyz",
         PATH_1 = "path/1",
@@ -28,6 +28,7 @@ public class StorageServiceImplTest {
     private static final long PICTURE_ID_2 = 17;
     private static final long CONSUMPTION_SIZE = 1024;
     private static final long CONSUMPTION_LIMIT = 2L * 1024L * 1024L * 1024L;
+    private static final long NEW_LIMIT = 4L * 1024L * 1024L * 1024L;
 
     private static final List<PictureMeta> PICTURE_METAS = List.of(
         new PictureMeta(15, USER_ID, 21, 1015L, "", "", null, null, null),
@@ -40,6 +41,7 @@ public class StorageServiceImplTest {
         JWTParser jwtParser = mock(JWTParser.class);
         PictureMetaDao pictureMetaDao = mock(PictureMetaDao.class);
         PictureDataDao pictureDataDao = mock(PictureDataDao.class);
+        LimitsDao limitsDao = mock(LimitsDao.class);
 
         when(jwtParser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(pictureMetaDao.findPictureMetasForUserId(USER_ID)).thenReturn(Future.succeededFuture(PICTURE_METAS));
@@ -48,12 +50,32 @@ public class StorageServiceImplTest {
         when(pictureDataDao.find(PATH_3)).thenReturn(Future.succeededFuture(new byte[]{0, 1, 2, 3, 4}));
         when(pictureMetaDao.setSize(PICTURE_ID, 4)).thenReturn(Future.succeededFuture());
         when(pictureMetaDao.setSize(PICTURE_ID_2, 5)).thenReturn(Future.succeededFuture());
+        when(limitsDao.getLimitForUser(USER_ID)).thenReturn(Future.succeededFuture(Optional.empty()));
 
-        StorageService service = new StorageServiceImpl(pictureMetaDao, pictureDataDao, jwtParser);
+        StorageService service = new StorageService(pictureMetaDao, pictureDataDao, limitsDao, jwtParser);
 
         var expectedConsumption = new StorageConsuption(CONSUMPTION_SIZE, CONSUMPTION_LIMIT);
 
         service.findForUser(TOKEN, USER_ID)
             .setHandler(response -> assertEquals(expectedConsumption, response.result()));
+    }
+
+    @Test
+    void testSettingNewLimitForUser() {
+        JWTParser jwtParser = mock(JWTParser.class);
+        PictureMetaDao pictureMetaDao = mock(PictureMetaDao.class);
+        PictureDataDao pictureDataDao = mock(PictureDataDao.class);
+        LimitsDao limitsDao = mock(LimitsDao.class);
+
+        when(jwtParser.isAdmin(TOKEN)).thenReturn(true);
+        when(limitsDao.setLimitForUser(USER_ID, NEW_LIMIT)).thenReturn(Future.succeededFuture());
+
+        StorageService service = new StorageService(pictureMetaDao, pictureDataDao, limitsDao, jwtParser);
+
+        service.setLimitForUser(TOKEN, USER_ID, NEW_LIMIT)
+                .setHandler(response -> {
+                    assertFalse(response.failed());
+                    verify(limitsDao, times(1)).setLimitForUser(USER_ID, NEW_LIMIT);
+                });
     }
 }

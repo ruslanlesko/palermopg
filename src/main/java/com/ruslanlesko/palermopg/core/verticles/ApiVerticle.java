@@ -3,10 +3,12 @@ package com.ruslanlesko.palermopg.core.verticles;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
 import com.ruslanlesko.palermopg.core.dao.AlbumDao;
+import com.ruslanlesko.palermopg.core.dao.LimitsDao;
 import com.ruslanlesko.palermopg.core.dao.PictureDataDao;
 import com.ruslanlesko.palermopg.core.dao.PictureMetaDao;
 import com.ruslanlesko.palermopg.core.dao.impl.FilePictureDataDao;
 import com.ruslanlesko.palermopg.core.dao.impl.MongoAlbumDao;
+import com.ruslanlesko.palermopg.core.dao.impl.MongoLimitsDao;
 import com.ruslanlesko.palermopg.core.dao.impl.MongoPictureMetaDao;
 import com.ruslanlesko.palermopg.core.handlers.AlbumHandler;
 import com.ruslanlesko.palermopg.core.handlers.PictureHandler;
@@ -17,8 +19,6 @@ import com.ruslanlesko.palermopg.core.services.PictureService;
 import com.ruslanlesko.palermopg.core.services.StorageService;
 import com.ruslanlesko.palermopg.core.services.impl.AlbumServiceImpl;
 import com.ruslanlesko.palermopg.core.services.impl.PictureServiceImpl;
-import com.ruslanlesko.palermopg.core.services.impl.StorageServiceImpl;
-
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.ext.web.Router;
@@ -43,11 +43,12 @@ public class ApiVerticle extends AbstractVerticle {
         PictureDataDao pictureDataDao = new FilePictureDataDao(vertx.getOrCreateContext());
         PictureMetaDao pictureMetaDao = new MongoPictureMetaDao(asyncMongoClient);
         AlbumDao albumDao = new MongoAlbumDao(asyncMongoClient);
+        LimitsDao limitsDao = new MongoLimitsDao(asyncMongoClient);
         JWTParser jwtParser = new JWTParser();
 
         PictureService pictureService = new PictureServiceImpl(pictureMetaDao, pictureDataDao, albumDao, jwtParser);
         AlbumService albumService = new AlbumServiceImpl(pictureMetaDao, albumDao, pictureService, jwtParser);
-        StorageService storageService = new StorageServiceImpl(pictureMetaDao, pictureDataDao, jwtParser);
+        StorageService storageService = new StorageService(pictureMetaDao, pictureDataDao, limitsDao, jwtParser);
 
         pictureHandler = new PictureHandler(pictureService);
         albumHandler = new AlbumHandler(albumService);
@@ -99,6 +100,7 @@ public class ApiVerticle extends AbstractVerticle {
 
         router.route("/storage/:userId*").handler(BodyHandler.create());
         router.get("/storage/:userId").produces(JSON_FORMAT).handler(storageHandler::storageByUser);
+        router.post("/storage/:userId").consumes(JSON_FORMAT).handler(storageHandler::setUserLimit);
 
         return router;
     }
