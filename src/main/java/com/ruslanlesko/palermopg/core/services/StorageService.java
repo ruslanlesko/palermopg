@@ -4,7 +4,7 @@ import com.ruslanlesko.palermopg.core.dao.LimitsDao;
 import com.ruslanlesko.palermopg.core.dao.PictureDataDao;
 import com.ruslanlesko.palermopg.core.dao.PictureMetaDao;
 import com.ruslanlesko.palermopg.core.entity.PictureMeta;
-import com.ruslanlesko.palermopg.core.entity.StorageConsuption;
+import com.ruslanlesko.palermopg.core.entity.StorageConsumption;
 import com.ruslanlesko.palermopg.core.exception.AuthorizationException;
 import com.ruslanlesko.palermopg.core.security.JWTParser;
 import io.vertx.core.CompositeFuture;
@@ -38,12 +38,12 @@ public class StorageService {
         this.jwtParser = jwtParser;
     }
 
-    public Future<StorageConsuption> findForUser(String token, long userId) {
+    public Future<StorageConsumption> findForUser(String token, long userId) {
         if (!jwtParser.validateTokenForUserId(token, userId) && !jwtParser.isAdmin(token)) {
             return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<StorageConsuption> resultPromise = Promise.promise();
+        Promise<StorageConsumption> resultPromise = Promise.promise();
 
         pictureMetaDao.findPictureMetasForUserId(userId).setHandler(metasResult -> {
             if (metasResult.failed()) {
@@ -85,14 +85,37 @@ public class StorageService {
         return resultPromise.future();
     }
 
-    private void getLimitAndReturnStorageConsumption(Promise<StorageConsuption> resultPromise, long userId, long size) {
+    public Future<List<StorageConsumption>> findForUsers(String token, List<Long> ids) {
+        Promise<List<StorageConsumption>> resultPromise = Promise.promise();
+
+        List<Future<StorageConsumption>> futures = ids.stream()
+                .map(id -> findForUser(token, id))
+                .collect(Collectors.toList());
+
+        CompositeFuture.all(new ArrayList<Future>(futures)).setHandler(results -> {
+            if (results.failed()) {
+                resultPromise.fail(results.cause());
+                return;
+            }
+
+            List<StorageConsumption> storageConsumptions = new ArrayList<>();
+            for (int i = 0; i < results.result().size(); i++) {
+                storageConsumptions.add((StorageConsumption) results.result().resultAt(i));
+            }
+            resultPromise.complete(storageConsumptions);
+        });
+
+        return resultPromise.future();
+    }
+
+    private void getLimitAndReturnStorageConsumption(Promise<StorageConsumption> resultPromise, long userId, long size) {
         limitsDao.getLimitForUser(userId).setHandler(result -> {
            if (result.failed()) {
                resultPromise.fail(result.cause());
                return;
            }
            long limit = result.result().orElse(LIMIT);
-           resultPromise.complete(new StorageConsuption(size, limit));
+           resultPromise.complete(new StorageConsumption(userId, size, limit));
         });
     }
 

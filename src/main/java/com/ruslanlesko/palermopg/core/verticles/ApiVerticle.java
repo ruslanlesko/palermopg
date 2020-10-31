@@ -99,6 +99,7 @@ public class ApiVerticle extends AbstractVerticle {
         router.delete("/album/:userId/:albumId").produces(JSON_FORMAT).handler(albumHandler::deleteAlbum);
 
         router.route("/storage/:userId*").handler(BodyHandler.create());
+        router.get("/storage").produces(JSON_FORMAT).handler(storageHandler::storageByUsers);
         router.get("/storage/:userId").produces(JSON_FORMAT).handler(storageHandler::storageByUser);
         router.post("/storage/:userId").consumes(JSON_FORMAT).handler(storageHandler::setUserLimit);
 

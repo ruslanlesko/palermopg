@@ -4,7 +4,7 @@ import com.ruslanlesko.palermopg.core.dao.LimitsDao;
 import com.ruslanlesko.palermopg.core.dao.PictureDataDao;
 import com.ruslanlesko.palermopg.core.dao.PictureMetaDao;
 import com.ruslanlesko.palermopg.core.entity.PictureMeta;
-import com.ruslanlesko.palermopg.core.entity.StorageConsuption;
+import com.ruslanlesko.palermopg.core.entity.StorageConsumption;
 import com.ruslanlesko.palermopg.core.security.JWTParser;
 import com.ruslanlesko.palermopg.core.services.StorageService;
 import io.vertx.core.Future;
@@ -54,7 +54,7 @@ public class StorageServiceTest {
 
         StorageService service = new StorageService(pictureMetaDao, pictureDataDao, limitsDao, jwtParser);
 
-        var expectedConsumption = new StorageConsuption(CONSUMPTION_SIZE, CONSUMPTION_LIMIT);
+        var expectedConsumption = new StorageConsumption(USER_ID, CONSUMPTION_SIZE, CONSUMPTION_LIMIT);
 
         service.findForUser(TOKEN, USER_ID)
             .setHandler(response -> assertEquals(expectedConsumption, response.result()));
