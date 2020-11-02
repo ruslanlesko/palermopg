@@ -2,6 +2,7 @@ package com.ruslanlesko.palermopg.core.util;
 
 import com.ruslanlesko.palermopg.core.exception.AuthorizationException;
 import com.ruslanlesko.palermopg.core.exception.MissingItemException;
+import com.ruslanlesko.palermopg.core.exception.StorageLimitException;
 import io.vertx.core.http.HttpServerResponse;
 
 public class ApiUtils {
@@ -12,6 +13,11 @@ public class ApiUtils {
         }
         if (cause instanceof MissingItemException) {
             cors(response.setStatusCode(404)).end();
+            return;
+        }
+        if (cause instanceof StorageLimitException) {
+            cors(response.setStatusCode(400)).end(((StorageLimitException) cause).json());
+            return;
         }
         cors(response.setStatusCode(500)).end();
     }

@@ -18,7 +18,6 @@ import com.ruslanlesko.palermopg.core.services.AlbumService;
 import com.ruslanlesko.palermopg.core.services.PictureService;
 import com.ruslanlesko.palermopg.core.services.StorageService;
 import com.ruslanlesko.palermopg.core.services.impl.AlbumServiceImpl;
-import com.ruslanlesko.palermopg.core.services.impl.PictureServiceImpl;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.ext.web.Router;
@@ -46,9 +45,9 @@ public class ApiVerticle extends AbstractVerticle {
         LimitsDao limitsDao = new MongoLimitsDao(asyncMongoClient);
         JWTParser jwtParser = new JWTParser();
 
-        PictureService pictureService = new PictureServiceImpl(pictureMetaDao, pictureDataDao, albumDao, jwtParser);
-        AlbumService albumService = new AlbumServiceImpl(pictureMetaDao, albumDao, pictureService, jwtParser);
         StorageService storageService = new StorageService(pictureMetaDao, pictureDataDao, limitsDao, jwtParser);
+        PictureService pictureService = new PictureService(pictureMetaDao, pictureDataDao, albumDao, jwtParser, storageService);
+        AlbumService albumService = new AlbumServiceImpl(pictureMetaDao, albumDao, pictureService, jwtParser);
 
         pictureHandler = new PictureHandler(pictureService);
         albumHandler = new AlbumHandler(albumService);
