@@ -11,6 +11,7 @@ import com.ruslanlesko.palermopg.core.exception.MissingItemException;
 import com.ruslanlesko.palermopg.core.exception.StorageLimitException;
 import com.ruslanlesko.palermopg.core.meta.MetaParser;
 import com.ruslanlesko.palermopg.core.security.JWTParser;
+import com.ruslanlesko.palermopg.core.util.CodeGenerator;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -24,9 +25,13 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
+import java.util.Random;
 
 public class PictureService {
     private static final Logger logger = LoggerFactory.getLogger("Application");
@@ -104,6 +109,46 @@ public class PictureService {
 
                     resultPromise.complete(new PictureResponse(dataResult.result(), false, hash));
                 });
+            });
+        });
+
+        return resultPromise.future();
+    }
+
+    public Future<byte[]> downloadPicture(long userId, long pictureId, String code) {
+        Promise<byte[]> resultPromise = Promise.promise();
+
+        pictureMetaDao.find(pictureId).setHandler(result -> {
+            if (result.failed()) {
+                resultPromise.fail(result.cause());
+                return;
+            }
+
+            var metaOptional = result.result();
+            if (metaOptional.isEmpty()) {
+                resultPromise.fail(new MissingItemException());
+                return;
+            }
+
+            var meta = metaOptional.get();
+            if (!meta.getDownloadCode().equals(code)) {
+                resultPromise.fail(new MissingItemException());
+                return;
+            }
+
+            isAlbumNotAccessible(meta.getAlbumId(), userId).setHandler(albumAccessResult -> {
+                if (albumAccessResult.failed()) {
+                    resultPromise.fail(albumAccessResult.cause());
+                    return;
+                }
+
+                var albumNotAccessible = albumAccessResult.result();
+                if (meta.getUserId() != userId && albumNotAccessible) {
+                    resultPromise.fail(new MissingItemException());
+                    return;
+                }
+
+                pictureDataDao.find(meta.getPath()).setHandler(resultPromise);
             });
         });
 
@@ -190,8 +235,8 @@ public class PictureService {
 
                 PictureMeta meta = new PictureMeta(-1, userId, albumId.orElse(-1L), size, originalPath,
                         optimizedPath,
-                        LocalDateTime.now(), dateCaptured, LocalDateTime.now()
-                );
+                        LocalDateTime.now(), dateCaptured, LocalDateTime.now(),
+                        CodeGenerator.generateDownloadCode());
 
                 pictureMetaDao.save(meta).setHandler(metaResult -> {
                     if (metaResult.failed()) {

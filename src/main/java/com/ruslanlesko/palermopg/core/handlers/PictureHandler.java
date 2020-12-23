@@ -24,6 +24,22 @@ public class PictureHandler {
         long id = Long.parseLong(request.getParam("pictureId"));
         String token = request.getHeader("Authorization");
         String clientHash = request.getHeader("If-None-Match");
+        String downloadCode = request.getParam("downloadCode");
+
+        if (downloadCode != null && !downloadCode.isEmpty()) {
+            pictureService.downloadPicture(userId, id, downloadCode).setHandler(result -> {
+                if (result.failed()) {
+                    handleFailure(result.cause(), routingContext.response());
+                    return;
+                }
+
+                var data = result.result();
+                cors(routingContext.response())
+                        .putHeader("Content-Disposition", "attachment; filename=\"" + id + ".jpg\"")
+                        .end(Buffer.buffer(data));
+            });
+            return;
+        }
 
         pictureService.getPictureData(token, clientHash, userId, id).setHandler(result -> {
             if (result.failed()) {

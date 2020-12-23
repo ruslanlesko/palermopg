@@ -11,6 +11,7 @@ Port number: 8081
 
 ### Picture operations
 * GET `/pic/{userId}/{pictureId}` returns picture under provided id for specific user in JPEG format
+* GET `/pic/{userId}/{pictureId}?downloadCode=123xyz` returns downloadable picture in maximum resolution
 * POST `/pic/{userId}?albumId={albumdId}` uploads picture in JPEG format under provided album id, returns newly created picture id
 * POST `/pic/{userId}/{pictureId}/rotate` rotates picture
 * DELETE `/pic/{userId}/{pictureId}` deletes picture, returns deleted picture id on success
@@ -44,11 +45,13 @@ Port number: 8081
 [
     {
         "userId": 42,
-        "pictureId": 25
+        "pictureId": 25,
+        "downloadCode": "123xyz"
     },
     {
         "userId": 69,
-        "pictureId": 27
+        "pictureId": 27,
+        "downloadCode": "9873abc"
     },
     { ... }
 ]

@@ -6,3 +6,4 @@ target/
 .project
 .settings/
 .vscode
+*.ps1

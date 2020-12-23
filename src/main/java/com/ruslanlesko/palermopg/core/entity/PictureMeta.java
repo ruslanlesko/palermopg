@@ -13,6 +13,7 @@ public class PictureMeta {
     private final LocalDateTime dateUploaded;
     private final LocalDateTime dateCaptured;
     private final LocalDateTime dateModified;
+    private final String downloadCode;
 
     public PictureMeta(
             long id,
@@ -23,8 +24,8 @@ public class PictureMeta {
             String pathOptimized,
             LocalDateTime dateUploaded,
             LocalDateTime dateCaptured,
-            LocalDateTime dateModified
-    ) {
+            LocalDateTime dateModified,
+            String downloadCode) {
         this.id = id;
         this.userId = userId;
         this.albumId = albumId;
@@ -34,6 +35,7 @@ public class PictureMeta {
         this.dateUploaded = dateUploaded;
         this.dateCaptured = dateCaptured;
         this.dateModified = dateModified;
+        this.downloadCode = downloadCode;
     }
 
     public long getId() {
@@ -72,41 +74,20 @@ public class PictureMeta {
         return dateModified;
     }
 
+    public String getDownloadCode() {
+        return downloadCode;
+    }
+
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         PictureMeta that = (PictureMeta) o;
-        return id == that.id &&
-               userId == that.userId &&
-               albumId == that.albumId &&
-               size == that.size &&
-               Objects.equals(path, that.path) &&
-               Objects.equals(pathOptimized, that.pathOptimized) &&
-               Objects.equals(dateUploaded, that.dateUploaded) &&
-               Objects.equals(dateCaptured, that.dateCaptured) &&
-               Objects.equals(dateModified, that.dateModified);
+        return id == that.id && userId == that.userId && albumId == that.albumId && size == that.size && Objects.equals(path, that.path) && Objects.equals(pathOptimized, that.pathOptimized) && Objects.equals(dateUploaded, that.dateUploaded) && Objects.equals(dateCaptured, that.dateCaptured) && Objects.equals(dateModified, that.dateModified) && Objects.equals(downloadCode, that.downloadCode);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, userId, albumId, size, path, pathOptimized, dateUploaded, dateCaptured, dateModified);
-    }
-
-    @Override
-    public String toString() {
-        return "PictureMeta{" +
-               "id=" + id +
-               ", userId=" + userId +
-               ", albumId=" + albumId +
-               ", size=" + size +
-               ", path='" + path + '\'' +
-               ", pathOptimized='" + pathOptimized + '\'' +
-               ", dateUploaded=" + dateUploaded +
-               ", dateCaptured=" + dateCaptured +
-               ", dateModified=" + dateModified +
-               '}';
+        return Objects.hash(id, userId, albumId, size, path, pathOptimized, dateUploaded, dateCaptured, dateModified, downloadCode);
     }
 }

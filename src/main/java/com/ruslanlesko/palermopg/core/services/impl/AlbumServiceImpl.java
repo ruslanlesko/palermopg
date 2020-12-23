@@ -9,6 +9,7 @@ import com.ruslanlesko.palermopg.core.exception.MissingItemException;
 import com.ruslanlesko.palermopg.core.security.JWTParser;
 import com.ruslanlesko.palermopg.core.services.AlbumService;
 import com.ruslanlesko.palermopg.core.services.PictureService;
+import com.ruslanlesko.palermopg.core.util.CodeGenerator;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -114,6 +115,25 @@ public class AlbumServiceImpl implements AlbumService {
 
                             return uploadedB.compareTo(uploadedA);
                         }).collect(Collectors.toList());
+
+                var metasWithoutDownloadCode = results.stream()
+                        .filter(p -> p.getDownloadCode() == null || p.getDownloadCode().isEmpty())
+                        .collect(Collectors.toList());
+
+                if (metasWithoutDownloadCode.size() > 0) {
+                    var futures = metasWithoutDownloadCode.stream()
+                            .map(p -> pictureMetaDao.setDownloadCode(p.getId(), CodeGenerator.generateDownloadCode()))
+                            .collect(Collectors.toList());
+
+                    CompositeFuture.all(new ArrayList<Future>(futures)).setHandler(codeUpdateResults -> {
+                        if (codeUpdateResults.failed()) {
+                            resultPromise.fail(codeUpdateResults.cause());
+                            return;
+                        }
+                        getPictureMetaForAlbum(token, userId, albumId).setHandler(resultPromise);
+                    });
+                    return;
+                }
 
                 resultPromise.complete(results);
             });

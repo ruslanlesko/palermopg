@@ -150,6 +150,26 @@ public class MongoPictureMetaDao implements PictureMetaDao {
         return resultPromise.future();
     }
 
+    @Override
+    public Future<Void> setDownloadCode(long id, String code) {
+        Promise<Void> resultPromise = Promise.promise();
+
+        BasicDBObject query = new BasicDBObject();
+        query.put("id", id);
+
+        BasicDBObject newDoc = new BasicDBObject();
+        newDoc.put("downloadCode", code);
+
+        BasicDBObject updateDoc = new BasicDBObject();
+        updateDoc.put("$set", newDoc);
+
+        getCollection()
+                .updateOne(query, updateDoc)
+                .subscribe(forVoidPromise(resultPromise, res -> res.getModifiedCount() == 1 && res.wasAcknowledged(), new MissingItemException()));
+
+        return resultPromise.future();
+    }
+
     private PictureMeta mapToPicture(Document document) {
         Long albumId = document.getLong("albumId");
 
@@ -163,8 +183,8 @@ public class MongoPictureMetaDao implements PictureMetaDao {
                 document.getDate("dateUploaded").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
                 document.getDate("dateCaptured").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
                 document.get("dateModified") == null ? document.getDate("dateUploaded").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
-                : document.getDate("dateModified").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
-        );
+                : document.getDate("dateModified").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
+                document.getString("downloadCode") == null ? "" : document.getString("downloadCode"));
     }
 
     private Future<Long> getNextIdAsync() {

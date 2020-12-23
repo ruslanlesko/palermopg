@@ -41,6 +41,7 @@ class PictureServiceTest {
     private static final long ALBUM_ID = 2;
     private static final String PATH = "path";
     private static final String DATA_PATH = "sample_picture.jpg";
+    private static final String DOWNLOAD_CODE = "a9z1c8";
     private static final LocalDateTime TIME = LocalDateTime.now();
     private static final StorageConsumption STORAGE_CONSUMPTION = new StorageConsumption(USER_ID, 8, 1024 * 1024 * 1024);
     private static final StorageConsumption STORAGE_CONSUMPTION_LIMITED = new StorageConsumption(USER_ID, 8, 1024 * 1024);
@@ -60,7 +61,7 @@ class PictureServiceTest {
         AlbumDao albumDao = mock(AlbumDao.class);
         StorageService storageService = mock(StorageService.class);
 
-        PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME);
+        PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME, DOWNLOAD_CODE);
         Album album = new Album(ALBUM_ID, USER_ID, "album", List.of());
 
         when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
@@ -78,6 +79,28 @@ class PictureServiceTest {
     }
 
     @Test
+    void testGetPictureDataByDownloadCode() {
+        JWTParser parser = mock(JWTParser.class);
+        PictureMetaDao metaDao = mock(PictureMetaDao.class);
+        PictureDataDao dataDao = mock(PictureDataDao.class);
+        AlbumDao albumDao = mock(AlbumDao.class);
+        StorageService storageService = mock(StorageService.class);
+
+        PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME, DOWNLOAD_CODE);
+        Album album = new Album(ALBUM_ID, USER_ID, "album", List.of());
+
+        when(metaDao.find(PICTURE_ID)).thenReturn(Future.succeededFuture(Optional.of(meta)));
+        when(dataDao.find(PATH)).thenReturn(Future.succeededFuture(data));
+        when(albumDao.findById(ALBUM_ID)).thenReturn(Future.succeededFuture(Optional.of(album)));
+
+        PictureService service = new PictureService(metaDao, dataDao, albumDao, parser, storageService);
+
+        byte[] expected = data;
+        service.downloadPicture(USER_ID, PICTURE_ID, DOWNLOAD_CODE)
+                .setHandler(response -> assertEquals(expected, response.result()));
+    }
+
+    @Test
     void testGetPictureDataAlbumNotAccessible() {
         JWTParser parser = mock(JWTParser.class);
         PictureMetaDao metaDao = mock(PictureMetaDao.class);
@@ -85,7 +108,7 @@ class PictureServiceTest {
         AlbumDao albumDao = mock(AlbumDao.class);
         StorageService storageService = mock(StorageService.class);
 
-        PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID_2, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME);
+        PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID_2, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME, DOWNLOAD_CODE);
         Album album = new Album(ALBUM_ID, USER_ID_2, "album", List.of(USER_ID_3));
 
         when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);

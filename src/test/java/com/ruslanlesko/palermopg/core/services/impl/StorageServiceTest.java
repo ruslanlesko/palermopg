@@ -22,7 +22,8 @@ public class StorageServiceTest {
         TOKEN = "Bearer abcxyz",
         PATH_1 = "path/1",
         PATH_2 = "path/2",
-        PATH_3 = "path/3";
+        PATH_3 = "path/3",
+        DOWNLOAD_CODE = "a9z1c8";
     private static final long USER_ID = 42;
     private static final long PICTURE_ID = 16;
     private static final long PICTURE_ID_2 = 17;
@@ -31,9 +32,9 @@ public class StorageServiceTest {
     private static final long NEW_LIMIT = 4L * 1024L * 1024L * 1024L;
 
     private static final List<PictureMeta> PICTURE_METAS = List.of(
-        new PictureMeta(15, USER_ID, 21, 1015L, "", "", null, null, null),
-        new PictureMeta(PICTURE_ID, USER_ID, 21, -1L, PATH_1, PATH_2, null, null, null),
-        new PictureMeta(PICTURE_ID_2, USER_ID, 21, -1L, PATH_3, null, null, null, null)
+        new PictureMeta(15, USER_ID, 21, 1015L, "", "", null, null, null, DOWNLOAD_CODE),
+        new PictureMeta(PICTURE_ID, USER_ID, 21, -1L, PATH_1, PATH_2, null, null, null, DOWNLOAD_CODE),
+        new PictureMeta(PICTURE_ID_2, USER_ID, 21, -1L, PATH_3, null, null, null, null, DOWNLOAD_CODE)
     );
 
     @Test

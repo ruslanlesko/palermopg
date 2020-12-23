@@ -1,6 +1,7 @@
 package com.ruslanlesko.palermopg.core.handlers;
 
 import com.ruslanlesko.palermopg.core.entity.Album;
+import com.ruslanlesko.palermopg.core.entity.PictureMeta;
 import com.ruslanlesko.palermopg.core.services.AlbumService;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonArray;
@@ -83,7 +84,7 @@ public class AlbumHandler {
             }
 
             List<JsonObject> data = getResult.result().stream()
-                    .map(p -> new JsonObject().put("userId", p.getUserId()).put("pictureId", p.getId()))
+                    .map(this::pictureDataToJson)
                     .collect(Collectors.toList());
             cors(routingContext.response()).end(new JsonArray(data).encode());
         });
@@ -168,5 +169,12 @@ public class AlbumHandler {
             }
         }
         return result;
+    }
+
+    private JsonObject pictureDataToJson(PictureMeta p) {
+        return new JsonObject()
+                .put("userId", p.getUserId())
+                .put("pictureId", p.getId())
+                .put("downloadCode", p.getDownloadCode());
     }
 }
