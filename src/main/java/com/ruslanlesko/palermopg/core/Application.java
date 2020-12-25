@@ -10,7 +10,7 @@ public class Application {
 
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx();
-        logger.info("Starting PalermoPG 1.9");
+        logger.info("Starting PalermoPG 1.10");
         vertx.deployVerticle(new ApiVerticle());
     }
 }

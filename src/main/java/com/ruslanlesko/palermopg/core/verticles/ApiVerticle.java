@@ -17,7 +17,6 @@ import com.ruslanlesko.palermopg.core.security.JWTParser;
 import com.ruslanlesko.palermopg.core.services.AlbumService;
 import com.ruslanlesko.palermopg.core.services.PictureService;
 import com.ruslanlesko.palermopg.core.services.StorageService;
-import com.ruslanlesko.palermopg.core.services.impl.AlbumServiceImpl;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.ext.web.Router;
@@ -47,7 +46,7 @@ public class ApiVerticle extends AbstractVerticle {
 
         StorageService storageService = new StorageService(pictureMetaDao, pictureDataDao, limitsDao, jwtParser);
         PictureService pictureService = new PictureService(pictureMetaDao, pictureDataDao, albumDao, jwtParser, storageService);
-        AlbumService albumService = new AlbumServiceImpl(pictureMetaDao, albumDao, pictureService, jwtParser);
+        AlbumService albumService = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService, jwtParser);
 
         pictureHandler = new PictureHandler(pictureService);
         albumHandler = new AlbumHandler(albumService);
@@ -92,6 +91,7 @@ public class ApiVerticle extends AbstractVerticle {
         router.route("/album/:userId*").handler(BodyHandler.create());
         router.get("/album/:userId").produces(JSON_FORMAT).handler(albumHandler::getAlbumsForUser);
         router.get("/album/:userId/:albumId").produces(JSON_FORMAT).handler(albumHandler::getAlbumContents);
+        router.get("/album/:userId/:albumId/download").handler(albumHandler::downloadAlbum);
         router.post("/album/:userId").consumes(JSON_FORMAT).handler(albumHandler::add);
         router.patch("/album/:userId/:albumId").consumes(JSON_FORMAT).handler(albumHandler::renameAlbum);
         router.post("/album/:userId/:albumId/share").consumes(JSON_FORMAT).handler(albumHandler::shareAlbum);

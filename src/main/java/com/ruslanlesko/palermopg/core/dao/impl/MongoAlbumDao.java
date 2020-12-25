@@ -67,9 +67,8 @@ public class MongoAlbumDao implements AlbumDao {
                         id,
                         doc.getLong("userId"),
                         doc.getString("name"),
-                        doc.getList("sharedUsers", Long.class)
-
-                )), Optional.empty()));
+                        doc.getList("sharedUsers", Long.class),
+                        doc.get("downloadCode") == null ? "" : doc.getString("downloadCode"))), Optional.empty()));
 
         return resultPromise.future();
     }
@@ -83,8 +82,8 @@ public class MongoAlbumDao implements AlbumDao {
                         document.getLong("id"),
                         document.getLong("userId"),
                         document.getString("name"),
-                        document.getList("sharedUsers", Long.class)
-                )));
+                        document.getList("sharedUsers", Long.class),
+                        document.get("downloadCode") == null ? "" : document.getString("downloadCode"))));
 
         return resultPromise.future();
     }
@@ -154,6 +153,26 @@ public class MongoAlbumDao implements AlbumDao {
                 .aggregate(aggregation)
                 .first()
                 .subscribe(forSinglePromise(resultPromise, doc -> doc.getLong("maxId") + 1, 1L));
+
+        return resultPromise.future();
+    }
+
+    @Override
+    public Future<Void> setDownloadCode(long id, String code) {
+        Promise<Void> resultPromise = Promise.promise();
+
+        BasicDBObject query = new BasicDBObject();
+        query.put("id", id);
+
+        BasicDBObject newDoc = new BasicDBObject();
+        newDoc.put("downloadCode", code);
+
+        BasicDBObject updateDoc = new BasicDBObject();
+        updateDoc.put("$set", newDoc);
+
+        getCollection()
+                .updateOne(query, updateDoc)
+                .subscribe(forVoidPromise(resultPromise, res -> res.getModifiedCount() == 1 && res.wasAcknowledged(), new MissingItemException()));
 
         return resultPromise.future();
     }

@@ -42,6 +42,7 @@ class PictureServiceTest {
     private static final String PATH = "path";
     private static final String DATA_PATH = "sample_picture.jpg";
     private static final String DOWNLOAD_CODE = "a9z1c8";
+    private static final String ALBUM_DOWNLOAD_CODE = "jkh57f";
     private static final LocalDateTime TIME = LocalDateTime.now();
     private static final StorageConsumption STORAGE_CONSUMPTION = new StorageConsumption(USER_ID, 8, 1024 * 1024 * 1024);
     private static final StorageConsumption STORAGE_CONSUMPTION_LIMITED = new StorageConsumption(USER_ID, 8, 1024 * 1024);
@@ -62,7 +63,7 @@ class PictureServiceTest {
         StorageService storageService = mock(StorageService.class);
 
         PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME, DOWNLOAD_CODE);
-        Album album = new Album(ALBUM_ID, USER_ID, "album", List.of());
+        Album album = new Album(ALBUM_ID, USER_ID, "album", List.of(), ALBUM_DOWNLOAD_CODE);
 
         when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(metaDao.find(PICTURE_ID)).thenReturn(Future.succeededFuture(Optional.of(meta)));
@@ -87,7 +88,7 @@ class PictureServiceTest {
         StorageService storageService = mock(StorageService.class);
 
         PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME, DOWNLOAD_CODE);
-        Album album = new Album(ALBUM_ID, USER_ID, "album", List.of());
+        Album album = new Album(ALBUM_ID, USER_ID, "album", List.of(), ALBUM_DOWNLOAD_CODE);
 
         when(metaDao.find(PICTURE_ID)).thenReturn(Future.succeededFuture(Optional.of(meta)));
         when(dataDao.find(PATH)).thenReturn(Future.succeededFuture(data));
@@ -109,7 +110,7 @@ class PictureServiceTest {
         StorageService storageService = mock(StorageService.class);
 
         PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID_2, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME, DOWNLOAD_CODE);
-        Album album = new Album(ALBUM_ID, USER_ID_2, "album", List.of(USER_ID_3));
+        Album album = new Album(ALBUM_ID, USER_ID_2, "album", List.of(USER_ID_3), ALBUM_DOWNLOAD_CODE);
 
         when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(metaDao.find(PICTURE_ID)).thenReturn(Future.succeededFuture(Optional.of(meta)));

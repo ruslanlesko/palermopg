@@ -19,6 +19,7 @@ Port number: 8081
 ### Album operations
 * GET `/album/{userId}` returns list of albums for user
 * GET `/album/{userId}/{albumId}` returns list of pictures contained in album
+* GET `/album/{userId}/{albumId}/download?code={downloadCode}` downloads album as a zip archive
 * POST `/album/{userId}` creates album for user, returns newly created album id
 * PATCH `/album/{userId}/{albumId}` renames album
 * POST `/album/{userId}/{albumId}/share` shares album with provided list of users
@@ -34,7 +35,8 @@ Port number: 8081
         "id": 42,
         "userId": 69,
         "name": "Vacation",
-        "sharedUsers": [25, 27]
+        "sharedUsers": [25, 27],
+        "downloadCode": "sav98d98f2ff"
     },
     { ... }
 ]

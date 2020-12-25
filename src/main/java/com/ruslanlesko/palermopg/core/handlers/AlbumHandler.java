@@ -3,6 +3,7 @@ package com.ruslanlesko.palermopg.core.handlers;
 import com.ruslanlesko.palermopg.core.entity.Album;
 import com.ruslanlesko.palermopg.core.entity.PictureMeta;
 import com.ruslanlesko.palermopg.core.services.AlbumService;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -87,6 +88,25 @@ public class AlbumHandler {
                     .map(this::pictureDataToJson)
                     .collect(Collectors.toList());
             cors(routingContext.response()).end(new JsonArray(data).encode());
+        });
+    }
+
+    public void downloadAlbum(RoutingContext routingContext) {
+        HttpServerRequest request = routingContext.request();
+        long albumId = Long.parseLong(request.getParam("albumId"));
+        long userId = Long.parseLong(request.getParam("userId"));
+        String code = request.getParam("code");
+
+        albumService.download(userId, albumId, code).setHandler(downloadResult -> {
+            if (downloadResult.failed()) {
+                handleFailure(downloadResult.cause(), routingContext.response());
+                return;
+            }
+
+            var data = downloadResult.result();
+            cors(routingContext.response())
+                    .putHeader("Content-Disposition", "attachment; filename=\"" + albumId + ".zip\"")
+                    .end(Buffer.buffer(data));
         });
     }
 

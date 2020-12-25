@@ -76,7 +76,7 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     }
 
     @Override
-    public Future<List<PictureMeta>> findPictureMetasForAlbumId(long albumId) {
+    public Future<List<PictureMeta>> findForAlbumId(long albumId) {
         logger.debug("Finding pictures for album id " + albumId);
 
         Promise<List<PictureMeta>> resultPromise = Promise.promise();
