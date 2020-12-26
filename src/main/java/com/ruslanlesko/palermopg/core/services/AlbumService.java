@@ -332,8 +332,10 @@ public class AlbumService {
                         return;
                     }
 
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    try(ZipOutputStream zos = new ZipOutputStream(baos)) {
+                    try (
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        ZipOutputStream zos = new ZipOutputStream(baos);
+                    ) {
                         for (int i = 0; i < dataResults.result().size(); i++) {
                             var data = (byte[]) dataResults.result().resultAt(i);
                             var meta = pics.get(i);
