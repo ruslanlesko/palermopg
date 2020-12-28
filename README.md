@@ -10,7 +10,7 @@ PalermoPG provides a solution for a self-hosted picture gallery using JWT as an 
 Port number: 8081
 
 ### Picture operations
-* GET `/pic/{userId}/{pictureId}` returns picture under provided id for specific user in JPEG format
+* GET `/pic/{userId}/{pictureId}` returns picture under provided id for specific user in JPEG format (optional fullSize=true parameter can be provided for non-compressed image)
 * GET `/pic/{userId}/{pictureId}?downloadCode=123xyz` returns downloadable picture in maximum resolution
 * POST `/pic/{userId}?albumId={albumdId}` uploads picture in JPEG format under provided album id, returns newly created picture id
 * POST `/pic/{userId}/{pictureId}/rotate` rotates picture

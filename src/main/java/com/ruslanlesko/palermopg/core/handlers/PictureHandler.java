@@ -25,6 +25,7 @@ public class PictureHandler {
         String token = request.getHeader("Authorization");
         String clientHash = request.getHeader("If-None-Match");
         String downloadCode = request.getParam("downloadCode");
+        boolean fullSize = Boolean.parseBoolean(request.getParam("fullSize"));
 
         if (downloadCode != null && !downloadCode.isEmpty()) {
             pictureService.downloadPicture(userId, id, downloadCode).setHandler(result -> {
@@ -41,7 +42,7 @@ public class PictureHandler {
             return;
         }
 
-        pictureService.getPictureData(token, clientHash, userId, id).setHandler(result -> {
+        pictureService.getPictureData(token, clientHash, userId, id, fullSize).setHandler(result -> {
             if (result.failed()) {
                 handleFailure(result.cause(), routingContext.response());
                 return;
@@ -100,7 +101,7 @@ public class PictureHandler {
         long id = Long.parseLong(request.getParam("pictureId"));
         String token = request.getHeader("Authorization");
 
-        pictureService.getPictureData(token, null, userId, id).setHandler(result -> {
+        pictureService.getPictureData(token, null, userId, id, false).setHandler(result -> {
             if (result.failed()) {
                 handleFailure(result.cause(), routingContext.response());
                 return;

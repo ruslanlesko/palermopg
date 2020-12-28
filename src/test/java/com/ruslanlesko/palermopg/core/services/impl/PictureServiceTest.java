@@ -75,7 +75,7 @@ class PictureServiceTest {
         String expectedHash = "W/\"" + TIME.toEpochSecond(ZoneOffset.UTC) + "\"";
 
         PictureResponse expected = new PictureResponse(data, false, expectedHash);
-        service.getPictureData(TOKEN, null, USER_ID, PICTURE_ID)
+        service.getPictureData(TOKEN, null, USER_ID, PICTURE_ID, false)
                 .setHandler(response -> assertEquals(expected, response.result()));
     }
 
@@ -119,7 +119,7 @@ class PictureServiceTest {
 
         PictureService service = new PictureService(metaDao, dataDao, albumDao, parser, storageService);
         
-        service.getPictureData(TOKEN, null, USER_ID, PICTURE_ID).setHandler(response -> {
+        service.getPictureData(TOKEN, null, USER_ID, PICTURE_ID, false).setHandler(response -> {
             assertTrue(response.failed());
             assertEquals(new AuthorizationException("Wrong user id"), response.cause());
         });

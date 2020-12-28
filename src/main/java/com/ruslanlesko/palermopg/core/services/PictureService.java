@@ -57,7 +57,7 @@ public class PictureService {
         this.storageService = storageService;
     }
 
-    public Future<PictureResponse> getPictureData(String token, String clientHash, long userId, long pictureId) {
+    public Future<PictureResponse> getPictureData(String token, String clientHash, long userId, long pictureId, boolean fullSize) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
             return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
@@ -90,7 +90,7 @@ public class PictureService {
                     return;
                 }
 
-                final String hash = calculateHash(meta);
+                final String hash = calculateHash(meta, fullSize);
                 if (hash.equals(clientHash)) {
                     resultPromise.complete(new PictureResponse(null, true, hash));
                     return;
@@ -99,7 +99,8 @@ public class PictureService {
                 String optimizedPath = meta.getPathOptimized();
                 String originalPath = meta.getPath();
 
-                String pathToFind = optimizedPath == null || optimizedPath.isBlank() ? originalPath : optimizedPath;
+                String pathToFind = fullSize || optimizedPath == null || optimizedPath.isBlank() ?
+                        originalPath : optimizedPath;
 
                 pictureDataDao.find(pathToFind).setHandler(dataResult -> {
                     if (dataResult.failed()) {
@@ -155,12 +156,13 @@ public class PictureService {
         return resultPromise.future();
     }
 
-    private String calculateHash(PictureMeta meta) {
+    private String calculateHash(PictureMeta meta, boolean fullSize) {
         LocalDateTime dateModified = meta.getDateModified();
         if (dateModified == null) {
             dateModified = meta.getDateUploaded();
         }
-        return "W/\"" + dateModified.toEpochSecond(ZoneOffset.UTC) + "\"";
+        String fullSizeSuffix = fullSize ? "1" : "";
+        return "W/\"" + dateModified.toEpochSecond(ZoneOffset.UTC) + fullSizeSuffix + "\"";
     }
 
     private Future<Boolean> isAlbumNotAccessible(long albumId, long userId) {
