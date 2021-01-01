@@ -42,23 +42,24 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     public Future<Long> save(PictureMeta pictureMeta) {
         Promise<Long> resultPromise = Promise.promise();
 
-        getNextIdAsync().setHandler(id -> {
-            Document document = new Document()
-                    .append("id", id.result())
-                    .append("size", pictureMeta.getSize())
-                    .append("path", pictureMeta.getPath())
-                    .append("pathOptimized", pictureMeta.getPathOptimized())
-                    .append("userId", pictureMeta.getUserId())
-                    .append("dateUploaded", pictureMeta.getDateUploaded())
-                    .append("dateCaptured", pictureMeta.getDateCaptured())
-                    .append("dateModified", pictureMeta.getDateModified());
+        getNextIdAsync()
+                .onSuccess(id -> {
+                    Document document = new Document()
+                            .append("id", id)
+                            .append("size", pictureMeta.getSize())
+                            .append("path", pictureMeta.getPath())
+                            .append("pathOptimized", pictureMeta.getPathOptimized())
+                            .append("userId", pictureMeta.getUserId())
+                            .append("dateUploaded", pictureMeta.getDateUploaded())
+                            .append("dateCaptured", pictureMeta.getDateCaptured())
+                            .append("dateModified", pictureMeta.getDateModified());
 
-            if (pictureMeta.getAlbumId() > 0) {
-                document.append("albumId", pictureMeta.getAlbumId());
-            }
+                    if (pictureMeta.getAlbumId() > 0) {
+                        document.append("albumId", pictureMeta.getAlbumId());
+                    }
 
-            getCollection().insertOne(document).subscribe(ReactiveSubscriber.forSinglePromise(resultPromise, success -> id.result()));
-        });
+                    getCollection().insertOne(document).subscribe(ReactiveSubscriber.forSinglePromise(resultPromise, success -> id));
+                }).onFailure(resultPromise::fail);
 
         return resultPromise.future();
     }

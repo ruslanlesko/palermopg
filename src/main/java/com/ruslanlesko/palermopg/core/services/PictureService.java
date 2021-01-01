@@ -5,7 +5,6 @@ import com.ruslanlesko.palermopg.core.dao.PictureDataDao;
 import com.ruslanlesko.palermopg.core.dao.PictureMetaDao;
 import com.ruslanlesko.palermopg.core.entity.PictureMeta;
 import com.ruslanlesko.palermopg.core.entity.PictureResponse;
-import com.ruslanlesko.palermopg.core.entity.StorageConsumption;
 import com.ruslanlesko.palermopg.core.exception.AuthorizationException;
 import com.ruslanlesko.palermopg.core.exception.MissingItemException;
 import com.ruslanlesko.palermopg.core.exception.StorageLimitException;
@@ -14,7 +13,6 @@ import com.ruslanlesko.palermopg.core.security.JWTParser;
 import com.ruslanlesko.palermopg.core.util.CodeGenerator;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,13 +23,12 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
-import java.util.Random;
+
+import static io.vertx.core.Future.failedFuture;
+import static io.vertx.core.Future.succeededFuture;
 
 public class PictureService {
     private static final Logger logger = LoggerFactory.getLogger("Application");
@@ -59,101 +56,38 @@ public class PictureService {
 
     public Future<PictureResponse> getPictureData(String token, String clientHash, long userId, long pictureId, boolean fullSize) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
-            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
+            return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<PictureResponse> resultPromise = Promise.promise();
+        return pictureMetaDao.find(pictureId)
+                .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
+                .compose(meta ->
+                    isAlbumNotAccessible(meta.getAlbumId(), userId)
+                            .compose(albumNotAccessible -> (albumNotAccessible && meta.getUserId() != userId) ?
+                                    failedFuture(new AuthorizationException("Wrong user id")) : succeededFuture(meta))
+                ).compose(meta -> {
+                    final String hash = calculateHash(meta, fullSize);
+                    if (hash.equals(clientHash)) return succeededFuture(new PictureResponse(null, true, hash));
 
-        pictureMetaDao.find(pictureId).setHandler(result -> {
-            if (result.failed()) {
-                resultPromise.fail(result.cause());
-                return;
-            }
+                    final String optimizedPath = meta.getPathOptimized();
+                    final String originalPath = meta.getPath();
+                    final String pathToFind = fullSize || optimizedPath == null || optimizedPath.isBlank() ?
+                            originalPath : optimizedPath;
 
-            var metaOptional = result.result();
-            if (metaOptional.isEmpty()) {
-                resultPromise.fail(new MissingItemException());
-                return;
-            }
-
-            var meta = metaOptional.get();
-
-            isAlbumNotAccessible(meta.getAlbumId(), userId).setHandler(albumAccessResult -> {
-                if (albumAccessResult.failed()) {
-                    resultPromise.fail(albumAccessResult.cause());
-                    return;
-                }
-
-                var albumNotAccessible = albumAccessResult.result();
-                if (meta.getUserId() != userId && albumNotAccessible) {
-                    resultPromise.fail(new AuthorizationException("Wrong user id"));
-                    return;
-                }
-
-                final String hash = calculateHash(meta, fullSize);
-                if (hash.equals(clientHash)) {
-                    resultPromise.complete(new PictureResponse(null, true, hash));
-                    return;
-                }
-
-                String optimizedPath = meta.getPathOptimized();
-                String originalPath = meta.getPath();
-
-                String pathToFind = fullSize || optimizedPath == null || optimizedPath.isBlank() ?
-                        originalPath : optimizedPath;
-
-                pictureDataDao.find(pathToFind).setHandler(dataResult -> {
-                    if (dataResult.failed()) {
-                        resultPromise.fail(dataResult.cause());
-                        return;
-                    }
-
-                    resultPromise.complete(new PictureResponse(dataResult.result(), false, hash));
+                    return pictureDataDao.find(pathToFind)
+                            .map(data -> new PictureResponse(data, false, hash));
                 });
-            });
-        });
-
-        return resultPromise.future();
     }
 
     public Future<byte[]> downloadPicture(long userId, long pictureId, String code) {
-        Promise<byte[]> resultPromise = Promise.promise();
-
-        pictureMetaDao.find(pictureId).setHandler(result -> {
-            if (result.failed()) {
-                resultPromise.fail(result.cause());
-                return;
-            }
-
-            var metaOptional = result.result();
-            if (metaOptional.isEmpty()) {
-                resultPromise.fail(new MissingItemException());
-                return;
-            }
-
-            var meta = metaOptional.get();
-            if (!meta.getDownloadCode().equals(code)) {
-                resultPromise.fail(new MissingItemException());
-                return;
-            }
-
-            isAlbumNotAccessible(meta.getAlbumId(), userId).setHandler(albumAccessResult -> {
-                if (albumAccessResult.failed()) {
-                    resultPromise.fail(albumAccessResult.cause());
-                    return;
-                }
-
-                var albumNotAccessible = albumAccessResult.result();
-                if (meta.getUserId() != userId && albumNotAccessible) {
-                    resultPromise.fail(new MissingItemException());
-                    return;
-                }
-
-                pictureDataDao.find(meta.getPath()).setHandler(resultPromise);
-            });
-        });
-
-        return resultPromise.future();
+        return pictureMetaDao.find(pictureId)
+                .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
+                .compose(meta -> meta.getDownloadCode().equals(code) ? succeededFuture(meta) : failedFuture(new MissingItemException()))
+                .compose(meta ->
+                        isAlbumNotAccessible(meta.getAlbumId(), userId)
+                                .compose(albumNotAccessible -> (albumNotAccessible && meta.getUserId() != userId) ?
+                                        failedFuture(new MissingItemException()) : succeededFuture(meta)))
+                .compose(meta -> pictureDataDao.find(meta.getPath()));
     }
 
     private String calculateHash(PictureMeta meta, boolean fullSize) {
@@ -166,95 +100,49 @@ public class PictureService {
     }
 
     private Future<Boolean> isAlbumNotAccessible(long albumId, long userId) {
-        Promise<Boolean> resultPromise = Promise.promise();
-
-        if (albumId <= 0) {
-            return Future.succeededFuture(true);
-        }
-
-        albumDao.findById(albumId).setHandler(albumResult -> {
-            if (albumResult.failed()) {
-                resultPromise.fail(albumResult.cause());
-                return;
-            }
-
-            var album = albumResult.result();
-
-            if (album.isEmpty()) {
-                resultPromise.complete(true);
-                return;
-            }
-
-            resultPromise.complete(album.get().getUserId() != userId && !album.get().getSharedUsers().contains(userId));
-        });
-
-        return resultPromise.future();
+        return albumId <= 0 ? succeededFuture(true)
+                : albumDao.findById(albumId)
+                    .map(opt -> opt.isEmpty() || opt.get().getUserId() != userId && !opt.get().getSharedUsers().contains(userId));
     }
 
     public Future<Long> insertNewPicture(String token, long userId, Optional<Long> albumId, byte[] data) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
-            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
+            return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<Long> resultPromise = Promise.promise();
+        return storageService.findForUser(token, userId)
+                .compose(storage -> {
+                    final LocalDateTime dateCaptured = extractDateCaptured(data);
+                    final byte[] rotatedData = getProperlyRotatedData(data);
+                    final byte[] optimizedPictureData = convertToOptimized(rotatedData);
 
-        storageService.findForUser(token, userId).setHandler(storage -> {
-           if (storage.failed()) {
-               resultPromise.fail(storage.cause());
-               return;
-           }
+                    long size = rotatedData.length + (optimizedPictureData == null ? 0 : optimizedPictureData.length);
+                    if (storage.getSize() + size > storage.getLimit()) return failedFuture(new StorageLimitException());
 
-            final LocalDateTime dateCaptured = extractDateCaptured(data);
-            byte[] rotatedData = getProperlyRotatedData(data);
-            byte[] optimizedPictureData = convertToOptimized(rotatedData);
-
-            long size = rotatedData.length + (optimizedPictureData == null ? 0 : optimizedPictureData.length);
-
-           StorageConsumption consumption = storage.result();
-           if (consumption.getSize() + size > consumption.getLimit()) {
-               resultPromise.fail(new StorageLimitException());
-               return;
-           }
-
-            Future<String> optimizedPathFuture;
-            if (optimizedPictureData == null) {
-                logger.warn("Optimized version was not created");
-                optimizedPathFuture = Future.failedFuture("Optimized version was not created");
-            } else {
-                optimizedPathFuture = pictureDataDao.save(optimizedPictureData);
-            }
-
-            Future<String> originalPathFuture = pictureDataDao.save(rotatedData);
-
-            CompositeFuture.all(optimizedPathFuture, originalPathFuture).setHandler(pathResults -> {
-                if (pathResults.failed()) {
-                    resultPromise.fail(pathResults.cause());
-                    return;
-                }
-
-                String optimizedPath = pathResults.result().resultAt(0);
-                String originalPath = pathResults.result().resultAt(1);
-
-                PictureMeta meta = new PictureMeta(-1, userId, albumId.orElse(-1L), size, originalPath,
-                        optimizedPath,
-                        LocalDateTime.now(), dateCaptured, LocalDateTime.now(),
-                        CodeGenerator.generateDownloadCode());
-
-                pictureMetaDao.save(meta).setHandler(metaResult -> {
-                    if (metaResult.failed()) {
-                        resultPromise.fail(metaResult.cause());
-                        return;
+                    if (optimizedPictureData == null) {
+                        logger.warn("Optimized version was not created");
+                        return failedFuture("Optimized version was not created");
                     }
 
-                    var id = metaResult.result();
+                    Future<String> optimizedPathFuture = pictureDataDao.save(optimizedPictureData);
+                    Future<String> originalPathFuture = pictureDataDao.save(rotatedData);
+                    return CompositeFuture.all(optimizedPathFuture, originalPathFuture)
+                            .compose(pathResults -> {
+                                String optimizedPath = pathResults.resultAt(0);
+                                String originalPath = pathResults.resultAt(1);
 
-                    logger.info("Inserted new picture with id {} for user id {}", id, userId);
-                    resultPromise.complete(id);
+                                PictureMeta meta = new PictureMeta(-1, userId, albumId.orElse(-1L), size, originalPath,
+                                        optimizedPath,
+                                        LocalDateTime.now(), dateCaptured, LocalDateTime.now(),
+                                        CodeGenerator.generateDownloadCode());
+
+                                return pictureMetaDao.save(meta)
+                                        .map(id -> {
+                                            logger.info("Inserted new picture with id {} for user id {}", id, userId);
+                                            return id;
+                                        });
+                            });
                 });
-            });
-        });
-
-        return resultPromise.future();
     }
 
     private LocalDateTime extractDateCaptured(byte[] data) {
@@ -280,130 +168,50 @@ public class PictureService {
 
     public Future<Void> rotatePicture(String token, long userId, long pictureId) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
-            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
+            return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<Void> resultPromise = Promise.promise();
-
-        pictureMetaDao.find(pictureId).setHandler(metaResult -> {
-            if (metaResult.failed()) {
-                resultPromise.fail(metaResult.cause());
-                return;
-            }
-
-            var optMeta = metaResult.result();
-            if (optMeta.isEmpty()) {
-                resultPromise.fail(new MissingItemException());
-                return;
-            }
-
-            isAlbumNotAccessible(optMeta.get().getAlbumId(), userId).setHandler(albumAccessResult -> {
-                if (albumAccessResult.failed()) {
-                    resultPromise.fail(albumAccessResult.cause());
-                    return;
-                }
-
-                var albumNotAccessible = albumAccessResult.result();
-                if (optMeta.get().getUserId() != userId && albumNotAccessible) {
-                    resultPromise.fail(new AuthorizationException("Wrong user id"));
-                    return;
-                }
-
-                String path = optMeta.get().getPath();
-                String pathOptimized = optMeta.get().getPathOptimized();
-
-                doRotate(pathOptimized);
-                doRotate(path).setHandler(rotateResult -> {
-                    if (rotateResult.failed()) {
-                        resultPromise.fail(rotateResult.cause());
-                        return;
-                    }
-
-                    pictureMetaDao.setLastModified(pictureId, LocalDateTime.now()).setHandler(modificationResult -> {
-                        if (modificationResult.failed()) {
-                            logger.warn("Cannot set last modified");
-                        }
-                    });
-                    resultPromise.complete();
-                });
-            });
-        });
-
-        return resultPromise.future();
+        return pictureMetaDao.find(pictureId)
+                .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
+                .compose(meta ->
+                        isAlbumNotAccessible(meta.getAlbumId(), userId)
+                            .compose(albumNotAccessible -> (albumNotAccessible && meta.getUserId() != userId) ?
+                                    failedFuture(new AuthorizationException("Wrong user id")) : succeededFuture(meta)))
+                .compose(meta -> {
+                    doRotate(meta.getPathOptimized());
+                    return doRotate(meta.getPath());
+                }).compose(rotated ->
+                    pictureMetaDao.setLastModified(pictureId, LocalDateTime.now())
+                            .onFailure(cause -> logger.warn("Cannot set last modified: " + cause.getMessage()))
+                );
     }
 
     private Future<Void> doRotate(String path) {
         if (path == null) {
-            return Future.failedFuture(new MissingItemException());
+            return failedFuture(new MissingItemException());
         }
 
-        Promise<Void> resultPromise = Promise.promise();
-
-        pictureDataDao.find(path).setHandler(dataResult -> {
-            if (dataResult.failed()) {
-                resultPromise.fail(dataResult.cause());
-                return;
-            }
-
-            byte[] rotated = rotateImage(dataResult.result(), 90);
-            if (rotated == null) {
-                resultPromise.fail("Cannot rotate image");
-                return;
-            }
-
-            pictureDataDao.replace(path, rotated).setHandler(resultPromise);
-        });
-
-        return resultPromise.future();
+        return pictureDataDao.find(path)
+                .map(data -> rotateImage(data, 90))
+                .compose(rotatedData -> rotatedData == null ?
+                        failedFuture("Cannot rotate image") : pictureDataDao.replace(path, rotatedData));
     }
 
     public Future<Void> deletePicture(String token, long userId, long pictureId) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
-            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
+            return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<Void> resultPromise = Promise.promise();
-
-        pictureMetaDao.find(pictureId).setHandler(metaResult -> {
-            if (metaResult.failed()) {
-                resultPromise.fail(metaResult.cause());
-                return;
-            }
-
-            var meta = metaResult.result();
-
-            if (meta.isEmpty()) {
-                logger.error("Picture with id {} is missing in database", pictureId);
-                resultPromise.fail(new MissingItemException());
-                return;
-            }
-
-            pictureMetaDao.deleteById(pictureId).setHandler(deleteDbResult -> {
-                if (deleteDbResult.failed()) {
-                    resultPromise.fail(deleteDbResult.cause());
-                    return;
-                }
-
-                pictureDataDao.delete(meta.get().getPath()).setHandler(deleteOriginalResult -> {
-                    if (deleteOriginalResult.failed()) {
-                        logger.error("Cannot delete picture id {} data", pictureId);
-                        resultPromise.fail(deleteOriginalResult.cause());
-                        return;
-                    }
-
-                    logger.info("Successfully deleted picture id {}", pictureId);
-
-                    String optimized = meta.get().getPathOptimized();
-                    if (optimized != null) {
-                        pictureDataDao.delete(optimized).setHandler(resultPromise);
-                        return;
-                    }
-                    resultPromise.complete();
-                });
-            });
-        });
-
-        return resultPromise.future();
+        return pictureMetaDao.find(pictureId)
+                .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
+                .compose(meta -> pictureMetaDao.deleteById(pictureId)
+                        .compose(dbItemDeleted -> pictureDataDao.delete(meta.getPath()))
+                        .compose(originalDeleted -> {
+                            logger.info("Successfully deleted picture id {}", pictureId);
+                            return meta.getPathOptimized() == null ?
+                                    succeededFuture() : pictureDataDao.delete(meta.getPathOptimized());
+                        })
+                );
     }
 
     private byte[] rotateImage(byte[] bytes, int degrees) {

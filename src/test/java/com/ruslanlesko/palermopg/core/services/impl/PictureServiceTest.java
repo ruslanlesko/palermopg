@@ -76,7 +76,7 @@ class PictureServiceTest {
 
         PictureResponse expected = new PictureResponse(data, false, expectedHash);
         service.getPictureData(TOKEN, null, USER_ID, PICTURE_ID, false)
-                .setHandler(response -> assertEquals(expected, response.result()));
+                .onComplete(response -> assertEquals(expected, response.result()));
     }
 
     @Test
@@ -98,7 +98,7 @@ class PictureServiceTest {
 
         byte[] expected = data;
         service.downloadPicture(USER_ID, PICTURE_ID, DOWNLOAD_CODE)
-                .setHandler(response -> assertEquals(expected, response.result()));
+                .onComplete(response -> assertEquals(expected, response.result()));
     }
 
     @Test
@@ -119,7 +119,7 @@ class PictureServiceTest {
 
         PictureService service = new PictureService(metaDao, dataDao, albumDao, parser, storageService);
         
-        service.getPictureData(TOKEN, null, USER_ID, PICTURE_ID, false).setHandler(response -> {
+        service.getPictureData(TOKEN, null, USER_ID, PICTURE_ID, false).onComplete(response -> {
             assertTrue(response.failed());
             assertEquals(new AuthorizationException("Wrong user id"), response.cause());
         });
@@ -142,7 +142,7 @@ class PictureServiceTest {
 
         Long expected = PICTURE_ID;
         service.insertNewPicture(TOKEN, USER_ID, Optional.empty(), data)
-                .setHandler(response -> assertEquals(expected, response.result()));
+                .onComplete(response -> assertEquals(expected, response.result()));
     }
 
     @Test
@@ -158,7 +158,7 @@ class PictureServiceTest {
         PictureService service = new PictureService(metaDao, dataDao, null, parser, storageService);
 
         service.insertNewPicture(TOKEN, USER_ID, Optional.empty(), data)
-                .setHandler(response -> {
+                .onComplete(response -> {
                     assertTrue(response.failed());
                     assertEquals(StorageLimitException.class, response.cause().getClass());
                 });

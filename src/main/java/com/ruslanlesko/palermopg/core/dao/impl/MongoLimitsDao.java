@@ -32,19 +32,16 @@ public class MongoLimitsDao implements LimitsDao {
     @Override
     public Future<Void> setLimitForUser(long userId, long limit) {
         Promise<Void> resultPromise = Promise.promise();
-        getLimitForUser(userId).setHandler(result -> {
-            if (result.failed()) {
-                resultPromise.fail(result.cause());
-                return;
-            }
-            if (result.result().isEmpty()) {
-                logger.info("No limit for user id {}, setting...", userId);
-                insertLimit(resultPromise, userId, limit);
-            } else {
-                logger.info("Updating limit for user id {}" ,userId);
-                updateLimit(resultPromise, userId, limit);
-            }
-        });
+        getLimitForUser(userId)
+                .onSuccess(result -> {
+                    if (result.isEmpty()) {
+                        logger.info("No limit for user id {}, setting...", userId);
+                        insertLimit(resultPromise, userId, limit);
+                    } else {
+                        logger.info("Updating limit for user id {}" ,userId);
+                        updateLimit(resultPromise, userId, limit);
+                    }
+                }).onFailure(resultPromise::fail);
         return resultPromise.future();
     }
 

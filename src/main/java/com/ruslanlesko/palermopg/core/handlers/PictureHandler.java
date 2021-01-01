@@ -1,7 +1,6 @@
 package com.ruslanlesko.palermopg.core.handlers;
 
 import com.ruslanlesko.palermopg.core.services.PictureService;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -10,6 +9,7 @@ import java.util.Optional;
 
 import static com.ruslanlesko.palermopg.core.util.ApiUtils.cors;
 import static com.ruslanlesko.palermopg.core.util.ApiUtils.handleFailure;
+import static io.vertx.core.buffer.Buffer.buffer;
 
 public class PictureHandler {
     private final PictureService pictureService;
@@ -28,39 +28,28 @@ public class PictureHandler {
         boolean fullSize = Boolean.parseBoolean(request.getParam("fullSize"));
 
         if (downloadCode != null && !downloadCode.isEmpty()) {
-            pictureService.downloadPicture(userId, id, downloadCode).setHandler(result -> {
-                if (result.failed()) {
-                    handleFailure(result.cause(), routingContext.response());
-                    return;
-                }
-
-                var data = result.result();
-                cors(routingContext.response())
-                        .putHeader("Content-Disposition", "attachment; filename=\"" + id + ".jpg\"")
-                        .end(Buffer.buffer(data));
-            });
+            pictureService.downloadPicture(userId, id, downloadCode)
+                    .onSuccess(result -> cors(routingContext.response())
+                            .putHeader("Content-Disposition", "attachment; filename=\"" + id + ".jpg\"")
+                            .end(buffer(result)))
+                    .onFailure(cause -> handleFailure(cause, routingContext.response()));
             return;
         }
 
-        pictureService.getPictureData(token, clientHash, userId, id, fullSize).setHandler(result -> {
-            if (result.failed()) {
-                handleFailure(result.cause(), routingContext.response());
-                return;
-            }
-
-            var response = result.result();
-            if (response.isNotModified()) {
-                cors(routingContext.response().setStatusCode(304))
-                        .putHeader("ETag", response.getHash())
-                        .putHeader("Cache-Control", "no-cache")
-                        .end();
-                return;
-            }
-            cors(routingContext.response())
-                    .putHeader("ETag", response.getHash())
-                    .putHeader("Cache-Control", "no-cache")
-                    .end(Buffer.buffer(response.getData()));
-        });
+        pictureService.getPictureData(token, clientHash, userId, id, fullSize)
+                .onSuccess(result -> {
+                    if (result.isNotModified()) {
+                        cors(routingContext.response().setStatusCode(304))
+                                .putHeader("ETag", result.getHash())
+                                .putHeader("Cache-Control", "no-cache")
+                                .end();
+                        return;
+                    }
+                    cors(routingContext.response())
+                            .putHeader("ETag", result.getHash())
+                            .putHeader("Cache-Control", "no-cache")
+                            .end(buffer(result.getData()));
+                }).onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 
     public void add(RoutingContext routingContext) {
@@ -70,14 +59,11 @@ public class PictureHandler {
         String token = request.getHeader("Authorization");
         byte[] data = routingContext.getBody().getBytes();
 
-        pictureService.insertNewPicture(token, userId, albumId, data).setHandler(insertResult -> {
-            if (insertResult.failed()) {
-                handleFailure(insertResult.cause(), routingContext.response());
-                return;
-            }
-            JsonObject response = new JsonObject().put("id", insertResult.result());
-            cors(routingContext.response()).end(response.encode());
-        });
+        pictureService.insertNewPicture(token, userId, albumId, data)
+                .onSuccess(insertResult -> {
+                    JsonObject response = new JsonObject().put("id", insertResult);
+                    cors(routingContext.response()).end(response.encode());
+                }).onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 
     public void rotate(RoutingContext routingContext) {
@@ -86,13 +72,9 @@ public class PictureHandler {
         long id = Long.parseLong(request.getParam("pictureId"));
         String token = request.getHeader("Authorization");
 
-        pictureService.rotatePicture(token, userId, id).setHandler(result -> {
-            if (result.failed()) {
-                handleFailure(result.cause(), routingContext.response());
-                return;
-            }
-            cors(routingContext.response()).end();
-        });
+        pictureService.rotatePicture(token, userId, id)
+                .onSuccess(result -> cors(routingContext.response()).end())
+                .onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 
     public void deleteById(RoutingContext routingContext) {
@@ -101,20 +83,12 @@ public class PictureHandler {
         long id = Long.parseLong(request.getParam("pictureId"));
         String token = request.getHeader("Authorization");
 
-        pictureService.getPictureData(token, null, userId, id, false).setHandler(result -> {
-            if (result.failed()) {
-                handleFailure(result.cause(), routingContext.response());
-                return;
-            }
-
-            pictureService.deletePicture(token, userId, id).setHandler(deleteResult -> {
-                if (deleteResult.failed()) {
-                    handleFailure(deleteResult.cause(), routingContext.response());
-                    return;
-                }
-                JsonObject response = new JsonObject().put("id", id);
-                cors(routingContext.response()).end(response.encode());
-            });
-        });
+        pictureService.getPictureData(token, null, userId, id, false)
+                .onSuccess(result -> pictureService.deletePicture(token, userId, id)
+                        .onSuccess(deleteResult -> {
+                            JsonObject response = new JsonObject().put("id", id);
+                            cors(routingContext.response()).end(response.encode());
+                        }).onFailure(cause -> handleFailure(cause, routingContext.response())))
+                .onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 }

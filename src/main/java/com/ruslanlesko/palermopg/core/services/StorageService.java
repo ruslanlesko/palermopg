@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.vertx.core.Future.succeededFuture;
+
 public class StorageService {
     private static final Logger logger = LoggerFactory.getLogger("Application");
 
@@ -45,42 +47,34 @@ public class StorageService {
 
         Promise<StorageConsumption> resultPromise = Promise.promise();
 
-        pictureMetaDao.findPictureMetasForUserId(userId).setHandler(metasResult -> {
-            if (metasResult.failed()) {
-                resultPromise.fail(metasResult.cause());
-                return;
-            }
+        pictureMetaDao.findPictureMetasForUserId(userId)
+                .onSuccess(metas -> {
+                    long knownSize = metas.stream()
+                        .mapToLong(PictureMeta::getSize)
+                        .filter(size -> size > 0)
+                        .sum();
 
-            List<PictureMeta> metas = metasResult.result();
-            long knownSize = metas.stream()
-                .mapToLong(PictureMeta::getSize)
-                .filter(size -> size > 0)
-                .sum();
+                    List<Future<Long>> unknownMetasSizes = metas.stream()
+                        .filter(i -> i.getSize() <= 0)
+                        .map(this::calculateSize)
+                        .collect(Collectors.toList());
 
-            List<Future<Long>> unknownMetasSizes = metas.stream()
-                .filter(i -> i.getSize() <= 0)
-                .map(this::calculateSize)
-                .collect(Collectors.toList());
+                    if (unknownMetasSizes.isEmpty()) {
+                        getLimitAndReturnStorageConsumption(resultPromise, userId, knownSize);
+                        return;
+                    }
 
-            if (unknownMetasSizes.isEmpty()) {
-                getLimitAndReturnStorageConsumption(resultPromise, userId, knownSize);
-                return;
-            }
+                    logger.info("Unknown sizes of {} pictures for user id {}, calculating...", unknownMetasSizes.size(), userId);
 
-            logger.info("Unknown sizes of {} pictures for user id {}, calculating...", unknownMetasSizes.size(), userId);
-
-            CompositeFuture.all(new ArrayList<Future>(unknownMetasSizes)).setHandler(results -> {
-                if (results.failed()) {
-                    resultPromise.fail(results.cause());
-                    return;
-                }
-                long size = 0;
-                for (int i = 0; i < results.result().size(); i++) {
-                    size += (Long) results.result().resultAt(i);
-                }
-                getLimitAndReturnStorageConsumption(resultPromise, userId, knownSize + size);
-            });
-        });
+                    CompositeFuture.all(new ArrayList<Future>(unknownMetasSizes))
+                            .onSuccess(results -> {
+                                long size = 0;
+                                for (int i = 0; i < results.size(); i++) {
+                                    size += (Long) results.resultAt(i);
+                                }
+                                getLimitAndReturnStorageConsumption(resultPromise, userId, knownSize + size);
+                            }).onFailure(resultPromise::fail);
+                }).onFailure(resultPromise::fail);
         
         return resultPromise.future();
     }
@@ -92,31 +86,24 @@ public class StorageService {
                 .map(id -> findForUser(token, id))
                 .collect(Collectors.toList());
 
-        CompositeFuture.all(new ArrayList<Future>(futures)).setHandler(results -> {
-            if (results.failed()) {
-                resultPromise.fail(results.cause());
-                return;
-            }
-
-            List<StorageConsumption> storageConsumptions = new ArrayList<>();
-            for (int i = 0; i < results.result().size(); i++) {
-                storageConsumptions.add((StorageConsumption) results.result().resultAt(i));
-            }
-            resultPromise.complete(storageConsumptions);
-        });
+        CompositeFuture.all(new ArrayList<Future>(futures))
+                .onSuccess(results -> {
+                    List<StorageConsumption> storageConsumptions = new ArrayList<>();
+                    for (int i = 0; i < results.result().size(); i++) {
+                        storageConsumptions.add((StorageConsumption) results.result().resultAt(i));
+                    }
+                    resultPromise.complete(storageConsumptions);
+                }).onFailure(resultPromise::fail);
 
         return resultPromise.future();
     }
 
     private void getLimitAndReturnStorageConsumption(Promise<StorageConsumption> resultPromise, long userId, long size) {
-        limitsDao.getLimitForUser(userId).setHandler(result -> {
-           if (result.failed()) {
-               resultPromise.fail(result.cause());
-               return;
-           }
-           long limit = result.result().orElse(LIMIT);
-           resultPromise.complete(new StorageConsumption(userId, size, limit));
-        });
+        limitsDao.getLimitForUser(userId)
+                .onSuccess(result -> {
+                    long limit = result.orElse(LIMIT);
+                    resultPromise.complete(new StorageConsumption(userId, size, limit));
+                }).onFailure(resultPromise::fail);
     }
 
     public Future<Void> setLimitForUser(String token, long userId, long limit) {
@@ -128,43 +115,13 @@ public class StorageService {
     }
 
     private Future<Long> calculateSize(PictureMeta meta) {
-        Promise<Long> resultPromise = Promise.promise();
-
-        pictureDataDao.find(meta.getPath()).setHandler(originalData -> {
-            if (originalData.failed()) {
-                resultPromise.fail(originalData.cause());
-                return;
-            }
-
-            final long size = originalData.result().length;
-            if (meta.getPathOptimized() == null) {
-                pictureMetaDao.setSize(meta.getId(), size).setHandler(persisted -> {
-                    if (persisted.failed()) {
-                        resultPromise.fail(persisted.cause());
-                        return;
-                    }
-                    resultPromise.complete(size);
+        return pictureDataDao.find(meta.getPath())
+                .compose(originalData -> {
+                    final long size = originalData.length;
+                    final String pathOptimized = meta.getPathOptimized();
+                    return pathOptimized == null ? succeededFuture(size)
+                            : pictureDataDao.find(pathOptimized)
+                                .map(optimizedData -> optimizedData.length + size);
                 });
-                return;
-            }
-
-            pictureDataDao.find(meta.getPathOptimized()).setHandler(optimizedData -> {
-                if (optimizedData.failed()) {
-                    resultPromise.fail(optimizedData.cause());
-                    return;
-                }
-
-                final long result = size + optimizedData.result().length;
-                pictureMetaDao.setSize(meta.getId(), result).setHandler(persisted -> {
-                    if (persisted.failed()) {
-                        resultPromise.fail(persisted.cause());
-                        return;
-                    }
-                    resultPromise.complete(result);
-                });
-            });
-        });
-
-        return resultPromise.future();
     }
 }

@@ -9,10 +9,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.ruslanlesko.palermopg.core.util.ApiUtils.cors;
 import static com.ruslanlesko.palermopg.core.util.ApiUtils.handleFailure;
+import static java.util.stream.Collectors.toList;
 
 public class StorageHandler {
     private static final Logger logger = LoggerFactory.getLogger("Application");
@@ -28,19 +28,13 @@ public class StorageHandler {
         String token = routingContext.request().getHeader("Authorization");
         logger.debug("Computing storage consumed by user {}", userId);
 
-        storageService.findForUser(token, userId).setHandler(result -> {
-            if (result.failed()) {
-                handleFailure(result.cause(), routingContext.response());
-                return;
-            }
-
-            var storageConsumption = result.result();
-            JsonObject jsonResponse = new JsonObject()
-                    .put("size", storageConsumption.getSize())
-                    .put("limit", storageConsumption.getLimit());
-
-            cors(routingContext.response()).end(jsonResponse.encode());
-        });
+        storageService.findForUser(token, userId)
+                .onSuccess(result -> {
+                    JsonObject jsonResponse = new JsonObject()
+                            .put("size", result.getSize())
+                            .put("limit", result.getLimit());
+                    cors(routingContext.response()).end(jsonResponse.encode());
+                }).onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 
     public void storageByUsers(RoutingContext routingContext) {
@@ -53,24 +47,16 @@ public class StorageHandler {
             return;
         }
 
-        storageService.findForUsers(token, ids).setHandler(result -> {
-            if (result.failed()) {
-                handleFailure(result.cause(), routingContext.response());
-                return;
-            }
-
-            var usersConsumption = result.result();
-            JsonArray array = new JsonArray(usersConsumption);
-            cors(routingContext.response()).end(array.encode());
-        });
+        storageService.findForUsers(token, ids)
+                .onSuccess(result -> {
+                    JsonArray jsonArray = new JsonArray(result);
+                    cors(routingContext.response()).end(jsonArray.encode());
+                }).onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 
     private List<Long> extractUserIds(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return List.of();
-        }
-
-        return Arrays.stream(raw.split(",")).map(Long::valueOf).collect(Collectors.toList());
+        return (raw == null || raw.isBlank()) ? List.of()
+                : Arrays.stream(raw.split(",")).map(Long::valueOf).collect(toList());
     }
 
     public void setUserLimit(RoutingContext routingContext) {
@@ -85,12 +71,8 @@ public class StorageHandler {
         long limit = body.getLong("limit");
         logger.debug("Setting storage limit for user {}", userId);
 
-        storageService.setLimitForUser(token, userId, limit).setHandler(result -> {
-            if (result.failed()) {
-                handleFailure(result.cause(), routingContext.response());
-                return;
-            }
-            cors(routingContext.response()).end();
-        });
+        storageService.setLimitForUser(token, userId, limit)
+                .onSuccess(result -> cors(routingContext.response()).end())
+                .onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 }

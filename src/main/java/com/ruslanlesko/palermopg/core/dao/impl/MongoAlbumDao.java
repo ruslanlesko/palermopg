@@ -36,22 +36,16 @@ public class MongoAlbumDao implements AlbumDao {
     public Future<Long> save(Album album) {
         Promise<Long> resultPromise = Promise.promise();
 
-        getNextId().setHandler(nextIdResult -> {
-            if (nextIdResult.failed()) {
-                resultPromise.fail(nextIdResult.cause());
-                return;
-            }
+        getNextId()
+                .onSuccess(nextId -> {
+                    Document document = new Document()
+                            .append("id", nextId)
+                            .append("userId", album.getUserId())
+                            .append("name", album.getName());
 
-            var nextId = nextIdResult.result();
-
-            Document document = new Document()
-                    .append("id", nextId)
-                    .append("userId", album.getUserId())
-                    .append("name", album.getName());
-
-            getCollection().insertOne(document)
-                    .subscribe(forSinglePromise(resultPromise, success -> nextId));
-        });
+                    getCollection().insertOne(document)
+                            .subscribe(forSinglePromise(resultPromise, success -> nextId));
+                }).onFailure(resultPromise::fail);
 
         return resultPromise.future();
     }

@@ -3,7 +3,6 @@ package com.ruslanlesko.palermopg.core.handlers;
 import com.ruslanlesko.palermopg.core.entity.Album;
 import com.ruslanlesko.palermopg.core.entity.PictureMeta;
 import com.ruslanlesko.palermopg.core.services.AlbumService;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -17,6 +16,7 @@ import java.util.stream.Collectors;
 
 import static com.ruslanlesko.palermopg.core.util.ApiUtils.cors;
 import static com.ruslanlesko.palermopg.core.util.ApiUtils.handleFailure;
+import static io.vertx.core.buffer.Buffer.buffer;
 
 public class AlbumHandler {
     private static final Logger logger = LoggerFactory.getLogger("Application");
@@ -41,16 +41,11 @@ public class AlbumHandler {
 
         logger.debug("Creating new album for userId " + userId);
 
-        albumService.addNewAlbum(token, userId, name).setHandler(addResult -> {
-            if (addResult.failed()) {
-                handleFailure(addResult.cause(), routingContext.response());
-                return;
-            }
-
-            var id = addResult.result();
-            JsonObject response = new JsonObject().put("id", id);
-            cors(routingContext.response()).end(response.encode());
-        });
+        albumService.addNewAlbum(token, userId, name)
+                .onSuccess(id -> {
+                    JsonObject response = new JsonObject().put("id", id);
+                    cors(routingContext.response()).end(response.encode());
+                }).onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 
     public void getAlbumsForUser(RoutingContext routingContext) {
@@ -60,16 +55,11 @@ public class AlbumHandler {
 
         logger.debug("Getting albums for userId " + userId);
 
-        albumService.getAlbumsForUserId(token, userId).setHandler(getResult -> {
-            if (getResult.failed()) {
-                handleFailure(getResult.cause(), routingContext.response());
-                return;
-            }
-
-            var albums = getResult.result();
-            JsonArray result = new JsonArray(albums);
-            cors(routingContext.response()).end(result.encode());
-        });
+        albumService.getAlbumsForUserId(token, userId)
+                .onSuccess(albums -> {
+                    JsonArray result = new JsonArray(albums);
+                    cors(routingContext.response()).end(result.encode());
+                }).onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 
     public void getAlbumContents(RoutingContext routingContext) {
@@ -78,17 +68,13 @@ public class AlbumHandler {
         long userId = Long.parseLong(request.getParam("userId"));
         String token = request.getHeader("Authorization");
 
-        albumService.getPictureMetaForAlbum(token, userId, albumId).setHandler(getResult -> {
-            if (getResult.failed()) {
-                handleFailure(getResult.cause(), routingContext.response());
-                return;
-            }
-
-            List<JsonObject> data = getResult.result().stream()
-                    .map(this::pictureDataToJson)
-                    .collect(Collectors.toList());
-            cors(routingContext.response()).end(new JsonArray(data).encode());
-        });
+        albumService.getPictureMetaForAlbum(token, userId, albumId)
+                .onSuccess(result -> {
+                    List<JsonObject> data = result.stream()
+                            .map(this::pictureDataToJson)
+                            .collect(Collectors.toList());
+                    cors(routingContext.response()).end(new JsonArray(data).encode());
+                }).onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 
     public void downloadAlbum(RoutingContext routingContext) {
@@ -97,17 +83,11 @@ public class AlbumHandler {
         long userId = Long.parseLong(request.getParam("userId"));
         String code = request.getParam("code");
 
-        albumService.download(userId, albumId, code).setHandler(downloadResult -> {
-            if (downloadResult.failed()) {
-                handleFailure(downloadResult.cause(), routingContext.response());
-                return;
-            }
-
-            var data = downloadResult.result();
-            cors(routingContext.response())
-                    .putHeader("Content-Disposition", "attachment; filename=\"" + albumId + ".zip\"")
-                    .end(Buffer.buffer(data));
-        });
+        albumService.download(userId, albumId, code)
+                .onSuccess(data -> cors(routingContext.response())
+                        .putHeader("Content-Disposition", "attachment; filename=\"" + albumId + ".zip\"")
+                        .end(buffer(data)))
+                .onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 
     public void renameAlbum(RoutingContext routingContext) {
@@ -123,14 +103,9 @@ public class AlbumHandler {
         }
         String name = body.getString("name");
 
-        albumService.rename(token, userId, albumId, name).setHandler(renameResult -> {
-            if (renameResult.failed()) {
-                handleFailure(renameResult.cause(), routingContext.response());
-                return;
-            }
-
-            cors(routingContext.response()).end();
-        });
+        albumService.rename(token, userId, albumId, name)
+                .onSuccess(result -> cors(routingContext.response()).end())
+                .onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 
     public void deleteAlbum(RoutingContext routingContext) {
@@ -139,28 +114,19 @@ public class AlbumHandler {
         long albumId = Long.parseLong(request.getParam("albumId"));
         String token = request.getHeader("Authorization");
 
-        albumService.getAlbumsForUserId(token, userId).setHandler(getResult -> {
-            if (getResult.failed()) {
-                handleFailure(getResult.cause(), routingContext.response());
-                return;
-            }
-
-            boolean notExist = getResult.result().stream()
-                    .map(Album::getId).noneMatch(id -> id == albumId);
-            if (notExist) {
-                cors(routingContext.response().setStatusCode(404)).end();
-                return;
-            }
-            albumService.delete(token, userId, albumId).setHandler(deleteResult -> {
-                if (deleteResult.failed()) {
-                    handleFailure(deleteResult.cause(), routingContext.response());
-                    return;
-                }
-
-                JsonObject response = new JsonObject().put("id", albumId);
-                cors(routingContext.response()).end(response.encode());
-            });
-        });
+        albumService.getAlbumsForUserId(token, userId)
+                .onSuccess(result -> {
+                    boolean notExist = result.stream().map(Album::getId).noneMatch(id -> id == albumId);
+                    if (notExist) {
+                        cors(routingContext.response().setStatusCode(404)).end();
+                        return;
+                    }
+                    albumService.delete(token, userId, albumId)
+                            .onSuccess(deleteResult -> {
+                                JsonObject response = new JsonObject().put("id", albumId);
+                                cors(routingContext.response()).end(response.encode());
+                            }).onFailure(cause -> handleFailure(cause, routingContext.response()));
+                }).onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 
     public void shareAlbum(RoutingContext routingContext) {
@@ -171,14 +137,9 @@ public class AlbumHandler {
         JsonObject body = routingContext.getBodyAsJson();
         List<Long> sharedUsers = extractLongArr(body.getJsonArray("sharedUsers", new JsonArray()));
 
-        albumService.shareAlbum(token, userId, albumId, sharedUsers).setHandler(shareResult -> {
-            if (shareResult.failed()) {
-                handleFailure(shareResult.cause(), routingContext.response());
-                return;
-            }
-
-            cors(routingContext.response()).end();
-        });
+        albumService.shareAlbum(token, userId, albumId, sharedUsers)
+                .onSuccess(result -> cors(routingContext.response()).end())
+                .onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 
     private List<Long> extractLongArr(JsonArray arr) {

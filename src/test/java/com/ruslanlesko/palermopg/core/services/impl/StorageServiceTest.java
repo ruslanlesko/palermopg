@@ -58,7 +58,7 @@ public class StorageServiceTest {
         var expectedConsumption = new StorageConsumption(USER_ID, CONSUMPTION_SIZE, CONSUMPTION_LIMIT);
 
         service.findForUser(TOKEN, USER_ID)
-            .setHandler(response -> assertEquals(expectedConsumption, response.result()));
+            .onComplete(response -> assertEquals(expectedConsumption, response.result()));
     }
 
     @Test
@@ -74,7 +74,7 @@ public class StorageServiceTest {
         StorageService service = new StorageService(pictureMetaDao, pictureDataDao, limitsDao, jwtParser);
 
         service.setLimitForUser(TOKEN, USER_ID, NEW_LIMIT)
-                .setHandler(response -> {
+                .onComplete(response -> {
                     assertFalse(response.failed());
                     verify(limitsDao, times(1)).setLimitForUser(USER_ID, NEW_LIMIT);
                 });

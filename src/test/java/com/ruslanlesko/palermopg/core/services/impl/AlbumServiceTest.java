@@ -51,7 +51,7 @@ public class AlbumServiceTest {
         List<Album> expected = List.of(SAMPLE_ALBUM);
 
         service.getAlbumsForUserId(TOKEN, USER_ID)
-                .setHandler(response -> assertEquals(expected, response.result()));
+                .onComplete(response -> assertEquals(expected, response.result()));
     }
 
     @Test
@@ -76,7 +76,7 @@ public class AlbumServiceTest {
         long expected = ALBUM_ID;
 
         albumService.addNewAlbum(TOKEN, USER_ID, ALBUM_NAME)
-                .setHandler(response -> assertEquals(expected, response.result()));
+                .onComplete(response -> assertEquals(expected, response.result()));
     }
 
     @Test
@@ -96,7 +96,7 @@ public class AlbumServiceTest {
         AuthorizationException expected = new AuthorizationException("Album is not available to user");
 
         albumService.delete(TOKEN, USER_ID, ALBUM_ID)
-                .setHandler(response -> {
+                .onComplete(response -> {
                     assertTrue(response.failed());
                     assertEquals(expected, response.cause());
                 });
@@ -117,7 +117,7 @@ public class AlbumServiceTest {
         AlbumService albumService = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService, parser);
 
         albumService.download(USER_ID, ALBUM_ID, DOWNLOAD_CODE)
-                .setHandler(response -> assertTrue(response.result().length > 0));
+                .onComplete(response -> assertTrue(response.result().length > 0));
 
     }
 }
