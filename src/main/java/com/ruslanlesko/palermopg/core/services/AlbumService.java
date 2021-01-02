@@ -19,11 +19,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static io.vertx.core.Future.failedFuture;
+import static io.vertx.core.Future.succeededFuture;
 import static java.util.stream.Collectors.toList;
 
 public class AlbumService {
@@ -52,15 +54,13 @@ public class AlbumService {
             return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<Long> resultPromise = Promise.promise();
+        Album newAlbum = new Album(-1, userId, albumName, List.of(), CodeGenerator.generateDownloadCode());
 
-        albumDao.save(new Album(-1, userId, albumName, List.of(), CodeGenerator.generateDownloadCode()))
-                .onSuccess(id -> {
+        return albumDao.save(newAlbum)
+                .map(id -> {
                     logger.info("Album with id {} was created for user id {}", id, userId);
-                    resultPromise.complete(id);
-                }).onFailure(resultPromise::fail);
-
-        return resultPromise.future();
+                    return id;
+                });
     }
 
     public Future<List<Album>> getAlbumsForUserId(String token, long userId) {
@@ -68,28 +68,25 @@ public class AlbumService {
             return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<List<Album>> resultPromise = Promise.promise();
-
-        albumDao.findAlbumsForUserId(userId)
-                .onSuccess(albums -> {
+        return albumDao.findAlbumsForUserId(userId)
+                .compose(albums -> {
                     var albumsWithoutDownloadCode = albums.stream()
                             .filter(a -> a.getDownloadCode() == null || a.getDownloadCode().isEmpty())
                             .collect(toList());
                     if (albumsWithoutDownloadCode.isEmpty()) {
-                        resultPromise.complete(albums);
-                        return;
+                        List<Album> sortedAlbums = albums.stream()
+                                .sorted(Comparator.comparingLong(Album::getId).reversed())
+                                .collect(toList());
+                        return succeededFuture(sortedAlbums);
                     }
 
                     var futures = albumsWithoutDownloadCode.stream()
                             .map(a -> albumDao.setDownloadCode(a.getId(), CodeGenerator.generateDownloadCode()))
                             .collect(toList());
 
-                    CompositeFuture.all(new ArrayList<Future>(futures))
-                            .onSuccess(success -> getAlbumsForUserId(token, userId).onComplete(resultPromise))
-                            .onFailure(resultPromise::fail);
-                }).onFailure(resultPromise::fail);
-
-        return resultPromise.future();
+                    return CompositeFuture.all(new ArrayList<Future>(futures))
+                            .compose(success -> getAlbumsForUserId(token, userId));
+                });
     }
 
     public Future<List<PictureMeta>> getPictureMetaForAlbum(String token, long userId, long albumId) {
@@ -97,45 +94,29 @@ public class AlbumService {
             return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<List<PictureMeta>> resultPromise = Promise.promise();
+        return albumDao.findById(albumId)
+                .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
+                .compose(album -> album.getUserId() != userId && !album.getSharedUsers().contains(userId) ?
+                        failedFuture(new AuthorizationException("Album is missing or not available to user")) : pictureMetaDao.findForAlbumId(albumId))
+                .compose(metas -> {
+                    var results = metas.stream()
+                            .sorted(this::sortPictureMeta)
+                            .collect(toList());
 
-        albumDao.findById(albumId)
-                .onSuccess(albumResult -> {
-                    if (albumResult.isEmpty()) {
-                        resultPromise.fail(new MissingItemException());
-                        return;
+                    var metasWithoutDownloadCode = results.stream()
+                            .filter(p -> p.getDownloadCode() == null || p.getDownloadCode().isEmpty())
+                            .collect(toList());
+
+                    if (metasWithoutDownloadCode.size() > 0) {
+                        var futures = metasWithoutDownloadCode.stream()
+                                .map(p -> pictureMetaDao.setDownloadCode(p.getId(), CodeGenerator.generateDownloadCode()))
+                                .collect(toList());
+
+                        return CompositeFuture.all(new ArrayList<Future>(futures))
+                                .compose(success -> getPictureMetaForAlbum(token, userId, albumId));
                     }
-                    if (albumResult.get().getUserId() != userId && !albumResult.get().getSharedUsers().contains(userId)) {
-                        resultPromise.fail(new AuthorizationException("Album is missing or not available to user"));
-                        return;
-                    }
-
-                    pictureMetaDao.findForAlbumId(albumId)
-                            .onSuccess(metas -> {
-                                var results = metas.stream()
-                                        .sorted(this::sortPictureMeta)
-                                        .collect(toList());
-
-                                var metasWithoutDownloadCode = results.stream()
-                                        .filter(p -> p.getDownloadCode() == null || p.getDownloadCode().isEmpty())
-                                        .collect(toList());
-
-                                if (metasWithoutDownloadCode.size() > 0) {
-                                    var futures = metasWithoutDownloadCode.stream()
-                                            .map(p -> pictureMetaDao.setDownloadCode(p.getId(), CodeGenerator.generateDownloadCode()))
-                                            .collect(toList());
-
-                                    CompositeFuture.all(new ArrayList<Future>(futures))
-                                            .onSuccess(success -> getPictureMetaForAlbum(token, userId, albumId).onComplete(resultPromise))
-                                            .onFailure(resultPromise::fail);
-                                    return;
-                                }
-
-                                resultPromise.complete(results);
-                            }).onFailure(resultPromise::fail);
-                }).onFailure(resultPromise::fail);
-
-        return resultPromise.future();
+                    return succeededFuture(results);
+                });
     }
 
     public Future<Void> rename(String token, long userId, long albumId, String newName) {
@@ -143,23 +124,11 @@ public class AlbumService {
             return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<Void> resultPromise = Promise.promise();
-
-        albumDao.findById(albumId)
-                .onSuccess(findResult -> {
-                    if (findResult.isEmpty()) {
-                        resultPromise.fail(new MissingItemException());
-                        return;
-                    }
-                    if (findResult.get().getUserId() != userId) {
-                        resultPromise.fail(new AuthorizationException("Album is not available to user"));
-                        return;
-                    }
-
-                    albumDao.renameAlbum(albumId, newName).onComplete(resultPromise);
-                }).onFailure(resultPromise::fail);
-
-        return resultPromise.future();
+        return albumDao.findById(albumId)
+                .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
+                .compose(album -> album.getUserId() != userId ?
+                        failedFuture(new AuthorizationException("Album is not available to user"))
+                            : albumDao.renameAlbum(albumId, newName));
     }
 
     public Future<Void> delete(String token, long userId, long albumId) {
@@ -167,43 +136,27 @@ public class AlbumService {
             return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<Void> resultPromise = Promise.promise();
+        return albumDao.findById(albumId)
+                .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
+                .compose(album -> album.getUserId() != userId ?
+                        failedFuture(new AuthorizationException("Album is not available to user")) : albumDao.delete(albumId))
+                .compose(dbRecordDeleted -> pictureMetaDao.findForAlbumId(albumId))
+                .compose(metas -> {
+                    var deleteFutures = metas.stream()
+                            .map(meta -> pictureService.deletePicture(token, userId, meta.getId()))
+                            .map(fut -> {
+                                Promise promise = Promise.promise();
 
-        albumDao.findById(albumId)
-                .onSuccess(albumResult -> {
-                    if (albumResult.isEmpty()) {
-                        resultPromise.fail(new MissingItemException());
-                        return;
-                    }
-                    if (albumResult.get().getUserId() != userId) {
-                        resultPromise.fail(new AuthorizationException("Album is not available to user"));
-                        return;
-                    }
+                                fut.onSuccess(success -> promise.complete())
+                                        .onFailure(cause -> promise.fail("Not deleted"));
 
-                    albumDao.delete(albumId)
-                            .onSuccess(deleteResult -> {
-                                pictureMetaDao.findForAlbumId(albumId)
-                                        .onSuccess(metas -> {
-                                            var deleteFutures = metas.stream()
-                                                    .map(meta -> pictureService.deletePicture(token, userId, meta.getId()))
-                                                    .map(fut -> {
-                                                        Promise promise = Promise.promise();
+                                return promise.future();
+                            })
+                            .collect(toList());
 
-                                                        fut.onSuccess(success -> promise.complete())
-                                                                .onFailure(cause -> promise.fail("Not deleted"));
-
-                                                        return promise.future();
-                                                    })
-                                                    .collect(toList());
-
-                                            CompositeFuture.all(deleteFutures)
-                                                    .onSuccess(success -> resultPromise.complete())
-                                                    .onFailure(resultPromise::fail);
-                                        }).onFailure(resultPromise::fail);
-                            }).onFailure(resultPromise::fail);
-                }).onFailure(resultPromise::fail);
-
-        return resultPromise.future();
+                    return CompositeFuture.all(deleteFutures)
+                            .compose(success -> succeededFuture());
+                });
     }
 
     public Future<Void> shareAlbum(String token, long userId, long albumId, List<Long> sharedUsers) {
@@ -211,77 +164,52 @@ public class AlbumService {
             return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Promise<Void> resultPromise = Promise.promise();
-
-        albumDao.findById(albumId)
-                .onSuccess(albumResult -> {
-                    if (albumResult.isEmpty()) {
-                        resultPromise.fail(new MissingItemException());
-                        return;
-                    }
-                    Album album = albumResult.get();
-
-                    if (album.getUserId() != userId) {
-                        resultPromise.fail(new AuthorizationException("Album is not available to user"));
-                        return;
-                    }
-
-                    List<Long> newSharedIds = combineSharedUsers(album.getSharedUsers(), sharedUsers);
-
-                    albumDao.updateSharedUsers(albumId, newSharedIds).onComplete(resultPromise);
-                }).onFailure(resultPromise::fail);
-
-        return resultPromise.future();
+        return albumDao.findById(albumId)
+                .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
+                .compose(album -> album.getUserId() != userId ?
+                        failedFuture(new AuthorizationException("Album is not available to user")) : succeededFuture(album))
+                .compose(album -> albumDao.updateSharedUsers(albumId, combineSharedUsers(album.getSharedUsers(), sharedUsers)));
     }
 
     public Future<byte[]> download(long userId, long albumId, String code) {
-        Promise<byte[]> resultPromise = Promise.promise();
+        return albumDao.findById(albumId)
+                .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
+                .compose(album -> album.getUserId() != userId && !album.getSharedUsers().contains(userId)
+                        || !album.getDownloadCode().equals(code) ?
+                            failedFuture(new AuthorizationException("Album is missing or not available to user"))
+                                : pictureMetaDao.findForAlbumId(albumId))
+                .compose(metas -> {
+                    var pics = metas.stream()
+                            .sorted(this::sortPictureMeta)
+                            .collect(toList());
 
-        albumDao.findById(albumId)
-                .onSuccess(albumResult -> {
-                    Album album = albumResult.get();
-                    if (album.getUserId() != userId && !album.getSharedUsers().contains(userId)
-                            || !album.getDownloadCode().equals(code)) {
-                        resultPromise.fail(new AuthorizationException("Album is missing or not available to user"));
-                        return;
-                    }
+                    var futures = pics.stream()
+                            .map(p -> pictureDataDao.find(p.getPath()))
+                            .collect(toList());
 
-                    pictureMetaDao.findForAlbumId(albumId)
-                            .onSuccess(metas -> {
-                                var pics = metas.stream()
-                                        .sorted(this::sortPictureMeta)
-                                        .collect(toList());
-
-                                var futures = pics.stream()
-                                        .map(p -> pictureDataDao.find(p.getPath()))
-                                        .collect(toList());
-
-                                CompositeFuture.all(new ArrayList<Future>(futures))
-                                        .onSuccess(dataResults -> {
-                                            try (
-                                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                                ZipOutputStream zos = new ZipOutputStream(baos);
-                                            ) {
-                                                for (int i = 0; i < dataResults.size(); i++) {
-                                                    var data = (byte[]) dataResults.resultAt(i);
-                                                    var meta = pics.get(i);
-                                                    ZipEntry entry = new ZipEntry(meta.getId() + ".jpg");
-                                                    zos.putNextEntry(entry);
-                                                    zos.write(data);
-                                                    zos.closeEntry();
-                                                }
-                                                zos.finish();
-                                                zos.flush();
-                                                resultPromise.complete(baos.toByteArray());
-                                            } catch (IOException e) {
-                                                logger.error(e.getMessage());
-                                                resultPromise.fail(e);
-                                            }
-                                        }).onFailure(resultPromise::fail);
-                            }).onFailure(resultPromise::fail);
-                }).onFailure(resultPromise::fail);
-
-        return resultPromise.future();
+                    return CompositeFuture.all(new ArrayList<Future>(futures))
+                            .compose(dataResults -> {
+                                try (
+                                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                        ZipOutputStream zos = new ZipOutputStream(baos);
+                                ) {
+                                    for (int i = 0; i < dataResults.size(); i++) {
+                                        var data = (byte[]) dataResults.resultAt(i);
+                                        var meta = pics.get(i);
+                                        ZipEntry entry = new ZipEntry(meta.getId() + ".jpg");
+                                        zos.putNextEntry(entry);
+                                        zos.write(data);
+                                        zos.closeEntry();
+                                    }
+                                    zos.finish();
+                                    zos.flush();
+                                    return succeededFuture(baos.toByteArray());
+                                } catch (IOException e) {
+                                    logger.error(e.getMessage());
+                                    return failedFuture(e);
+                                }
+                            });
+                });
     }
 
     private int sortPictureMeta(PictureMeta a, PictureMeta b) {
