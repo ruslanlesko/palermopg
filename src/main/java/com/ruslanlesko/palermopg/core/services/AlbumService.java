@@ -54,7 +54,7 @@ public class AlbumService {
             return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        Album newAlbum = new Album(-1, userId, albumName, List.of(), CodeGenerator.generateDownloadCode());
+        Album newAlbum = new Album(-1, userId, albumName, List.of(), CodeGenerator.generateDownloadCode(), false);
 
         return albumDao.save(newAlbum)
                 .map(id -> {
@@ -97,26 +97,29 @@ public class AlbumService {
         return albumDao.findById(albumId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
                 .compose(album -> album.getUserId() != userId && !album.getSharedUsers().contains(userId) ?
-                        failedFuture(new AuthorizationException("Album is missing or not available to user")) : pictureMetaDao.findForAlbumId(albumId))
-                .compose(metas -> {
-                    var results = metas.stream()
-                            .sorted(this::sortPictureMeta)
-                            .collect(toList());
+                        failedFuture(new AuthorizationException("Album is missing or not available to user")) : succeededFuture(album))
+                .compose(album -> pictureMetaDao.findForAlbumId(albumId)
+                        .compose(metas -> {
+                            boolean isChronologicalOrder = album.isChronologicalOrder();
+                            var results = metas.stream()
+                                    .sorted((a, b) -> isChronologicalOrder ? -1 * sortPictureMeta(a, b) : sortPictureMeta(a, b))
+                                    .collect(toList());
 
-                    var metasWithoutDownloadCode = results.stream()
-                            .filter(p -> p.getDownloadCode() == null || p.getDownloadCode().isEmpty())
-                            .collect(toList());
+                            var metasWithoutDownloadCode = results.stream()
+                                    .filter(p -> p.getDownloadCode() == null || p.getDownloadCode().isEmpty())
+                                    .collect(toList());
 
-                    if (metasWithoutDownloadCode.size() > 0) {
-                        var futures = metasWithoutDownloadCode.stream()
-                                .map(p -> pictureMetaDao.setDownloadCode(p.getId(), CodeGenerator.generateDownloadCode()))
-                                .collect(toList());
+                            if (metasWithoutDownloadCode.size() > 0) {
+                                var futures = metasWithoutDownloadCode.stream()
+                                        .map(p -> pictureMetaDao.setDownloadCode(p.getId(), CodeGenerator.generateDownloadCode()))
+                                        .collect(toList());
 
-                        return CompositeFuture.all(new ArrayList<Future>(futures))
-                                .compose(success -> getPictureMetaForAlbum(token, userId, albumId));
-                    }
-                    return succeededFuture(results);
-                });
+                                return CompositeFuture.all(new ArrayList<Future>(futures))
+                                        .compose(success -> getPictureMetaForAlbum(token, userId, albumId));
+                            }
+                            return succeededFuture(results);
+                        })
+                );
     }
 
     public Future<Void> rename(String token, long userId, long albumId, String newName) {
@@ -210,6 +213,18 @@ public class AlbumService {
                                 }
                             });
                 });
+    }
+
+    public Future<Void> setChronologicalOrder(String token, long userId, long albumId, boolean isChronologicalOrder) {
+        if (!jwtParser.validateTokenForUserId(token, userId)) {
+            return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
+        }
+
+        return albumDao.findById(albumId)
+                .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
+                .compose(album -> album.getUserId() != userId ?
+                        failedFuture(new AuthorizationException("Album is not available to user"))
+                            : albumDao.setChronologicalOrder(albumId, isChronologicalOrder));
     }
 
     private int sortPictureMeta(PictureMeta a, PictureMeta b) {

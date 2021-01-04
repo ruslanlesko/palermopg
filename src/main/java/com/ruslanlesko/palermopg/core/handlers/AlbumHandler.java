@@ -90,20 +90,24 @@ public class AlbumHandler {
                 .onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 
-    public void renameAlbum(RoutingContext routingContext) {
+    public void updateAlbum(RoutingContext routingContext) {
         HttpServerRequest request = routingContext.request();
         long userId = Long.parseLong(request.getParam("userId"));
         long albumId = Long.parseLong(request.getParam("albumId"));
         String token = request.getHeader("Authorization");
         JsonObject body = routingContext.getBodyAsJson();
-        if (body == null || !body.containsKey("name")) {
+        if (body == null || !body.containsKey("name") && !body.containsKey("isChronologicalOrder")) {
             logger.debug("Body is invalid, returning 400");
             cors(routingContext.response().setStatusCode(400)).end();
             return;
         }
         String name = body.getString("name");
+        String orderStr = body.getString("isChronologicalOrder");
 
-        albumService.rename(token, userId, albumId, name)
+        var resultFuture = orderStr == null ? albumService.rename(token, userId, albumId, name)
+                : albumService.setChronologicalOrder(token, userId, albumId, Boolean.parseBoolean(orderStr));
+
+        resultFuture
                 .onSuccess(result -> cors(routingContext.response()).end())
                 .onFailure(cause -> handleFailure(cause, routingContext.response()));
     }

@@ -93,7 +93,7 @@ public class ApiVerticle extends AbstractVerticle {
         router.get("/album/:userId/:albumId").produces(JSON_FORMAT).handler(albumHandler::getAlbumContents);
         router.get("/album/:userId/:albumId/download").handler(albumHandler::downloadAlbum);
         router.post("/album/:userId").consumes(JSON_FORMAT).handler(albumHandler::add);
-        router.patch("/album/:userId/:albumId").consumes(JSON_FORMAT).handler(albumHandler::renameAlbum);
+        router.patch("/album/:userId/:albumId").consumes(JSON_FORMAT).handler(albumHandler::updateAlbum);
         router.post("/album/:userId/:albumId/share").consumes(JSON_FORMAT).handler(albumHandler::shareAlbum);
         router.delete("/album/:userId/:albumId").produces(JSON_FORMAT).handler(albumHandler::deleteAlbum);
 

@@ -62,7 +62,8 @@ public class MongoAlbumDao implements AlbumDao {
                         doc.getLong("userId"),
                         doc.getString("name"),
                         doc.getList("sharedUsers", Long.class),
-                        doc.get("downloadCode") == null ? "" : doc.getString("downloadCode"))), Optional.empty()));
+                        doc.get("downloadCode") == null ? "" : doc.getString("downloadCode"),
+                        doc.get("isChronologicalOrder") != null && doc.getBoolean("isChronologicalOrder"))), Optional.empty()));
 
         return resultPromise.future();
     }
@@ -77,7 +78,8 @@ public class MongoAlbumDao implements AlbumDao {
                         document.getLong("userId"),
                         document.getString("name"),
                         document.getList("sharedUsers", Long.class),
-                        document.get("downloadCode") == null ? "" : document.getString("downloadCode"))));
+                        document.get("downloadCode") == null ? "" : document.getString("downloadCode"),
+                        document.get("isChronologicalOrder") != null && document.getBoolean("isChronologicalOrder"))));
 
         return resultPromise.future();
     }
@@ -160,6 +162,26 @@ public class MongoAlbumDao implements AlbumDao {
 
         BasicDBObject newDoc = new BasicDBObject();
         newDoc.put("downloadCode", code);
+
+        BasicDBObject updateDoc = new BasicDBObject();
+        updateDoc.put("$set", newDoc);
+
+        getCollection()
+                .updateOne(query, updateDoc)
+                .subscribe(forVoidPromise(resultPromise, res -> res.getModifiedCount() == 1 && res.wasAcknowledged(), new MissingItemException()));
+
+        return resultPromise.future();
+    }
+
+    @Override
+    public Future<Void> setChronologicalOrder(long id, boolean isChronologicalOrder) {
+        Promise<Void> resultPromise = Promise.promise();
+
+        BasicDBObject query = new BasicDBObject();
+        query.put("id", id);
+
+        BasicDBObject newDoc = new BasicDBObject();
+        newDoc.put("isChronologicalOrder", isChronologicalOrder);
 
         BasicDBObject updateDoc = new BasicDBObject();
         updateDoc.put("$set", newDoc);

@@ -63,7 +63,7 @@ class PictureServiceTest {
         StorageService storageService = mock(StorageService.class);
 
         PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME, DOWNLOAD_CODE);
-        Album album = new Album(ALBUM_ID, USER_ID, "album", List.of(), ALBUM_DOWNLOAD_CODE);
+        Album album = new Album(ALBUM_ID, USER_ID, "album", List.of(), ALBUM_DOWNLOAD_CODE, false);
 
         when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(metaDao.find(PICTURE_ID)).thenReturn(Future.succeededFuture(Optional.of(meta)));
@@ -88,7 +88,7 @@ class PictureServiceTest {
         StorageService storageService = mock(StorageService.class);
 
         PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME, DOWNLOAD_CODE);
-        Album album = new Album(ALBUM_ID, USER_ID, "album", List.of(), ALBUM_DOWNLOAD_CODE);
+        Album album = new Album(ALBUM_ID, USER_ID, "album", List.of(), ALBUM_DOWNLOAD_CODE, false);
 
         when(metaDao.find(PICTURE_ID)).thenReturn(Future.succeededFuture(Optional.of(meta)));
         when(dataDao.find(PATH)).thenReturn(Future.succeededFuture(data));
@@ -110,7 +110,7 @@ class PictureServiceTest {
         StorageService storageService = mock(StorageService.class);
 
         PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID_2, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME, DOWNLOAD_CODE);
-        Album album = new Album(ALBUM_ID, USER_ID_2, "album", List.of(USER_ID_3), ALBUM_DOWNLOAD_CODE);
+        Album album = new Album(ALBUM_ID, USER_ID_2, "album", List.of(USER_ID_3), ALBUM_DOWNLOAD_CODE, false);
 
         when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(metaDao.find(PICTURE_ID)).thenReturn(Future.succeededFuture(Optional.of(meta)));

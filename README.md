@@ -21,7 +21,7 @@ Port number: 8081
 * GET `/album/{userId}/{albumId}` returns list of pictures contained in album
 * GET `/album/{userId}/{albumId}/download?code={downloadCode}` downloads album as a zip archive
 * POST `/album/{userId}` creates album for user, returns newly created album id
-* PATCH `/album/{userId}/{albumId}` renames album
+* PATCH `/album/{userId}/{albumId}` updates album (either rename or change ordering)
 * POST `/album/{userId}/{albumId}/share` shares album with provided list of users
 * DELETE `/album/{userId}/{albumId}` deletes album, returns deleted album id on success
 
@@ -36,7 +36,8 @@ Port number: 8081
         "userId": 69,
         "name": "Vacation",
         "sharedUsers": [25, 27],
-        "downloadCode": "sav98d98f2ff"
+        "downloadCode": "sav98d98f2ff",
+        "isChronologicalOrder": false
     },
     { ... }
 ]
@@ -66,10 +67,11 @@ Port number: 8081
 }
 ```
 
-#### Payload of album rename body
+#### Payload of album update body
 ```
 {
-    "name": "2020 NY Party"
+    "name": "2020 NY Party",
+    "isChronologicalOrder": true
 }
 ```
 

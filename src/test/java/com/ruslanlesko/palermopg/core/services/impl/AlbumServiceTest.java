@@ -29,7 +29,7 @@ public class AlbumServiceTest {
     private static final long USER_ID_2 = 97;
     private static final long ALBUM_ID = 69;
     private static final String DOWNLOAD_CODE = "jkh57f";
-    private static final Album SAMPLE_ALBUM = new Album(ALBUM_ID, USER_ID, ALBUM_NAME, List.of(), DOWNLOAD_CODE);
+    private static final Album SAMPLE_ALBUM = new Album(ALBUM_ID, USER_ID, ALBUM_NAME, List.of(), DOWNLOAD_CODE, false);
     private static final PictureMeta PICTURE_META = new PictureMeta(25, USER_ID, ALBUM_ID, 2,
             "pic.jpg", "pic_0.jpg", LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now(), "98sdv9");
     private static final byte[] DATA = new byte[]{99, 2};
@@ -89,7 +89,7 @@ public class AlbumServiceTest {
 
         when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(albumDao.findById(ALBUM_ID))
-                .thenReturn(Future.succeededFuture(Optional.of(new Album(ALBUM_ID, USER_ID_2, ALBUM_NAME, List.of(), DOWNLOAD_CODE))));
+                .thenReturn(Future.succeededFuture(Optional.of(new Album(ALBUM_ID, USER_ID_2, ALBUM_NAME, List.of(), DOWNLOAD_CODE, false))));
 
         AlbumService albumService = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService, parser);
 

@@ -5,7 +5,7 @@ COPY src src
 RUN mvn package
 
 FROM openjdk:11-jre-slim
-COPY --from=build /app/target/core-1.14-fat.jar /app/target/core.jar
+COPY --from=build /app/target/core-1.15-fat.jar /app/target/core.jar
 EXPOSE 8081
 ENTRYPOINT ["java", "-jar"]
 CMD ["/app/target/core.jar"]
