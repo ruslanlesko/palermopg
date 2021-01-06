@@ -1,4 +1,4 @@
-package com.leskor.palermopg.services.impl;
+package com.leskor.palermopg.services;
 
 import com.leskor.palermopg.dao.AlbumDao;
 import com.leskor.palermopg.dao.PictureDataDao;
@@ -10,8 +10,6 @@ import com.leskor.palermopg.entity.StorageConsumption;
 import com.leskor.palermopg.exception.AuthorizationException;
 import com.leskor.palermopg.exception.StorageLimitException;
 import com.leskor.palermopg.security.JWTParser;
-import com.leskor.palermopg.services.PictureService;
-import com.leskor.palermopg.services.StorageService;
 import io.vertx.core.Future;
 
 import org.junit.jupiter.api.BeforeAll;

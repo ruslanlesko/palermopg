@@ -1,4 +1,4 @@
-package com.leskor.palermopg.services.impl;
+package com.leskor.palermopg.services;
 
 import com.leskor.palermopg.dao.AlbumDao;
 import com.leskor.palermopg.dao.PictureDataDao;
