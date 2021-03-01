@@ -66,7 +66,7 @@ public class StorageService {
 
                     logger.info("Unknown sizes of {} pictures for user id {}, calculating...", unknownMetasSizes.size(), userId);
 
-                    CompositeFuture.all(new ArrayList<Future>(unknownMetasSizes))
+                    CompositeFuture.all(new ArrayList<>(unknownMetasSizes))
                             .onSuccess(results -> {
                                 long size = 0;
                                 for (int i = 0; i < results.size(); i++) {
@@ -86,7 +86,7 @@ public class StorageService {
                 .map(id -> findForUser(token, id))
                 .collect(Collectors.toList());
 
-        CompositeFuture.all(new ArrayList<Future>(futures))
+        CompositeFuture.all(new ArrayList<>(futures))
                 .onSuccess(results -> {
                     List<StorageConsumption> storageConsumptions = new ArrayList<>();
                     for (int i = 0; i < results.result().size(); i++) {

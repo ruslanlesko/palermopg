@@ -3,14 +3,14 @@ package com.leskor.palermopg.services;
 import com.leskor.palermopg.dao.AlbumDao;
 import com.leskor.palermopg.dao.PictureDataDao;
 import com.leskor.palermopg.dao.PictureMetaDao;
+import com.leskor.palermopg.entity.PictureMeta;
+import com.leskor.palermopg.entity.PictureResponse;
 import com.leskor.palermopg.exception.AuthorizationException;
 import com.leskor.palermopg.exception.MissingItemException;
 import com.leskor.palermopg.exception.StorageLimitException;
-import com.leskor.palermopg.util.CodeGenerator;
-import com.leskor.palermopg.entity.PictureMeta;
-import com.leskor.palermopg.entity.PictureResponse;
 import com.leskor.palermopg.meta.MetaParser;
 import com.leskor.palermopg.security.JWTParser;
+import com.leskor.palermopg.util.CodeGenerator;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import org.slf4j.Logger;
@@ -25,7 +25,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Optional;
 
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
@@ -105,7 +104,7 @@ public class PictureService {
                     .map(opt -> opt.isEmpty() || opt.get().getUserId() != userId && !opt.get().getSharedUsers().contains(userId));
     }
 
-    public Future<Long> insertNewPicture(String token, long userId, Optional<Long> albumId, byte[] data) {
+    public Future<Long> insertNewPicture(String token, long userId, long albumId, byte[] data) {
         if (!jwtParser.validateTokenForUserId(token, userId)) {
             return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
@@ -131,7 +130,7 @@ public class PictureService {
                                 String optimizedPath = pathResults.resultAt(0);
                                 String originalPath = pathResults.resultAt(1);
 
-                                PictureMeta meta = new PictureMeta(-1, userId, albumId.orElse(-1L), size, originalPath,
+                                PictureMeta meta = new PictureMeta(-1, userId, albumId, size, originalPath,
                                         optimizedPath,
                                         LocalDateTime.now(), dateCaptured, LocalDateTime.now(),
                                         CodeGenerator.generateDownloadCode());

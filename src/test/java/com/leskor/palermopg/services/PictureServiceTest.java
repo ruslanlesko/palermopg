@@ -139,7 +139,7 @@ class PictureServiceTest {
         PictureService service = new PictureService(metaDao, dataDao, null, parser, storageService);
 
         Long expected = PICTURE_ID;
-        service.insertNewPicture(TOKEN, USER_ID, Optional.empty(), data)
+        service.insertNewPicture(TOKEN, USER_ID, -1L, data)
                 .onComplete(response -> assertEquals(expected, response.result()));
     }
 
@@ -155,7 +155,7 @@ class PictureServiceTest {
 
         PictureService service = new PictureService(metaDao, dataDao, null, parser, storageService);
 
-        service.insertNewPicture(TOKEN, USER_ID, Optional.empty(), data)
+        service.insertNewPicture(TOKEN, USER_ID, -1L, data)
                 .onComplete(response -> {
                     assertTrue(response.failed());
                     assertEquals(StorageLimitException.class, response.cause().getClass());

@@ -1,13 +1,12 @@
 package com.leskor.palermopg.dao.impl;
 
-import com.mongodb.BasicDBObject;
+import com.leskor.palermopg.dao.AlbumDao;
+import com.leskor.palermopg.entity.Album;
+import com.leskor.palermopg.exception.MissingItemException;
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoCollection;
-import com.leskor.palermopg.dao.AlbumDao;
-import com.leskor.palermopg.entity.Album;
-import com.leskor.palermopg.exception.MissingItemException;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.bson.Document;
@@ -16,11 +15,12 @@ import org.bson.conversions.Bson;
 import java.util.List;
 import java.util.Optional;
 
-import static com.mongodb.client.model.Filters.eq;
-import static com.mongodb.client.model.Filters.or;
+import static com.leskor.palermopg.util.MongoUtils.setField;
 import static com.leskor.palermopg.util.ReactiveListSubscriber.forPromise;
 import static com.leskor.palermopg.util.ReactiveSubscriber.forSinglePromise;
 import static com.leskor.palermopg.util.ReactiveSubscriber.forVoidPromise;
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.or;
 
 public class MongoAlbumDao implements AlbumDao {
     private final static String DB = System.getenv("PIC_DB_NAME");
@@ -86,24 +86,7 @@ public class MongoAlbumDao implements AlbumDao {
 
     @Override
     public Future<Void> renameAlbum(long id, String name) {
-        Promise<Void> resultPromise = Promise.promise();
-
-        BasicDBObject query = new BasicDBObject();
-        query.put("id", id);
-
-        BasicDBObject newDoc = new BasicDBObject();
-        newDoc.put("name", name);
-
-        BasicDBObject updateDoc = new BasicDBObject();
-        updateDoc.put("$set", newDoc);
-
-        getCollection().updateOne(query, updateDoc)
-                .subscribe(forVoidPromise(
-                        resultPromise,
-                        result ->  result.getModifiedCount() == 1 && result.wasAcknowledged(),
-                        new MissingItemException()));
-
-        return resultPromise.future();
+        return setField(getCollection(), id, "name", name);
     }
 
     @Override
@@ -121,23 +104,7 @@ public class MongoAlbumDao implements AlbumDao {
 
     @Override
     public Future<Void> updateSharedUsers(long id, List<Long> sharedIds) {
-        Promise<Void> resultPromise = Promise.promise();
-
-        BasicDBObject query = new BasicDBObject();
-        query.put("id", id);
-
-        BasicDBObject newDoc = new BasicDBObject();
-        newDoc.put("sharedUsers", sharedIds);
-
-        BasicDBObject updateDoc = new BasicDBObject();
-        updateDoc.put("$set", newDoc);
-
-        getCollection().updateOne(query, updateDoc)
-                .subscribe(forVoidPromise(
-                        resultPromise,
-                        result -> result.getModifiedCount() == 1 && result.wasAcknowledged(),
-                        new MissingItemException()));
-        return resultPromise.future();
+        return setField(getCollection(), id, "sharedUsers", sharedIds);
     }
 
     private Future<Long> getNextId() {
@@ -155,42 +122,12 @@ public class MongoAlbumDao implements AlbumDao {
 
     @Override
     public Future<Void> setDownloadCode(long id, String code) {
-        Promise<Void> resultPromise = Promise.promise();
-
-        BasicDBObject query = new BasicDBObject();
-        query.put("id", id);
-
-        BasicDBObject newDoc = new BasicDBObject();
-        newDoc.put("downloadCode", code);
-
-        BasicDBObject updateDoc = new BasicDBObject();
-        updateDoc.put("$set", newDoc);
-
-        getCollection()
-                .updateOne(query, updateDoc)
-                .subscribe(forVoidPromise(resultPromise, res -> res.getModifiedCount() == 1 && res.wasAcknowledged(), new MissingItemException()));
-
-        return resultPromise.future();
+        return setField(getCollection(), id, "downloadCode", code);
     }
 
     @Override
     public Future<Void> setChronologicalOrder(long id, boolean isChronologicalOrder) {
-        Promise<Void> resultPromise = Promise.promise();
-
-        BasicDBObject query = new BasicDBObject();
-        query.put("id", id);
-
-        BasicDBObject newDoc = new BasicDBObject();
-        newDoc.put("isChronologicalOrder", isChronologicalOrder);
-
-        BasicDBObject updateDoc = new BasicDBObject();
-        updateDoc.put("$set", newDoc);
-
-        getCollection()
-                .updateOne(query, updateDoc)
-                .subscribe(forVoidPromise(resultPromise, res -> res.getModifiedCount() == 1 && res.wasAcknowledged(), new MissingItemException()));
-
-        return resultPromise.future();
+        return setField(getCollection(), id, "isChronologicalOrder", isChronologicalOrder);
     }
 
     private MongoCollection<Document> getCollection() {

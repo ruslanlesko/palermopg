@@ -20,7 +20,7 @@ import java.util.Base64;
 import java.util.stream.Collectors;
 
 public class JWTParser {
-    private static Logger logger = LoggerFactory.getLogger("JWTParser");
+    private static final Logger logger = LoggerFactory.getLogger("JWTParser");
 
     private static final String KEY_PATH = System.getenv("PIC_KEY");
     private static final String SECURITY_DISABLED = System.getenv("SECURITY_DISABLED");
@@ -28,7 +28,7 @@ public class JWTParser {
     private static final String BEARER = "Bearer ";
     private static final Long ADMIN_ID = Long.parseLong(System.getenv("PIC_ADMIN_ID") == null ? "-1" : System.getenv("PIC_ADMIN_ID"));
 
-    private JwtConsumer consumer;
+    private final JwtConsumer consumer;
 
     public JWTParser() {
         Key publicKey = makePublicKey();

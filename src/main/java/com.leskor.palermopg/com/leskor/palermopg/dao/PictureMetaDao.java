@@ -14,6 +14,5 @@ public interface PictureMetaDao {
     Future<Void> setLastModified(long id, LocalDateTime lastModified);
     Future<Void> deleteById(long id);
     Future<List<PictureMeta>> findPictureMetasForUserId(long userId);
-    Future<Void> setSize(long id, long size);
     Future<Void> setDownloadCode(long id, String code);
 }

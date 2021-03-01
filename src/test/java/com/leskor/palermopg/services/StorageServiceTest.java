@@ -49,8 +49,6 @@ public class StorageServiceTest {
         when(pictureDataDao.find(PATH_1)).thenReturn(Future.succeededFuture(new byte[]{0, 1, 2}));
         when(pictureDataDao.find(PATH_2)).thenReturn(Future.succeededFuture(new byte[]{0}));
         when(pictureDataDao.find(PATH_3)).thenReturn(Future.succeededFuture(new byte[]{0, 1, 2, 3, 4}));
-        when(pictureMetaDao.setSize(PICTURE_ID, 4)).thenReturn(Future.succeededFuture());
-        when(pictureMetaDao.setSize(PICTURE_ID_2, 5)).thenReturn(Future.succeededFuture());
         when(limitsDao.getLimitForUser(USER_ID)).thenReturn(Future.succeededFuture(Optional.empty()));
 
         StorageService service = new StorageService(pictureMetaDao, pictureDataDao, limitsDao, jwtParser);

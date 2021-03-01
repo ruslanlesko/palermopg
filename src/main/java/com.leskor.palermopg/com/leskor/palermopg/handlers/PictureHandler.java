@@ -59,7 +59,7 @@ public class PictureHandler {
         String token = request.getHeader("Authorization");
         byte[] data = routingContext.getBody().getBytes();
 
-        pictureService.insertNewPicture(token, userId, albumId, data)
+        pictureService.insertNewPicture(token, userId, albumId.orElse(-1L), data)
                 .onSuccess(insertResult -> {
                     JsonObject response = new JsonObject().put("id", insertResult);
                     cors(routingContext.response()).end(response.encode());

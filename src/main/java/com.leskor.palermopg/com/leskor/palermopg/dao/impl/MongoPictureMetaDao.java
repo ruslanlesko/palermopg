@@ -5,7 +5,6 @@ import com.leskor.palermopg.entity.PictureMeta;
 import com.leskor.palermopg.exception.MissingItemException;
 import com.leskor.palermopg.util.ReactiveListSubscriber;
 import com.leskor.palermopg.util.ReactiveSubscriber;
-import com.mongodb.BasicDBObject;
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.result.DeleteResult;
@@ -14,20 +13,16 @@ import com.mongodb.reactivestreams.client.MongoCollection;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.bson.Document;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
+import static com.leskor.palermopg.util.MongoUtils.setField;
 import static com.mongodb.client.model.Filters.eq;
-import static com.leskor.palermopg.util.ReactiveSubscriber.forSinglePromise;
 
 public class MongoPictureMetaDao implements PictureMetaDao {
-    private static final Logger logger = LoggerFactory.getLogger("Application");
-
     private final static String DB = System.getenv("PIC_DB_NAME");
     private final static String COLLECTION = "pictures";
 
@@ -77,8 +72,6 @@ public class MongoPictureMetaDao implements PictureMetaDao {
 
     @Override
     public Future<List<PictureMeta>> findForAlbumId(long albumId) {
-        logger.debug("Finding pictures for album id " + albumId);
-
         Promise<List<PictureMeta>> resultPromise = Promise.promise();
 
         getCollection()
@@ -90,22 +83,7 @@ public class MongoPictureMetaDao implements PictureMetaDao {
 
     @Override
     public Future<Void> setLastModified(long id, LocalDateTime lastModified) {
-        Promise<Void> resultPromise = Promise.promise();
-
-        BasicDBObject query = new BasicDBObject();
-        query.put("id", id);
-
-        BasicDBObject newDoc = new BasicDBObject();
-        newDoc.put("dateModified", lastModified);
-
-        BasicDBObject updateDoc = new BasicDBObject();
-        updateDoc.put("$set", newDoc);
-
-        getCollection()
-                .updateOne(query, updateDoc)
-                .subscribe(ReactiveSubscriber.forVoidPromise(resultPromise, res -> res.getModifiedCount() == 1 && res.wasAcknowledged(), new MissingItemException()));
-
-        return resultPromise.future();
+        return setField(getCollection(), id, "dateModified", lastModified);
     }
 
     @Override
@@ -131,43 +109,8 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     }
 
     @Override
-    public Future<Void> setSize(long id, long size) {
-        Promise<Void> resultPromise = Promise.promise();
-
-        BasicDBObject query = new BasicDBObject();
-        query.put("id", id);
-
-        BasicDBObject newDoc = new BasicDBObject();
-        newDoc.put("size", size);
-
-        BasicDBObject updateDoc = new BasicDBObject();
-        updateDoc.put("$set", newDoc);
-
-        getCollection()
-                .updateOne(query, updateDoc)
-                .subscribe(ReactiveSubscriber.forVoidPromise(resultPromise, res -> res.getModifiedCount() == 1 && res.wasAcknowledged(), new MissingItemException()));
-
-        return resultPromise.future();
-    }
-
-    @Override
     public Future<Void> setDownloadCode(long id, String code) {
-        Promise<Void> resultPromise = Promise.promise();
-
-        BasicDBObject query = new BasicDBObject();
-        query.put("id", id);
-
-        BasicDBObject newDoc = new BasicDBObject();
-        newDoc.put("downloadCode", code);
-
-        BasicDBObject updateDoc = new BasicDBObject();
-        updateDoc.put("$set", newDoc);
-
-        getCollection()
-                .updateOne(query, updateDoc)
-                .subscribe(ReactiveSubscriber.forVoidPromise(resultPromise, res -> res.getModifiedCount() == 1 && res.wasAcknowledged(), new MissingItemException()));
-
-        return resultPromise.future();
+        return setField(getCollection(), id, "downloadCode", code);
     }
 
     private PictureMeta mapToPicture(Document document) {

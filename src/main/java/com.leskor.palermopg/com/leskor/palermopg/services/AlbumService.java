@@ -84,7 +84,7 @@ public class AlbumService {
                             .map(a -> albumDao.setDownloadCode(a.getId(), CodeGenerator.generateDownloadCode()))
                             .collect(toList());
 
-                    return CompositeFuture.all(new ArrayList<Future>(futures))
+                    return CompositeFuture.all(new ArrayList<>(futures))
                             .compose(success -> getAlbumsForUserId(token, userId));
                 });
     }
@@ -114,7 +114,7 @@ public class AlbumService {
                                         .map(p -> pictureMetaDao.setDownloadCode(p.getId(), CodeGenerator.generateDownloadCode()))
                                         .collect(toList());
 
-                                return CompositeFuture.all(new ArrayList<Future>(futures))
+                                return CompositeFuture.all(new ArrayList<>(futures))
                                         .compose(success -> getPictureMetaForAlbum(token, userId, albumId));
                             }
                             return succeededFuture(results);
@@ -190,11 +190,11 @@ public class AlbumService {
                             .map(p -> pictureDataDao.find(p.getPath()))
                             .collect(toList());
 
-                    return CompositeFuture.all(new ArrayList<Future>(futures))
+                    return CompositeFuture.all(new ArrayList<>(futures))
                             .compose(dataResults -> {
                                 try (
                                         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                        ZipOutputStream zos = new ZipOutputStream(baos);
+                                        ZipOutputStream zos = new ZipOutputStream(baos)
                                 ) {
                                     for (int i = 0; i < dataResults.size(); i++) {
                                         var data = (byte[]) dataResults.resultAt(i);

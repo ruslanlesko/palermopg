@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 
 import static com.mongodb.client.model.Filters.eq;
-import static com.leskor.palermopg.util.ReactiveSubscriber.forSinglePromise;
 
 public class MongoLimitsDao implements LimitsDao {
     private static final Logger logger = LoggerFactory.getLogger("Application");
