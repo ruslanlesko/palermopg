@@ -10,6 +10,8 @@ module com.leskor.palermopg {
 
     // Annotations for JSON fields
     requires com.fasterxml.jackson.annotation;
+    requires com.fasterxml.jackson.core;
+    requires com.fasterxml.jackson.databind;
 
     // JWT processing
     requires jose4j;
@@ -25,4 +27,5 @@ module com.leskor.palermopg {
     requires java.desktop;
 
     opens com.leskor.palermopg.services;
+    opens com.leskor.palermopg.entity;
 }
