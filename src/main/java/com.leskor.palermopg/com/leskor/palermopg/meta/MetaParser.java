@@ -58,8 +58,6 @@ public class MetaParser {
                     break;
                 }
             }
-            logger.info("Orientation: " + orientation);
-            logger.info("Rotating image to " + degrees + " degrees");
             return degrees;
         } catch (MetadataException e) {
             logger.error(e.getMessage());

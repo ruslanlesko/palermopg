@@ -5,6 +5,7 @@ import com.leskor.palermopg.dao.PictureDataDao;
 import com.leskor.palermopg.dao.PictureMetaDao;
 import com.leskor.palermopg.entity.PictureMeta;
 import com.leskor.palermopg.entity.PictureResponse;
+import com.leskor.palermopg.entity.StorageConsumption;
 import com.leskor.palermopg.exception.AuthorizationException;
 import com.leskor.palermopg.exception.MissingItemException;
 import com.leskor.palermopg.exception.StorageLimitException;
@@ -40,17 +41,20 @@ public class PictureService {
     private final AlbumDao albumDao;
     private final JWTParser jwtParser;
     private final StorageService storageService;
+    private final PictureManipulationService pictureManipulationService;
 
     public PictureService(PictureMetaDao pictureMetaDao,
                           PictureDataDao pictureDataDao,
                           AlbumDao albumDao,
                           JWTParser jwtParser,
-                          StorageService storageService) {
+                          StorageService storageService,
+                          PictureManipulationService pictureManipulationService) {
         this.pictureMetaDao = pictureMetaDao;
         this.pictureDataDao = pictureDataDao;
         this.albumDao = albumDao;
         this.jwtParser = jwtParser;
         this.storageService = storageService;
+        this.pictureManipulationService = pictureManipulationService;
     }
 
     public Future<PictureResponse> getPictureData(String token, String clientHash, long userId, long pictureId, boolean fullSize) {
@@ -109,59 +113,59 @@ public class PictureService {
             return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
         }
 
-        return storageService.findForUser(token, userId)
-                .compose(storage -> {
-                    final LocalDateTime dateCaptured = extractDateCaptured(data);
-                    final byte[] rotatedData = getProperlyRotatedData(data);
-                    final byte[] optimizedPictureData = convertToOptimized(rotatedData);
+        final LocalDateTime dateCaptured = extractDateCaptured(data);
 
-                    long size = rotatedData.length + (optimizedPictureData == null ? 0 : optimizedPictureData.length);
-                    if (storage.getSize() + size > storage.getLimit()) return Future.failedFuture(new StorageLimitException());
+        return storageService.findForUser(token, userId).compose(storage ->
+                pictureManipulationService.rotateToCorrectOrientation(data).compose(rotatedData ->
+                        pictureManipulationService.convertToOptimized(rotatedData).compose(optimizedPictureData ->
+                                doInsertPicture(userId, albumId, storage, dateCaptured, rotatedData, optimizedPictureData)
+                        )
+                )
+        );
+    }
 
-                    if (optimizedPictureData == null) {
-                        logger.warn("Optimized version was not created");
-                        return failedFuture("Optimized version was not created");
-                    }
+    private Future<Long> doInsertPicture(
+            long userId,
+            long albumId,
+            StorageConsumption storage,
+            LocalDateTime dateCaptured,
+            byte[] rotatedData,
+            byte[] optimizedPictureData
+    ) {
+        long size = rotatedData.length + (optimizedPictureData == null ? 0 : optimizedPictureData.length);
+        if (storage.getSize() + size > storage.getLimit()) return Future.failedFuture(new StorageLimitException());
 
-                    Future<String> optimizedPathFuture = pictureDataDao.save(optimizedPictureData);
-                    Future<String> originalPathFuture = pictureDataDao.save(rotatedData);
-                    return CompositeFuture.all(optimizedPathFuture, originalPathFuture)
-                            .compose(pathResults -> {
-                                String optimizedPath = pathResults.resultAt(0);
-                                String originalPath = pathResults.resultAt(1);
+        if (optimizedPictureData == null) {
+            logger.warn("Optimized version was not created");
+            return failedFuture("Optimized version was not created");
+        }
 
-                                PictureMeta meta = new PictureMeta(-1, userId, albumId, size, originalPath,
-                                        optimizedPath,
-                                        LocalDateTime.now(), dateCaptured, LocalDateTime.now(),
-                                        CodeGenerator.generateDownloadCode());
+        Future<String> optimizedPathFuture = pictureDataDao.save(optimizedPictureData);
+        Future<String> originalPathFuture = pictureDataDao.save(rotatedData);
+        return CompositeFuture.all(optimizedPathFuture, originalPathFuture).compose(pathResults -> {
+            String optimizedPath = pathResults.resultAt(0);
+            String originalPath = pathResults.resultAt(1);
 
-                                return pictureMetaDao.save(meta)
-                                        .map(id -> {
-                                            logger.info("Inserted new picture with id {} for user id {}", id, userId);
-                                            return id;
-                                        });
-                            });
-                });
+            PictureMeta meta = new PictureMeta(-1, userId, albumId, size, originalPath,
+                    optimizedPath,
+                    LocalDateTime.now(), dateCaptured, LocalDateTime.now(),
+                    CodeGenerator.generateDownloadCode());
+
+            return pictureMetaDao.save(meta)
+                    .map(id -> {
+                        logger.info("Inserted new picture with id {} for user id {}", id, userId);
+                        return id;
+                    });
+        });
     }
 
     private LocalDateTime extractDateCaptured(byte[] data) {
         try {
             MetaParser metaParser = new MetaParser(data);
             return metaParser.getDateCaptured();
-
         } catch (Exception ex) {
             logger.info("No meta");
             return LocalDateTime.now();
-        }
-    }
-
-    private byte[] getProperlyRotatedData(byte[] data) {
-        try {
-            MetaParser metaParser = new MetaParser(data);
-            int degrees = metaParser.getRotation();
-            return rotateImage(data, degrees);
-        } catch (Exception ex) {
-            return data;
         }
     }
 
@@ -186,14 +190,10 @@ public class PictureService {
     }
 
     private Future<Void> doRotate(String path) {
-        if (path == null) {
-            return failedFuture(new MissingItemException());
-        }
-
-        return pictureDataDao.find(path)
-                .map(data -> rotateImage(data, 90))
-                .compose(rotatedData -> rotatedData == null ?
-                        failedFuture("Cannot rotate image") : pictureDataDao.replace(path, rotatedData));
+        if (path == null) return failedFuture(new MissingItemException());
+        else return pictureDataDao.find(path)
+                .compose(pictureManipulationService::rotate90)
+                .compose(rotatedData -> pictureDataDao.replace(path, rotatedData));
     }
 
     public Future<Void> deletePicture(String token, long userId, long pictureId) {
@@ -211,80 +211,5 @@ public class PictureService {
                                     succeededFuture() : pictureDataDao.delete(meta.getPathOptimized());
                         })
                 );
-    }
-
-    private byte[] rotateImage(byte[] bytes, int degrees) {
-        if (degrees <= 0) {
-            return bytes;
-        }
-        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            BufferedImage image = ImageIO.read(bais);
-
-            final double rads = Math.toRadians(degrees);
-            final double sin = Math.abs(Math.sin(rads));
-            final double cos = Math.abs(Math.cos(rads));
-            final int w = (int) Math.floor(image.getWidth() * cos + image.getHeight() * sin);
-            final int h = (int) Math.floor(image.getHeight() * cos + image.getWidth() * sin);
-            final BufferedImage rotatedImage = new BufferedImage(w, h, image.getType());
-            final AffineTransform at = new AffineTransform();
-            at.translate(w / 2.0, h / 2.0);
-            at.rotate(rads, 0, 0);
-            at.translate(-image.getWidth() / 2.0, -image.getHeight() / 2.0);
-            final AffineTransformOp rotateOp = new AffineTransformOp(at, AffineTransformOp.TYPE_BICUBIC);
-            rotateOp.filter(image, rotatedImage);
-
-            ImageIO.write(rotatedImage, "JPEG", baos);
-            baos.flush();
-            return baos.toByteArray();
-        } catch (IOException e) {
-            logger.error(e.getMessage());
-            return null;
-        } finally {
-            try {
-                bais.close();
-                baos.close();
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-            }
-        }
-    }
-
-    private byte[] convertToOptimized(byte[] bytes) {
-        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-        try {
-            BufferedImage image = ImageIO.read(bais);
-            int originalHeight = image.getHeight();
-            int originalWidth = image.getWidth();
-
-            if (originalHeight <= TARGET_HEIGHT && originalWidth <= TARGET_WIDTH) {
-                return bytes;
-            }
-
-            double percent = originalHeight > originalWidth ?
-                             (double) TARGET_HEIGHT / (double) originalHeight
-                                                            : (double) TARGET_WIDTH / (double) originalWidth;
-
-            AffineTransform resize = AffineTransform.getScaleInstance(percent, percent);
-            AffineTransformOp op = new AffineTransformOp(resize, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
-            BufferedImage resultImage = op.filter(image, null);
-
-            ImageIO.write(resultImage, "JPEG", baos);
-            baos.flush();
-            return baos.toByteArray();
-        } catch (IOException e) {
-            logger.error(e.getMessage());
-            return null;
-        } finally {
-            try {
-                bais.close();
-                baos.close();
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-            }
-        }
     }
 }

@@ -13,6 +13,7 @@ import com.leskor.palermopg.security.JWTParser;
 import io.vertx.core.Future;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -44,22 +45,34 @@ class PictureServiceTest {
     private static final LocalDateTime TIME = LocalDateTime.now();
     private static final StorageConsumption STORAGE_CONSUMPTION = new StorageConsumption(USER_ID, 8, 1024 * 1024 * 1024);
     private static final StorageConsumption STORAGE_CONSUMPTION_LIMITED = new StorageConsumption(USER_ID, 8, 1024 * 1024);
+    public static final byte[] OPTIMIZED_DATA = {42, 69};
 
     private static byte[] data;
+
+    private JWTParser parser;
+    private PictureMetaDao metaDao;
+    private PictureDataDao dataDao;
+    private AlbumDao albumDao;
+    private StorageService storageService;
+    private PictureManipulationService pmService;
 
     @BeforeAll
     static void setup() throws URISyntaxException, IOException {
         data = Files.readAllBytes(Path.of(PictureServiceTest.class.getClassLoader().getResource(DATA_PATH).toURI()));
     }
 
+    @BeforeEach
+    void prepareMocks() {
+        this.parser = mock(JWTParser.class);
+        this.metaDao = mock(PictureMetaDao.class);
+        this.dataDao = mock(PictureDataDao.class);
+        this.albumDao = mock(AlbumDao.class);
+        this.storageService = mock(StorageService.class);
+        this.pmService = mock(PictureManipulationService.class);
+    }
+
     @Test
     void testGetPictureData() {
-        JWTParser parser = mock(JWTParser.class);
-        PictureMetaDao metaDao = mock(PictureMetaDao.class);
-        PictureDataDao dataDao = mock(PictureDataDao.class);
-        AlbumDao albumDao = mock(AlbumDao.class);
-        StorageService storageService = mock(StorageService.class);
-
         PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME, DOWNLOAD_CODE);
         Album album = new Album(ALBUM_ID, USER_ID, "album", List.of(), ALBUM_DOWNLOAD_CODE, false);
 
@@ -68,7 +81,7 @@ class PictureServiceTest {
         when(dataDao.find(PATH)).thenReturn(Future.succeededFuture(data));
         when(albumDao.findById(ALBUM_ID)).thenReturn(Future.succeededFuture(Optional.of(album)));
 
-        PictureService service = new PictureService(metaDao, dataDao, albumDao, parser, storageService);
+        PictureService service = new PictureService(metaDao, dataDao, albumDao, parser, storageService, pmService);
 
         String expectedHash = "W/\"" + TIME.toEpochSecond(ZoneOffset.UTC) + "\"";
 
@@ -79,12 +92,6 @@ class PictureServiceTest {
 
     @Test
     void testGetPictureDataByDownloadCode() {
-        JWTParser parser = mock(JWTParser.class);
-        PictureMetaDao metaDao = mock(PictureMetaDao.class);
-        PictureDataDao dataDao = mock(PictureDataDao.class);
-        AlbumDao albumDao = mock(AlbumDao.class);
-        StorageService storageService = mock(StorageService.class);
-
         PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME, DOWNLOAD_CODE);
         Album album = new Album(ALBUM_ID, USER_ID, "album", List.of(), ALBUM_DOWNLOAD_CODE, false);
 
@@ -92,7 +99,7 @@ class PictureServiceTest {
         when(dataDao.find(PATH)).thenReturn(Future.succeededFuture(data));
         when(albumDao.findById(ALBUM_ID)).thenReturn(Future.succeededFuture(Optional.of(album)));
 
-        PictureService service = new PictureService(metaDao, dataDao, albumDao, parser, storageService);
+        PictureService service = new PictureService(metaDao, dataDao, albumDao, parser, storageService, pmService);
 
         byte[] expected = data;
         service.downloadPicture(USER_ID, PICTURE_ID, DOWNLOAD_CODE)
@@ -101,12 +108,6 @@ class PictureServiceTest {
 
     @Test
     void testGetPictureDataAlbumNotAccessible() {
-        JWTParser parser = mock(JWTParser.class);
-        PictureMetaDao metaDao = mock(PictureMetaDao.class);
-        PictureDataDao dataDao = mock(PictureDataDao.class);
-        AlbumDao albumDao = mock(AlbumDao.class);
-        StorageService storageService = mock(StorageService.class);
-
         PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID_2, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME, DOWNLOAD_CODE);
         Album album = new Album(ALBUM_ID, USER_ID_2, "album", List.of(USER_ID_3), ALBUM_DOWNLOAD_CODE, false);
 
@@ -115,7 +116,7 @@ class PictureServiceTest {
         when(dataDao.find(PATH)).thenReturn(Future.succeededFuture(data));
         when(albumDao.findById(ALBUM_ID)).thenReturn(Future.succeededFuture(Optional.of(album)));
 
-        PictureService service = new PictureService(metaDao, dataDao, albumDao, parser, storageService);
+        PictureService service = new PictureService(metaDao, dataDao, albumDao, parser, storageService, pmService);
         
         service.getPictureData(TOKEN, null, USER_ID, PICTURE_ID, false).onComplete(response -> {
             assertTrue(response.failed());
@@ -125,18 +126,15 @@ class PictureServiceTest {
 
     @Test
     void testInsertingNewPicture() {
-        JWTParser parser = mock(JWTParser.class);
-        PictureMetaDao metaDao = mock(PictureMetaDao.class);
-        PictureDataDao dataDao = mock(PictureDataDao.class);
-        StorageService storageService = mock(StorageService.class);
-
         when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(dataDao.save(data)).thenReturn(Future.succeededFuture(PATH));
-        when(dataDao.save(any())).thenReturn(Future.succeededFuture(PATH + "_optimized"));
+        when(dataDao.save(OPTIMIZED_DATA)).thenReturn(Future.succeededFuture(PATH + "_optimized"));
         when(metaDao.save(any())).thenReturn(Future.succeededFuture(PICTURE_ID));
         when(storageService.findForUser(TOKEN, USER_ID)).thenReturn(Future.succeededFuture(STORAGE_CONSUMPTION));
+        when(pmService.rotateToCorrectOrientation(data)).thenReturn(Future.succeededFuture(data));
+        when(pmService.convertToOptimized(data)).thenReturn(Future.succeededFuture(OPTIMIZED_DATA));
 
-        PictureService service = new PictureService(metaDao, dataDao, null, parser, storageService);
+        PictureService service = new PictureService(metaDao, dataDao, null, parser, storageService, pmService);
 
         Long expected = PICTURE_ID;
         service.insertNewPicture(TOKEN, USER_ID, -1L, data)
@@ -145,15 +143,12 @@ class PictureServiceTest {
 
     @Test
     void testInsertingNewPictureExceedingLimit() {
-        JWTParser parser = mock(JWTParser.class);
-        PictureMetaDao metaDao = mock(PictureMetaDao.class);
-        PictureDataDao dataDao = mock(PictureDataDao.class);
-        StorageService storageService = mock(StorageService.class);
-
         when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(storageService.findForUser(TOKEN, USER_ID)).thenReturn(Future.succeededFuture(STORAGE_CONSUMPTION_LIMITED));
+        when(pmService.rotateToCorrectOrientation(data)).thenReturn(Future.succeededFuture(data));
+        when(pmService.convertToOptimized(data)).thenReturn(Future.succeededFuture(OPTIMIZED_DATA));
 
-        PictureService service = new PictureService(metaDao, dataDao, null, parser, storageService);
+        PictureService service = new PictureService(metaDao, dataDao, null, parser, storageService, pmService);
 
         service.insertNewPicture(TOKEN, USER_ID, -1L, data)
                 .onComplete(response -> {

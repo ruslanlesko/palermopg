@@ -13,6 +13,7 @@ import com.leskor.palermopg.handlers.PictureHandler;
 import com.leskor.palermopg.handlers.StorageHandler;
 import com.leskor.palermopg.security.JWTParser;
 import com.leskor.palermopg.services.AlbumService;
+import com.leskor.palermopg.services.PictureManipulationService;
 import com.leskor.palermopg.services.PictureService;
 import com.leskor.palermopg.services.StorageService;
 import com.mongodb.reactivestreams.client.MongoClient;
@@ -46,9 +47,10 @@ public class Application {
         AlbumDao albumDao = new MongoAlbumDao(asyncMongoClient);
         LimitsDao limitsDao = new MongoLimitsDao(asyncMongoClient);
         JWTParser jwtParser = new JWTParser();
+        PictureManipulationService pmService = new PictureManipulationService(vertx.getOrCreateContext());
 
         StorageService storageService = new StorageService(pictureMetaDao, pictureDataDao, limitsDao, jwtParser);
-        PictureService pictureService = new PictureService(pictureMetaDao, pictureDataDao, albumDao, jwtParser, storageService);
+        PictureService pictureService = new PictureService(pictureMetaDao, pictureDataDao, albumDao, jwtParser, storageService, pmService);
         AlbumService albumService = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService, jwtParser);
 
         pictureHandler = new PictureHandler(pictureService);
