@@ -1,14 +1,12 @@
 package com.leskor.palermopg.handlers;
 
-import com.leskor.palermopg.services.AlbumService;
 import com.leskor.palermopg.entity.Album;
 import com.leskor.palermopg.entity.PictureMeta;
+import com.leskor.palermopg.services.AlbumService;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,8 +17,6 @@ import static com.leskor.palermopg.util.ApiUtils.handleFailure;
 import static io.vertx.core.buffer.Buffer.buffer;
 
 public class AlbumHandler {
-    private static final Logger logger = LoggerFactory.getLogger("Application");
-
     private final AlbumService albumService;
 
     public AlbumHandler(AlbumService albumService) {
@@ -33,13 +29,10 @@ public class AlbumHandler {
         String token = request.getHeader("Authorization");
         JsonObject body = routingContext.getBodyAsJson();
         if (body == null || !body.containsKey("name")) {
-            logger.debug("Body is invalid, returning 404");
             cors(routingContext.response().setStatusCode(404)).end();
             return;
         }
         String name = body.getString("name");
-
-        logger.debug("Creating new album for userId " + userId);
 
         albumService.addNewAlbum(token, userId, name)
                 .onSuccess(id -> {
@@ -52,8 +45,6 @@ public class AlbumHandler {
         HttpServerRequest request = routingContext.request();
         long userId = Long.parseLong(request.getParam("userId"));
         String token = request.getHeader("Authorization");
-
-        logger.debug("Getting albums for userId " + userId);
 
         albumService.getAlbumsForUserId(token, userId)
                 .onSuccess(albums -> {
@@ -97,7 +88,6 @@ public class AlbumHandler {
         String token = request.getHeader("Authorization");
         JsonObject body = routingContext.getBodyAsJson();
         if (body == null || !body.containsKey("name") && !body.containsKey("isChronologicalOrder")) {
-            logger.debug("Body is invalid, returning 400");
             cors(routingContext.response().setStatusCode(400)).end();
             return;
         }

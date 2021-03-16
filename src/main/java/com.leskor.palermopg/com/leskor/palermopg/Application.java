@@ -21,6 +21,8 @@ import com.mongodb.reactivestreams.client.MongoClients;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.LoggerFormat;
+import io.vertx.ext.web.handler.LoggerHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,6 +87,8 @@ public class Application {
                 .putHeader("Access-Control-Max-Age", "-1")
                 .end()
         );
+
+        router.route().handler(LoggerHandler.create(LoggerFormat.TINY));
 
         router.route("/pic/:userId*").handler(BodyHandler.create());
         router.get("/pic/:userId/:pictureId").produces(JPEG_FORMAT).handler(pictureHandler::getById);

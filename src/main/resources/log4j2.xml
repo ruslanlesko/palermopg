@@ -13,5 +13,8 @@
     <Logger name="Application" level="info" additivity="false">
       <AppenderRef ref="console" />
     </Logger>
+    <Logger name="io.vertx.ext.web.handler.impl.LoggerHandlerImpl" level="info" additivity="false">
+      <AppenderRef ref="console" />
+    </Logger>
   </Loggers>
 </Configuration>
