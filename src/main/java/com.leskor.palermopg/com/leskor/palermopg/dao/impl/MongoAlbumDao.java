@@ -14,7 +14,6 @@ import org.bson.conversions.Bson;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.leskor.palermopg.util.MongoUtils.setField;
 import static com.leskor.palermopg.util.ReactiveListSubscriber.forPromise;
@@ -78,7 +77,7 @@ public class MongoAlbumDao implements AlbumDao {
                         document.getInteger("id"),
                         document.getInteger("userId"),
                         document.getString("name"),
-                        document.getList("sharedUsers", Integer.class).stream().map(Integer::longValue).collect(Collectors.toList()),
+                        document.getList("sharedUsers", Long.class),
                         document.get("downloadCode") == null ? "" : document.getString("downloadCode"),
                         document.get("isChronologicalOrder") != null && document.getBoolean("isChronologicalOrder"))));
 
