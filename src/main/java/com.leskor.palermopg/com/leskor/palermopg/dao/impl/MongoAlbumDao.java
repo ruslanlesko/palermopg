@@ -59,7 +59,7 @@ public class MongoAlbumDao implements AlbumDao {
                 .first()
                 .subscribe(forSinglePromise(resultPromise, doc -> Optional.of(new Album(
                         id,
-                        doc.getInteger("userId"),
+                        doc.getLong("userId"),
                         doc.getString("name"),
                         doc.getList("sharedUsers", Long.class),
                         doc.get("downloadCode") == null ? "" : doc.getString("downloadCode"),
@@ -74,8 +74,8 @@ public class MongoAlbumDao implements AlbumDao {
 
         getCollection().find(or(eq("userId", userId), eq("sharedUsers", userId)))
                 .subscribe(forPromise(resultPromise, document -> new Album(
-                        document.getInteger("id"),
-                        document.getInteger("userId"),
+                        document.getLong("id"),
+                        document.getLong("userId"),
                         document.getString("name"),
                         document.getList("sharedUsers", Long.class),
                         document.get("downloadCode") == null ? "" : document.getString("downloadCode"),
