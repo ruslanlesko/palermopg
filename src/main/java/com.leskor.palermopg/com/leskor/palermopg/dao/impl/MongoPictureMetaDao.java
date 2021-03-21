@@ -114,13 +114,13 @@ public class MongoPictureMetaDao implements PictureMetaDao {
     }
 
     private PictureMeta mapToPicture(Document document) {
-        Long albumId = document.getLong("albumId");
+        Integer albumId = document.getInteger("albumId");
 
         return new PictureMeta(
-                document.getLong("id"),
-                document.getLong("userId"),
+                document.getInteger("id"),
+                document.getInteger("userId"),
                 albumId == null ? -1 : albumId,
-                document.getLong("size") == null ? -1L : document.getLong("size"),
+                document.getInteger("size") == null ? -1L : document.getInteger("size"),
                 document.getString("path"),
                 document.getString("pathOptimized"),
                 document.getDate("dateUploaded").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
@@ -138,7 +138,7 @@ public class MongoPictureMetaDao implements PictureMetaDao {
         getCollection()
                 .aggregate(aggregation)
                 .first()
-                .subscribe(ReactiveSubscriber.forSinglePromise(resultPromise, doc -> doc.getLong("maxId") + 1, 1L));
+                .subscribe(ReactiveSubscriber.forSinglePromise(resultPromise, doc -> doc.getInteger("maxId").longValue() + 1, 1L));
 
         return resultPromise.future();
     }

@@ -76,7 +76,7 @@ public class MongoLimitsDao implements LimitsDao {
         getCollection()
                 .find(eq("userId", userId))
                 .first()
-                .subscribe(ReactiveSubscriber.forSinglePromise(resultPromise, doc -> Optional.of(doc.getLong("limit")), Optional.empty()));
+                .subscribe(ReactiveSubscriber.forSinglePromise(resultPromise, doc -> Optional.of(doc.getInteger("limit").longValue()), Optional.empty()));
         return resultPromise.future();
     }
 
