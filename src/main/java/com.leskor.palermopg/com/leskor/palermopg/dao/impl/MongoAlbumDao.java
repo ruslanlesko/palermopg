@@ -62,7 +62,7 @@ public class MongoAlbumDao implements AlbumDao {
                         id,
                         doc.getInteger("userId"),
                         doc.getString("name"),
-                        doc.getList("sharedUsers", Integer.class).stream().map(Integer::longValue).collect(Collectors.toList()),
+                        doc.getList("sharedUsers", Long.class),
                         doc.get("downloadCode") == null ? "" : doc.getString("downloadCode"),
                         doc.get("isChronologicalOrder") != null && doc.getBoolean("isChronologicalOrder"))), Optional.empty()));
 
