@@ -6,9 +6,6 @@ import com.leskor.palermopg.dao.PictureMetaDao;
 import com.leskor.palermopg.entity.Album;
 import com.leskor.palermopg.entity.PictureMeta;
 import com.leskor.palermopg.exception.AuthorizationException;
-import com.leskor.palermopg.security.JWTParser;
-import com.leskor.palermopg.services.AlbumService;
-import com.leskor.palermopg.services.PictureService;
 import io.vertx.core.Future;
 import org.junit.jupiter.api.Test;
 
@@ -36,33 +33,29 @@ public class AlbumServiceTest {
     
     @Test
     void testGetAlbumsForUser() {
-        JWTParser parser = mock(JWTParser.class);
         PictureMetaDao pictureMetaDao = mock(PictureMetaDao.class);
         PictureDataDao pictureDataDao = mock(PictureDataDao.class);
         AlbumDao albumDao = mock(AlbumDao.class);
         PictureService pictureService = mock(PictureService.class);
 
-        when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(albumDao.findAlbumsForUserId(USER_ID))
                 .thenReturn(Future.succeededFuture(List.of(SAMPLE_ALBUM)));
 
-        AlbumService service = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService, parser);
+        AlbumService service = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService);
 
         List<Album> expected = List.of(SAMPLE_ALBUM);
 
-        service.getAlbumsForUserId(TOKEN, USER_ID)
+        service.getAlbumsForUserId(USER_ID)
                 .onComplete(response -> assertEquals(expected, response.result()));
     }
 
     @Test
     void testAddAlbum() {
-        JWTParser parser = mock(JWTParser.class);
         PictureMetaDao pictureMetaDao = mock(PictureMetaDao.class);
         PictureDataDao pictureDataDao = mock(PictureDataDao.class);
         AlbumDao albumDao = mock(AlbumDao.class);
         PictureService pictureService = mock(PictureService.class);
 
-        when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(albumDao.save(argThat(a ->
                         a.getId() == -1
                         && a.getName().equals(ALBUM_NAME)
@@ -71,27 +64,23 @@ public class AlbumServiceTest {
                         && a.getDownloadCode().length() == 128)))
                 .thenReturn(Future.succeededFuture(ALBUM_ID));
 
-        AlbumService albumService = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService, parser);
-        
-        long expected = ALBUM_ID;
+        AlbumService albumService = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService);
 
-        albumService.addNewAlbum(TOKEN, USER_ID, ALBUM_NAME)
-                .onComplete(response -> assertEquals(expected, response.result()));
+        albumService.addNewAlbum(USER_ID, ALBUM_NAME)
+                .onComplete(response -> assertEquals(ALBUM_ID, response.result()));
     }
 
     @Test
     void testDeleteAlbumNotAccessible() {
-        JWTParser parser = mock(JWTParser.class);
         PictureMetaDao pictureMetaDao = mock(PictureMetaDao.class);
         PictureDataDao pictureDataDao = mock(PictureDataDao.class);
         AlbumDao albumDao = mock(AlbumDao.class);
         PictureService pictureService = mock(PictureService.class);
 
-        when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(albumDao.findById(ALBUM_ID))
                 .thenReturn(Future.succeededFuture(Optional.of(new Album(ALBUM_ID, USER_ID_2, ALBUM_NAME, List.of(), DOWNLOAD_CODE, false))));
 
-        AlbumService albumService = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService, parser);
+        AlbumService albumService = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService);
 
         AuthorizationException expected = new AuthorizationException("Album is not available to user");
 
@@ -104,7 +93,6 @@ public class AlbumServiceTest {
 
     @Test
     void testAlbumDownload() {
-        JWTParser parser = mock(JWTParser.class);
         PictureMetaDao pictureMetaDao = mock(PictureMetaDao.class);
         PictureDataDao pictureDataDao = mock(PictureDataDao.class);
         AlbumDao albumDao = mock(AlbumDao.class);
@@ -114,7 +102,7 @@ public class AlbumServiceTest {
         when(pictureMetaDao.findForAlbumId(ALBUM_ID)).thenReturn(Future.succeededFuture(List.of(PICTURE_META)));
         when(pictureDataDao.find(PICTURE_META.getPath())).thenReturn(Future.succeededFuture(DATA));
 
-        AlbumService albumService = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService, parser);
+        AlbumService albumService = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService);
 
         albumService.download(USER_ID, ALBUM_ID, DOWNLOAD_CODE)
                 .onComplete(response -> assertTrue(response.result().length > 0));

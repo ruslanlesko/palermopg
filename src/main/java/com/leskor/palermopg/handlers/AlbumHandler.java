@@ -26,7 +26,6 @@ public class AlbumHandler {
     public void add(RoutingContext routingContext) {
         HttpServerRequest request = routingContext.request();
         long userId = Long.parseLong(request.getParam("userId"));
-        String token = request.getHeader("Authorization");
         JsonObject body = routingContext.getBodyAsJson();
         if (body == null || !body.containsKey("name")) {
             cors(routingContext.response().setStatusCode(404)).end();
@@ -34,7 +33,7 @@ public class AlbumHandler {
         }
         String name = body.getString("name");
 
-        albumService.addNewAlbum(token, userId, name)
+        albumService.addNewAlbum(userId, name)
                 .onSuccess(id -> {
                     JsonObject response = new JsonObject().put("id", id);
                     cors(routingContext.response()).end(response.encode());
@@ -44,9 +43,8 @@ public class AlbumHandler {
     public void getAlbumsForUser(RoutingContext routingContext) {
         HttpServerRequest request = routingContext.request();
         long userId = Long.parseLong(request.getParam("userId"));
-        String token = request.getHeader("Authorization");
 
-        albumService.getAlbumsForUserId(token, userId)
+        albumService.getAlbumsForUserId(userId)
                 .onSuccess(albums -> {
                     JsonArray result = new JsonArray(albums);
                     cors(routingContext.response()).end(result.encode());
@@ -57,9 +55,8 @@ public class AlbumHandler {
         HttpServerRequest request = routingContext.request();
         long albumId = Long.parseLong(request.getParam("albumId"));
         long userId = Long.parseLong(request.getParam("userId"));
-        String token = request.getHeader("Authorization");
 
-        albumService.getPictureMetaForAlbum(token, userId, albumId)
+        albumService.getPictureMetaForAlbum(userId, albumId)
                 .onSuccess(result -> {
                     List<JsonObject> data = result.stream()
                             .map(this::pictureDataToJson)
@@ -85,7 +82,6 @@ public class AlbumHandler {
         HttpServerRequest request = routingContext.request();
         long userId = Long.parseLong(request.getParam("userId"));
         long albumId = Long.parseLong(request.getParam("albumId"));
-        String token = request.getHeader("Authorization");
         JsonObject body = routingContext.getBodyAsJson();
         if (body == null || !body.containsKey("name") && !body.containsKey("isChronologicalOrder")) {
             cors(routingContext.response().setStatusCode(400)).end();
@@ -94,8 +90,8 @@ public class AlbumHandler {
         String name = body.getString("name");
         String orderStr = body.getString("isChronologicalOrder");
 
-        var resultFuture = orderStr == null ? albumService.rename(token, userId, albumId, name)
-                : albumService.setChronologicalOrder(token, userId, albumId, Boolean.parseBoolean(orderStr));
+        var resultFuture = orderStr == null ? albumService.rename(userId, albumId, name)
+                : albumService.setChronologicalOrder(userId, albumId, Boolean.parseBoolean(orderStr));
 
         resultFuture
                 .onSuccess(result -> cors(routingContext.response()).end())
@@ -108,7 +104,7 @@ public class AlbumHandler {
         long albumId = Long.parseLong(request.getParam("albumId"));
         String token = request.getHeader("Authorization");
 
-        albumService.getAlbumsForUserId(token, userId)
+        albumService.getAlbumsForUserId(userId)
                 .onSuccess(result -> {
                     boolean notExist = result.stream().map(Album::getId).noneMatch(id -> id == albumId);
                     if (notExist) {
@@ -127,11 +123,10 @@ public class AlbumHandler {
         HttpServerRequest request = routingContext.request();
         long userId = Long.parseLong(request.getParam("userId"));
         long albumId = Long.parseLong(request.getParam("albumId"));
-        String token = request.getHeader("Authorization");
         JsonObject body = routingContext.getBodyAsJson();
         List<Long> sharedUsers = extractLongArr(body.getJsonArray("sharedUsers", new JsonArray()));
 
-        albumService.shareAlbum(token, userId, albumId, sharedUsers)
+        albumService.shareAlbum(userId, albumId, sharedUsers)
                 .onSuccess(result -> cors(routingContext.response()).end())
                 .onFailure(cause -> handleFailure(cause, routingContext.response()));
     }

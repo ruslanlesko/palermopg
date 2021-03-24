@@ -3,17 +3,14 @@ package com.leskor.palermopg.services;
 import com.leskor.palermopg.dao.AlbumDao;
 import com.leskor.palermopg.dao.PictureDataDao;
 import com.leskor.palermopg.dao.PictureMetaDao;
+import com.leskor.palermopg.entity.Album;
+import com.leskor.palermopg.entity.PictureMeta;
 import com.leskor.palermopg.exception.AuthorizationException;
 import com.leskor.palermopg.exception.MissingItemException;
 import com.leskor.palermopg.util.CodeGenerator;
-import com.leskor.palermopg.entity.Album;
-import com.leskor.palermopg.entity.PictureMeta;
-import com.leskor.palermopg.security.JWTParser;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,45 +26,28 @@ import static io.vertx.core.Future.succeededFuture;
 import static java.util.stream.Collectors.toList;
 
 public class AlbumService {
-    private static final Logger logger = LoggerFactory.getLogger("Application");
-
     private final PictureMetaDao pictureMetaDao;
     private final PictureDataDao pictureDataDao;
     private final AlbumDao albumDao;
     private final PictureService pictureService;
-    private final JWTParser jwtParser;
 
     public AlbumService(
             PictureMetaDao pictureMetaDao,
             PictureDataDao pictureDataDao, AlbumDao albumDao,
-            PictureService pictureService, JWTParser jwtParser
+            PictureService pictureService
     ) {
         this.pictureMetaDao = pictureMetaDao;
         this.pictureDataDao = pictureDataDao;
         this.albumDao = albumDao;
         this.pictureService = pictureService;
-        this.jwtParser = jwtParser;
     }
 
-    public Future<Long> addNewAlbum(String token, long userId, String albumName) {
-        if (!jwtParser.validateTokenForUserId(token, userId)) {
-            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
-        }
-
+    public Future<Long> addNewAlbum(long userId, String albumName) {
         Album newAlbum = new Album(-1, userId, albumName, List.of(), CodeGenerator.generateDownloadCode(), false);
-
-        return albumDao.save(newAlbum)
-                .map(id -> {
-                    logger.info("Album with id {} was created for user id {}", id, userId);
-                    return id;
-                });
+        return albumDao.save(newAlbum);
     }
 
-    public Future<List<Album>> getAlbumsForUserId(String token, long userId) {
-        if (!jwtParser.validateTokenForUserId(token, userId)) {
-            return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
-        }
-
+    public Future<List<Album>> getAlbumsForUserId(long userId) {
         return albumDao.findAlbumsForUserId(userId)
                 .compose(albums -> {
                     var albumsWithoutDownloadCode = albums.stream()
@@ -85,15 +65,11 @@ public class AlbumService {
                             .collect(toList());
 
                     return CompositeFuture.all(new ArrayList<>(futures))
-                            .compose(success -> getAlbumsForUserId(token, userId));
+                            .compose(success -> getAlbumsForUserId(userId));
                 });
     }
 
-    public Future<List<PictureMeta>> getPictureMetaForAlbum(String token, long userId, long albumId) {
-        if (!jwtParser.validateTokenForUserId(token, userId)) {
-            return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
-        }
-
+    public Future<List<PictureMeta>> getPictureMetaForAlbum(long userId, long albumId) {
         return albumDao.findById(albumId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> Future.failedFuture(new MissingItemException())))
                 .compose(album -> album.getUserId() != userId && !album.getSharedUsers().contains(userId) ?
@@ -115,18 +91,14 @@ public class AlbumService {
                                         .collect(toList());
 
                                 return CompositeFuture.all(new ArrayList<>(futures))
-                                        .compose(success -> getPictureMetaForAlbum(token, userId, albumId));
+                                        .compose(success -> getPictureMetaForAlbum(userId, albumId));
                             }
                             return succeededFuture(results);
                         })
                 );
     }
 
-    public Future<Void> rename(String token, long userId, long albumId, String newName) {
-        if (!jwtParser.validateTokenForUserId(token, userId)) {
-            return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
-        }
-
+    public Future<Void> rename(long userId, long albumId, String newName) {
         return albumDao.findById(albumId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
                 .compose(album -> album.getUserId() != userId ?
@@ -135,10 +107,6 @@ public class AlbumService {
     }
 
     public Future<Void> delete(String token, long userId, long albumId) {
-        if (!jwtParser.validateTokenForUserId(token, userId)) {
-            return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
-        }
-
         return albumDao.findById(albumId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
                 .compose(album -> album.getUserId() != userId ?
@@ -162,11 +130,7 @@ public class AlbumService {
                 });
     }
 
-    public Future<Void> shareAlbum(String token, long userId, long albumId, List<Long> sharedUsers) {
-        if (!jwtParser.validateTokenForUserId(token, userId)) {
-            return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
-        }
-
+    public Future<Void> shareAlbum(long userId, long albumId, List<Long> sharedUsers) {
         return albumDao.findById(albumId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
                 .compose(album -> album.getUserId() != userId ?
@@ -208,18 +172,13 @@ public class AlbumService {
                                     zos.flush();
                                     return succeededFuture(baos.toByteArray());
                                 } catch (IOException e) {
-                                    logger.error(e.getMessage());
                                     return failedFuture(e);
                                 }
                             });
                 });
     }
 
-    public Future<Void> setChronologicalOrder(String token, long userId, long albumId, boolean isChronologicalOrder) {
-        if (!jwtParser.validateTokenForUserId(token, userId)) {
-            return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
-        }
-
+    public Future<Void> setChronologicalOrder(long userId, long albumId, boolean isChronologicalOrder) {
         return albumDao.findById(albumId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
                 .compose(album -> album.getUserId() != userId ?
