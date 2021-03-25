@@ -126,7 +126,6 @@ class PictureServiceTest {
 
     @Test
     void testInsertingNewPicture() {
-        when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(dataDao.save(data)).thenReturn(Future.succeededFuture(PATH));
         when(dataDao.save(OPTIMIZED_DATA)).thenReturn(Future.succeededFuture(PATH + "_optimized"));
         when(metaDao.save(any())).thenReturn(Future.succeededFuture(PICTURE_ID));
@@ -143,7 +142,6 @@ class PictureServiceTest {
 
     @Test
     void testInsertingNewPictureExceedingLimit() {
-        when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(storageService.findForUser(TOKEN, USER_ID)).thenReturn(Future.succeededFuture(STORAGE_CONSUMPTION_LIMITED));
         when(pmService.rotateToCorrectOrientation(data)).thenReturn(Future.succeededFuture(data));
         when(pmService.convertToOptimized(data)).thenReturn(Future.succeededFuture(OPTIMIZED_DATA));

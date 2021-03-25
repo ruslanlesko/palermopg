@@ -20,7 +20,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class AlbumServiceTest {
-    private static final String TOKEN = "abc";
     private static final String ALBUM_NAME = "great pics";
     private static final long USER_ID = 42;
     private static final long USER_ID_2 = 97;
@@ -84,7 +83,7 @@ public class AlbumServiceTest {
 
         AuthorizationException expected = new AuthorizationException("Album is not available to user");
 
-        albumService.delete(TOKEN, USER_ID, ALBUM_ID)
+        albumService.delete(USER_ID, ALBUM_ID)
                 .onComplete(response -> {
                     assertTrue(response.failed());
                     assertEquals(expected, response.cause());

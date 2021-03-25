@@ -106,7 +106,7 @@ public class AlbumService {
                             : albumDao.renameAlbum(albumId, newName));
     }
 
-    public Future<Void> delete(String token, long userId, long albumId) {
+    public Future<Void> delete(long userId, long albumId) {
         return albumDao.findById(albumId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
                 .compose(album -> album.getUserId() != userId ?
@@ -114,7 +114,7 @@ public class AlbumService {
                 .compose(dbRecordDeleted -> pictureMetaDao.findForAlbumId(albumId))
                 .compose(metas -> {
                     var deleteFutures = metas.stream()
-                            .map(meta -> pictureService.deletePicture(token, userId, meta.getId()))
+                            .map(meta -> pictureService.deletePicture(userId, meta.getId()))
                             .map(fut -> {
                                 Promise promise = Promise.promise();
 

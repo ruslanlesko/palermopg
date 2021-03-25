@@ -94,8 +94,9 @@ public class Application {
 
         router.route().handler(LoggerHandler.create(LoggerFormat.TINY));
 
-        router.route("/pic/:userId*").handler(BodyHandler.create());
         router.get("/pic/:userId/:pictureId").produces(JPEG_FORMAT).handler(pictureHandler::getById);
+        router.route("/pic/:userId*").handler(this::authorize);
+        router.route("/pic/:userId*").handler(BodyHandler.create());
         router.post("/pic/:userId").consumes(JPEG_FORMAT).handler(pictureHandler::add);
         router.post("/pic/:userId/:pictureId/rotate").handler(pictureHandler::rotate);
         router.delete("/pic/:userId/:pictureId").produces(JSON_FORMAT).handler(pictureHandler::deleteById);

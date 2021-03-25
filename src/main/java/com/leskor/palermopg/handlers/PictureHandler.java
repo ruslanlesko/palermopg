@@ -70,9 +70,8 @@ public class PictureHandler {
         HttpServerRequest request = routingContext.request();
         long userId = Long.parseLong(request.getParam("userId"));
         long id = Long.parseLong(request.getParam("pictureId"));
-        String token = request.getHeader("Authorization");
 
-        pictureService.rotatePicture(token, userId, id)
+        pictureService.rotatePicture(userId, id)
                 .onSuccess(result -> cors(routingContext.response()).end())
                 .onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
@@ -84,7 +83,7 @@ public class PictureHandler {
         String token = request.getHeader("Authorization");
 
         pictureService.getPictureData(token, null, userId, id, false)
-                .onSuccess(result -> pictureService.deletePicture(token, userId, id)
+                .onSuccess(result -> pictureService.deletePicture(userId, id)
                         .onSuccess(deleteResult -> {
                             JsonObject response = new JsonObject().put("id", id);
                             cors(routingContext.response()).end(response.encode());

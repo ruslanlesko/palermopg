@@ -102,7 +102,6 @@ public class AlbumHandler {
         HttpServerRequest request = routingContext.request();
         long userId = Long.parseLong(request.getParam("userId"));
         long albumId = Long.parseLong(request.getParam("albumId"));
-        String token = request.getHeader("Authorization");
 
         albumService.getAlbumsForUserId(userId)
                 .onSuccess(result -> {
@@ -111,7 +110,7 @@ public class AlbumHandler {
                         cors(routingContext.response().setStatusCode(404)).end();
                         return;
                     }
-                    albumService.delete(token, userId, albumId)
+                    albumService.delete(userId, albumId)
                             .onSuccess(deleteResult -> {
                                 JsonObject response = new JsonObject().put("id", albumId);
                                 cors(routingContext.response()).end(response.encode());

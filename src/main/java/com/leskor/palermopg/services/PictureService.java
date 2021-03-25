@@ -17,13 +17,6 @@ import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.imageio.ImageIO;
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
@@ -32,9 +25,6 @@ import static io.vertx.core.Future.succeededFuture;
 
 public class PictureService {
     private static final Logger logger = LoggerFactory.getLogger("Application");
-
-    private static final int TARGET_WIDTH = 1792;
-    private static final int TARGET_HEIGHT = 1120;
 
     private final PictureMetaDao pictureMetaDao;
     private final PictureDataDao pictureDataDao;
@@ -64,11 +54,8 @@ public class PictureService {
 
         return pictureMetaDao.find(pictureId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> Future.failedFuture(new MissingItemException())))
-                .compose(meta ->
-                    isAlbumNotAccessible(meta.getAlbumId(), userId)
-                            .compose(albumNotAccessible -> (albumNotAccessible && meta.getUserId() != userId) ?
-                                    failedFuture(new AuthorizationException("Wrong user id")) : succeededFuture(meta))
-                ).compose(meta -> {
+                .compose(meta -> checkPictureAccess(userId, meta))
+                .compose(meta -> {
                     final String hash = calculateHash(meta, fullSize);
                     if (hash.equals(clientHash)) return succeededFuture(new PictureResponse(null, true, hash));
 
@@ -86,10 +73,7 @@ public class PictureService {
         return pictureMetaDao.find(pictureId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
                 .compose(meta -> meta.getDownloadCode().equals(code) ? succeededFuture(meta) : failedFuture(new MissingItemException()))
-                .compose(meta ->
-                        isAlbumNotAccessible(meta.getAlbumId(), userId)
-                                .compose(albumNotAccessible -> (albumNotAccessible && meta.getUserId() != userId) ?
-                                        failedFuture(new MissingItemException()) : succeededFuture(meta)))
+                .compose(meta -> checkPictureAccess(userId, meta))
                 .compose(meta -> pictureDataDao.find(meta.getPath()));
     }
 
@@ -102,19 +86,8 @@ public class PictureService {
         return "W/\"" + dateModified.toEpochSecond(ZoneOffset.UTC) + fullSizeSuffix + "\"";
     }
 
-    private Future<Boolean> isAlbumNotAccessible(long albumId, long userId) {
-        return albumId <= 0 ? succeededFuture(true)
-                : albumDao.findById(albumId)
-                    .map(opt -> opt.isEmpty() || opt.get().getUserId() != userId && !opt.get().getSharedUsers().contains(userId));
-    }
-
     public Future<Long> insertNewPicture(String token, long userId, long albumId, byte[] data) {
-        if (!jwtParser.validateTokenForUserId(token, userId)) {
-            return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
-        }
-
         final LocalDateTime dateCaptured = extractDateCaptured(data);
-
         return storageService.findForUser(token, userId).compose(storage ->
                 pictureManipulationService.rotateToCorrectOrientation(data).compose(rotatedData ->
                         pictureManipulationService.convertToOptimized(rotatedData).compose(optimizedPictureData ->
@@ -169,17 +142,10 @@ public class PictureService {
         }
     }
 
-    public Future<Void> rotatePicture(String token, long userId, long pictureId) {
-        if (!jwtParser.validateTokenForUserId(token, userId)) {
-            return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
-        }
-
+    public Future<Void> rotatePicture(long userId, long pictureId) {
         return pictureMetaDao.find(pictureId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
-                .compose(meta ->
-                        isAlbumNotAccessible(meta.getAlbumId(), userId)
-                            .compose(albumNotAccessible -> (albumNotAccessible && meta.getUserId() != userId) ?
-                                    failedFuture(new AuthorizationException("Wrong user id")) : succeededFuture(meta)))
+                .compose(meta -> checkPictureAccess(userId, meta))
                 .compose(meta -> {
                     doRotate(meta.getPathOptimized());
                     return doRotate(meta.getPath());
@@ -196,20 +162,26 @@ public class PictureService {
                 .compose(rotatedData -> pictureDataDao.replace(path, rotatedData));
     }
 
-    public Future<Void> deletePicture(String token, long userId, long pictureId) {
-        if (!jwtParser.validateTokenForUserId(token, userId)) {
-            return failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
-        }
-
+    public Future<Void> deletePicture(long userId, long pictureId) {
         return pictureMetaDao.find(pictureId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
+                .compose(meta -> checkPictureAccess(userId, meta))
                 .compose(meta -> pictureMetaDao.deleteById(pictureId)
                         .compose(dbItemDeleted -> pictureDataDao.delete(meta.getPath()))
-                        .compose(originalDeleted -> {
-                            logger.info("Successfully deleted picture id {}", pictureId);
-                            return meta.getPathOptimized() == null ?
-                                    succeededFuture() : pictureDataDao.delete(meta.getPathOptimized());
-                        })
+                        .compose(originalDeleted -> meta.getPathOptimized() == null ? succeededFuture()
+                                : pictureDataDao.delete(meta.getPathOptimized()))
                 );
+    }
+
+    private Future<PictureMeta> checkPictureAccess(long userId, PictureMeta meta) {
+        return isAlbumNotAccessible(meta.getAlbumId(), userId)
+                .compose(albumNotAccessible -> (albumNotAccessible && meta.getUserId() != userId) ?
+                        failedFuture(new AuthorizationException("Wrong user id")) : succeededFuture(meta));
+    }
+
+    private Future<Boolean> isAlbumNotAccessible(long albumId, long userId) {
+        return albumId <= 0 ? succeededFuture(true)
+                : albumDao.findById(albumId)
+                .map(opt -> opt.isEmpty() || opt.get().getUserId() != userId && !opt.get().getSharedUsers().contains(userId));
     }
 }
