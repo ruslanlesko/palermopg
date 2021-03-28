@@ -41,7 +41,9 @@ public class MongoAlbumDao implements AlbumDao {
                     Document document = new Document()
                             .append("id", nextId)
                             .append("userId", album.getUserId())
-                            .append("name", album.getName());
+                            .append("name", album.getName())
+                            .append("isChronologicalOrder", album.isChronologicalOrder())
+                            .append("sharedUsers", album.getSharedUsers());
 
                     getCollection().insertOne(document)
                             .subscribe(forSinglePromise(resultPromise, success -> nextId));

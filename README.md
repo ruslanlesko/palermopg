@@ -63,7 +63,9 @@ Port number: 8081
 #### Payload of create album body
 ```
 {
-    "name": "New Year Party"
+    "name": "New Year Party", <- required field
+    "sharedUsers": [21, 14],
+    "isChronologicalOrder": false
 }
 ```
 

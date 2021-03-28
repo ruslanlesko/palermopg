@@ -13,9 +13,9 @@ public class Album {
     private final List<Long> sharedUsers;
     private final String downloadCode;
 
-    private final boolean isChronologicalOrder;
+    private final Boolean isChronologicalOrder;
 
-    public Album(long id, long userId, String name, List<Long> sharedUsers, String downloadCode, boolean isChronologicalOrder) {
+    public Album(long id, long userId, String name, List<Long> sharedUsers, String downloadCode, Boolean isChronologicalOrder) {
         this.id = id;
         this.userId = userId;
         this.name = name;
@@ -45,7 +45,7 @@ public class Album {
     }
 
     @JsonProperty("isChronologicalOrder")
-    public boolean isChronologicalOrder() {
+    public Boolean isChronologicalOrder() {
         return isChronologicalOrder;
     }
 

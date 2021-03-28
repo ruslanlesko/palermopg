@@ -65,7 +65,7 @@ public class AlbumServiceTest {
 
         AlbumService albumService = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService);
 
-        albumService.addNewAlbum(USER_ID, ALBUM_NAME)
+        albumService.addNewAlbum(new Album(-1, USER_ID, ALBUM_NAME, null, null, null))
                 .onComplete(response -> assertEquals(ALBUM_ID, response.result()));
     }
 

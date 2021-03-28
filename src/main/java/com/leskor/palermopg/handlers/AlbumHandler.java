@@ -31,9 +31,9 @@ public class AlbumHandler {
             cors(routingContext.response().setStatusCode(404)).end();
             return;
         }
-        String name = body.getString("name");
+        Album newAlbum = jsonToAlbum(userId, body);
 
-        albumService.addNewAlbum(userId, name)
+        albumService.addNewAlbum(newAlbum)
                 .onSuccess(id -> {
                     JsonObject response = new JsonObject().put("id", id);
                     cors(routingContext.response()).end(response.encode());
@@ -145,5 +145,18 @@ public class AlbumHandler {
                 .put("userId", p.getUserId())
                 .put("pictureId", p.getId())
                 .put("downloadCode", p.getDownloadCode());
+    }
+
+    private Album jsonToAlbum(long userId, JsonObject json) {
+        String name = json.getString("name");
+        List<Long> sharedUsers = null;
+        if (json.containsKey("sharedUsers")) {
+            sharedUsers = extractLongArr(json.getJsonArray("sharedUsers"));
+        }
+        Boolean isChrono = null;
+        if (json.containsKey("isChronologicalOrder")) {
+            isChrono = Boolean.parseBoolean(json.getString("isChronologicalOrder"));
+        }
+        return new Album(-1, userId, name, sharedUsers, null, isChrono);
     }
 }
