@@ -21,7 +21,7 @@ Port number: 8081
 * GET `/album/{userId}/{albumId}` returns list of pictures contained in album
 * GET `/album/{userId}/{albumId}/download?code={downloadCode}` downloads album as a zip archive
 * POST `/album/{userId}` creates album for user, returns newly created album id
-* PATCH `/album/{userId}/{albumId}` updates album (either rename or change ordering)
+* PATCH `/album/{userId}/{albumId}` updates album
 * POST `/album/{userId}/{albumId}/share` shares album with provided list of users
 * DELETE `/album/{userId}/{albumId}` deletes album, returns deleted album id on success
 
@@ -73,7 +73,8 @@ Port number: 8081
 ```
 {
     "name": "2020 NY Party",
-    "isChronologicalOrder": true
+    "isChronologicalOrder": true,
+    "sharedUsers": [21, 14]
 }
 ```
 
