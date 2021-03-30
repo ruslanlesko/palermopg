@@ -10,6 +10,6 @@ RUN ["jlink", \
 
 FROM debian:10.7-slim
 COPY --from=build /app/slimjre /slimjre
-COPY --from=build /app/target/core-1.17.0-fat.jar /app/target/core.jar
+COPY --from=build /app/target/core-1.18.0-fat.jar /app/target/core.jar
 EXPOSE 8081
 ENTRYPOINT ["/slimjre/bin/java", "-jar", "/app/target/core.jar"]
