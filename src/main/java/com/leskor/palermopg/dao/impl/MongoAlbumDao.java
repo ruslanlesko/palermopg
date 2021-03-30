@@ -3,6 +3,8 @@ package com.leskor.palermopg.dao.impl;
 import com.leskor.palermopg.dao.AlbumDao;
 import com.leskor.palermopg.entity.Album;
 import com.leskor.palermopg.exception.MissingItemException;
+import com.leskor.palermopg.util.ReactiveSubscriber;
+import com.mongodb.BasicDBObject;
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.reactivestreams.client.MongoClient;
@@ -130,6 +132,34 @@ public class MongoAlbumDao implements AlbumDao {
     @Override
     public Future<Void> setChronologicalOrder(long id, boolean isChronologicalOrder) {
         return setField(getCollection(), id, "isChronologicalOrder", isChronologicalOrder);
+    }
+
+    @Override
+    public Future<Void> updateAlbum(Album album) {
+        Promise<Void> resultPromise = Promise.promise();
+
+        BasicDBObject query = new BasicDBObject();
+        query.put("id", album.getId());
+
+        BasicDBObject newDoc = new BasicDBObject();
+
+        if (album.getName() != null) newDoc.put("name", album.getName());
+        if (album.isChronologicalOrder() != null) newDoc.put("isChronologicalOrder", album.isChronologicalOrder());
+        if (album.getSharedUsers() != null) newDoc.put("sharedUsers", album.getSharedUsers());
+
+        BasicDBObject updateDoc = new BasicDBObject();
+        updateDoc.put("$set", newDoc);
+
+        getCollection()
+                .updateOne(query, updateDoc)
+                .subscribe(
+                        ReactiveSubscriber.forVoidPromise(
+                                resultPromise, res -> res.getModifiedCount() == 1 && res.wasAcknowledged(),
+                                new MissingItemException()
+                        )
+                );
+
+        return resultPromise.future();
     }
 
     private MongoCollection<Document> getCollection() {

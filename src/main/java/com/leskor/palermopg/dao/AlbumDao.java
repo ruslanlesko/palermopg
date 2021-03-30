@@ -15,4 +15,5 @@ public interface AlbumDao {
     Future<Void> updateSharedUsers(long id, List<Long> sharedIds);
     Future<Void> setDownloadCode(long id, String code);
     Future<Void> setChronologicalOrder(long id, boolean isChronologicalOrder);
+    Future<Void> updateAlbum(Album album);
 }

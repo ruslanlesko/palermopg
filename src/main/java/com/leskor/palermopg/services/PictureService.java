@@ -182,6 +182,6 @@ public class PictureService {
     private Future<Boolean> isAlbumNotAccessible(long albumId, long userId) {
         return albumId <= 0 ? succeededFuture(true)
                 : albumDao.findById(albumId)
-                .map(opt -> opt.isEmpty() || opt.get().getUserId() != userId && !opt.get().getSharedUsers().contains(userId));
+                .map(opt -> opt.isEmpty() || opt.get().getUserId() != userId && (opt.get().getSharedUsers() == null || !opt.get().getSharedUsers().contains(userId)));
     }
 }

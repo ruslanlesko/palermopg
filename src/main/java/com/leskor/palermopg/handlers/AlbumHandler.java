@@ -31,7 +31,7 @@ public class AlbumHandler {
             cors(routingContext.response().setStatusCode(404)).end();
             return;
         }
-        Album newAlbum = jsonToAlbum(userId, body);
+        Album newAlbum = jsonToAlbum(userId, -1, body);
 
         albumService.addNewAlbum(newAlbum)
                 .onSuccess(id -> {
@@ -83,17 +83,14 @@ public class AlbumHandler {
         long userId = Long.parseLong(request.getParam("userId"));
         long albumId = Long.parseLong(request.getParam("albumId"));
         JsonObject body = routingContext.getBodyAsJson();
-        if (body == null || !body.containsKey("name") && !body.containsKey("isChronologicalOrder")) {
+        if (body == null) {
             cors(routingContext.response().setStatusCode(400)).end();
             return;
         }
-        String name = body.getString("name");
-        String orderStr = body.getString("isChronologicalOrder");
 
-        var resultFuture = orderStr == null ? albumService.rename(userId, albumId, name)
-                : albumService.setChronologicalOrder(userId, albumId, Boolean.parseBoolean(orderStr));
+        Album album = jsonToAlbum(userId, albumId, body);
 
-        resultFuture
+        albumService.update(album)
                 .onSuccess(result -> cors(routingContext.response()).end())
                 .onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
@@ -147,7 +144,7 @@ public class AlbumHandler {
                 .put("downloadCode", p.getDownloadCode());
     }
 
-    private Album jsonToAlbum(long userId, JsonObject json) {
+    private Album jsonToAlbum(long userId, long albumId, JsonObject json) {
         String name = json.getString("name");
         List<Long> sharedUsers = null;
         if (json.containsKey("sharedUsers")) {
@@ -157,6 +154,6 @@ public class AlbumHandler {
         if (json.containsKey("isChronologicalOrder")) {
             isChrono = Boolean.parseBoolean(json.getString("isChronologicalOrder"));
         }
-        return new Album(-1, userId, name, sharedUsers, null, isChrono);
+        return new Album(albumId, userId, name, sharedUsers, null, isChrono);
     }
 }

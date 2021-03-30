@@ -79,7 +79,7 @@ public class AlbumService {
     public Future<List<PictureMeta>> getPictureMetaForAlbum(long userId, long albumId) {
         return albumDao.findById(albumId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> Future.failedFuture(new MissingItemException())))
-                .compose(album -> album.getUserId() != userId && !album.getSharedUsers().contains(userId) ?
+                .compose(album -> album.getUserId() != userId && (album.getSharedUsers() == null || !album.getSharedUsers().contains(userId)) ?
                         failedFuture(new AuthorizationException("Album is missing or not available to user")) : succeededFuture(album))
                 .compose(album -> pictureMetaDao.findForAlbumId(albumId)
                         .compose(metas -> {
@@ -105,12 +105,12 @@ public class AlbumService {
                 );
     }
 
-    public Future<Void> rename(long userId, long albumId, String newName) {
-        return albumDao.findById(albumId)
+    public Future<Void> update(Album album) {
+        return albumDao.findById(album.getId())
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
-                .compose(album -> album.getUserId() != userId ?
+                .compose(a -> a.getUserId() != album.getUserId() ?
                         failedFuture(new AuthorizationException("Album is not available to user"))
-                            : albumDao.renameAlbum(albumId, newName));
+                        : albumDao.updateAlbum(album));
     }
 
     public Future<Void> delete(long userId, long albumId) {
@@ -148,7 +148,7 @@ public class AlbumService {
     public Future<byte[]> download(long userId, long albumId, String code) {
         return albumDao.findById(albumId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
-                .compose(album -> album.getUserId() != userId && !album.getSharedUsers().contains(userId)
+                .compose(album -> album.getUserId() != userId && (album.getSharedUsers() == null || !album.getSharedUsers().contains(userId))
                         || !album.getDownloadCode().equals(code) ?
                             failedFuture(new AuthorizationException("Album is missing or not available to user"))
                                 : pictureMetaDao.findForAlbumId(albumId))
@@ -185,14 +185,6 @@ public class AlbumService {
                 });
     }
 
-    public Future<Void> setChronologicalOrder(long userId, long albumId, boolean isChronologicalOrder) {
-        return albumDao.findById(albumId)
-                .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
-                .compose(album -> album.getUserId() != userId ?
-                        failedFuture(new AuthorizationException("Album is not available to user"))
-                            : albumDao.setChronologicalOrder(albumId, isChronologicalOrder));
-    }
-
     private int sortPictureMeta(PictureMeta a, PictureMeta b) {
         LocalDateTime uploadedA = a.getDateUploaded();
         LocalDateTime uploadedB = b.getDateUploaded();
@@ -208,6 +200,9 @@ public class AlbumService {
     }
 
     List<Long> combineSharedUsers(List<Long> current, List<Long> toAdd) {
+        if (current == null) {
+            return toAdd.stream().distinct().collect(toList());
+        }
         List<Long> result = new ArrayList<>(current);
         result.addAll(toAdd);
         return result.stream().distinct().collect(toList());
