@@ -27,5 +27,6 @@ module com.leskor.palermopg {
     requires java.desktop;
 
     opens com.leskor.palermopg.services;
+    opens com.leskor.palermopg.services.album;
     opens com.leskor.palermopg.entity;
 }
