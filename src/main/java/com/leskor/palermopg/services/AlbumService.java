@@ -42,18 +42,6 @@ public class AlbumService {
         this.pictureService = pictureService;
     }
 
-    public Future<Long> addNewAlbum(Album album) {
-        Album newAlbum = new Album(
-                -1,
-                album.getUserId(),
-                album.getName(),
-                album.getSharedUsers() == null ? List.of() : album.getSharedUsers(),
-                CodeGenerator.generateDownloadCode(),
-                album.isChronologicalOrder() != null && album.isChronologicalOrder()
-        );
-        return albumDao.save(newAlbum);
-    }
-
     public Future<List<Album>> getAlbumsForUserId(long userId) {
         return albumDao.findAlbumsForUserId(userId)
                 .compose(albums -> {

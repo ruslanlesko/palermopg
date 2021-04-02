@@ -3,6 +3,7 @@ package com.leskor.palermopg.handlers;
 import com.leskor.palermopg.entity.Album;
 import com.leskor.palermopg.entity.PictureMeta;
 import com.leskor.palermopg.services.AlbumService;
+import com.leskor.palermopg.services.album.AlbumCreationService;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -18,9 +19,14 @@ import static io.vertx.core.buffer.Buffer.buffer;
 
 public class AlbumHandler {
     private final AlbumService albumService;
+    private final AlbumCreationService albumCreationService;
 
-    public AlbumHandler(AlbumService albumService) {
+    public AlbumHandler(
+            AlbumService albumService,
+            AlbumCreationService albumCreationService
+    ) {
         this.albumService = albumService;
+        this.albumCreationService = albumCreationService;
     }
 
     public void add(RoutingContext routingContext) {
@@ -33,7 +39,7 @@ public class AlbumHandler {
         }
         Album newAlbum = jsonToAlbum(userId, -1, body);
 
-        albumService.addNewAlbum(newAlbum)
+        albumCreationService.addNewAlbum(newAlbum)
                 .onSuccess(id -> {
                     JsonObject response = new JsonObject().put("id", id);
                     cors(routingContext.response()).end(response.encode());

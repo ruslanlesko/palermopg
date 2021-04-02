@@ -15,7 +15,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -46,27 +45,6 @@ public class AlbumServiceTest {
 
         service.getAlbumsForUserId(USER_ID)
                 .onComplete(response -> assertEquals(expected, response.result()));
-    }
-
-    @Test
-    void testAddAlbum() {
-        PictureMetaDao pictureMetaDao = mock(PictureMetaDao.class);
-        PictureDataDao pictureDataDao = mock(PictureDataDao.class);
-        AlbumDao albumDao = mock(AlbumDao.class);
-        PictureService pictureService = mock(PictureService.class);
-
-        when(albumDao.save(argThat(a ->
-                        a.getId() == -1
-                        && a.getName().equals(ALBUM_NAME)
-                        && a.getUserId() == USER_ID
-                        && a.getSharedUsers().isEmpty()
-                        && a.getDownloadCode().length() == 128)))
-                .thenReturn(Future.succeededFuture(ALBUM_ID));
-
-        AlbumService albumService = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService);
-
-        albumService.addNewAlbum(new Album(-1, USER_ID, ALBUM_NAME, null, null, null))
-                .onComplete(response -> assertEquals(ALBUM_ID, response.result()));
     }
 
     @Test

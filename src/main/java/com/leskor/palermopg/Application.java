@@ -16,6 +16,7 @@ import com.leskor.palermopg.services.AlbumService;
 import com.leskor.palermopg.services.PictureManipulationService;
 import com.leskor.palermopg.services.PictureService;
 import com.leskor.palermopg.services.StorageService;
+import com.leskor.palermopg.services.album.AlbumCreationService;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
 import io.vertx.core.Vertx;
@@ -58,9 +59,10 @@ public class Application {
         StorageService storageService = new StorageService(pictureMetaDao, pictureDataDao, limitsDao, jwtParser);
         PictureService pictureService = new PictureService(pictureMetaDao, pictureDataDao, albumDao, jwtParser, storageService, pmService);
         AlbumService albumService = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService);
+        AlbumCreationService albumCreationService = new AlbumCreationService(albumDao);
 
         pictureHandler = new PictureHandler(pictureService);
-        albumHandler = new AlbumHandler(albumService);
+        albumHandler = new AlbumHandler(albumService, albumCreationService);
         storageHandler = new StorageHandler(storageService);
     }
 
