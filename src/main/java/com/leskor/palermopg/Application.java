@@ -12,11 +12,10 @@ import com.leskor.palermopg.handlers.AlbumHandler;
 import com.leskor.palermopg.handlers.PictureHandler;
 import com.leskor.palermopg.handlers.StorageHandler;
 import com.leskor.palermopg.security.JWTParser;
-import com.leskor.palermopg.services.AlbumService;
 import com.leskor.palermopg.services.PictureManipulationService;
 import com.leskor.palermopg.services.PictureService;
 import com.leskor.palermopg.services.StorageService;
-import com.leskor.palermopg.services.album.AlbumCreationService;
+import com.leskor.palermopg.services.album.*;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
 import io.vertx.core.Vertx;
@@ -58,11 +57,14 @@ public class Application {
 
         StorageService storageService = new StorageService(pictureMetaDao, pictureDataDao, limitsDao, jwtParser);
         PictureService pictureService = new PictureService(pictureMetaDao, pictureDataDao, albumDao, jwtParser, storageService, pmService);
-        AlbumService albumService = new AlbumService(pictureMetaDao, pictureDataDao, albumDao, pictureService);
         AlbumCreationService albumCreationService = new AlbumCreationService(albumDao);
+        AlbumFetchingService albumFetchingService = new AlbumFetchingService(albumDao, pictureMetaDao, pictureDataDao);
+        AlbumSharingService albumSharingService = new AlbumSharingService(albumDao);
+        AlbumUpdatingService albumUpdatingService = new AlbumUpdatingService(albumDao);
+        AlbumDeletingService albumDeletingService = new AlbumDeletingService(pictureService, albumDao, pictureMetaDao);
 
         pictureHandler = new PictureHandler(pictureService);
-        albumHandler = new AlbumHandler(albumService, albumCreationService);
+        albumHandler = new AlbumHandler(albumCreationService, albumFetchingService, albumSharingService, albumUpdatingService, albumDeletingService);
         storageHandler = new StorageHandler(storageService);
     }
 

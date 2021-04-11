@@ -2,8 +2,7 @@ package com.leskor.palermopg.handlers;
 
 import com.leskor.palermopg.entity.Album;
 import com.leskor.palermopg.entity.PictureMeta;
-import com.leskor.palermopg.services.AlbumService;
-import com.leskor.palermopg.services.album.AlbumCreationService;
+import com.leskor.palermopg.services.album.*;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -18,15 +17,22 @@ import static com.leskor.palermopg.util.ApiUtils.handleFailure;
 import static io.vertx.core.buffer.Buffer.buffer;
 
 public class AlbumHandler {
-    private final AlbumService albumService;
     private final AlbumCreationService albumCreationService;
+    private final AlbumFetchingService albumFetchingService;
+    private final AlbumSharingService albumSharingService;
+    private final AlbumUpdatingService albumUpdatingService;
+    private final AlbumDeletingService albumDeletingService;
 
     public AlbumHandler(
-            AlbumService albumService,
-            AlbumCreationService albumCreationService
-    ) {
-        this.albumService = albumService;
+            AlbumCreationService albumCreationService,
+            AlbumFetchingService albumFetchingService,
+            AlbumSharingService albumSharingService,
+            AlbumUpdatingService albumUpdatingService, AlbumDeletingService albumDeletingService) {
         this.albumCreationService = albumCreationService;
+        this.albumFetchingService = albumFetchingService;
+        this.albumSharingService = albumSharingService;
+        this.albumUpdatingService = albumUpdatingService;
+        this.albumDeletingService = albumDeletingService;
     }
 
     public void add(RoutingContext routingContext) {
@@ -50,7 +56,7 @@ public class AlbumHandler {
         HttpServerRequest request = routingContext.request();
         long userId = Long.parseLong(request.getParam("userId"));
 
-        albumService.getAlbumsForUserId(userId)
+        albumFetchingService.getAlbumsForUserId(userId)
                 .onSuccess(albums -> {
                     JsonArray result = new JsonArray(albums);
                     cors(routingContext.response()).end(result.encode());
@@ -62,7 +68,7 @@ public class AlbumHandler {
         long albumId = Long.parseLong(request.getParam("albumId"));
         long userId = Long.parseLong(request.getParam("userId"));
 
-        albumService.getPictureMetaForAlbum(userId, albumId)
+        albumFetchingService.getPictureMetaForAlbum(userId, albumId)
                 .onSuccess(result -> {
                     List<JsonObject> data = result.stream()
                             .map(this::pictureDataToJson)
@@ -77,7 +83,7 @@ public class AlbumHandler {
         long userId = Long.parseLong(request.getParam("userId"));
         String code = request.getParam("code");
 
-        albumService.download(userId, albumId, code)
+        albumFetchingService.download(userId, albumId, code)
                 .onSuccess(data -> cors(routingContext.response())
                         .putHeader("Content-Disposition", "attachment; filename=\"" + albumId + ".zip\"")
                         .end(buffer(data)))
@@ -96,7 +102,7 @@ public class AlbumHandler {
 
         Album album = jsonToAlbum(userId, albumId, body);
 
-        albumService.update(album)
+        albumUpdatingService.update(album)
                 .onSuccess(result -> cors(routingContext.response()).end())
                 .onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
@@ -106,14 +112,14 @@ public class AlbumHandler {
         long userId = Long.parseLong(request.getParam("userId"));
         long albumId = Long.parseLong(request.getParam("albumId"));
 
-        albumService.getAlbumsForUserId(userId)
+        albumFetchingService.getAlbumsForUserId(userId)
                 .onSuccess(result -> {
                     boolean notExist = result.stream().map(Album::getId).noneMatch(id -> id == albumId);
                     if (notExist) {
                         cors(routingContext.response().setStatusCode(404)).end();
                         return;
                     }
-                    albumService.delete(userId, albumId)
+                    albumDeletingService.delete(userId, albumId)
                             .onSuccess(deleteResult -> {
                                 JsonObject response = new JsonObject().put("id", albumId);
                                 cors(routingContext.response()).end(response.encode());
@@ -128,7 +134,7 @@ public class AlbumHandler {
         JsonObject body = routingContext.getBodyAsJson();
         List<Long> sharedUsers = extractLongArr(body.getJsonArray("sharedUsers", new JsonArray()));
 
-        albumService.shareAlbum(userId, albumId, sharedUsers)
+        albumSharingService.shareAlbum(userId, albumId, sharedUsers)
                 .onSuccess(result -> cors(routingContext.response()).end())
                 .onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
