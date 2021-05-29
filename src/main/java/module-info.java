@@ -4,9 +4,10 @@ module com.leskor.palermopg {
     requires org.apache.logging.log4j;
     requires java.scripting;
 
-    // Vert.x core & web
+    // Vert.x core, web & metrics
     requires io.vertx.core;
     requires io.vertx.web;
+    requires io.vertx.metrics.micrometer;
 
     // Annotations for JSON fields
     requires com.fasterxml.jackson.annotation;

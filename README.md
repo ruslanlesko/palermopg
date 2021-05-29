@@ -28,6 +28,9 @@ Port number: 8081
 ### Storage operations
 * GET `/storage/{userId}` returns consumed by user storage in bytes
 
+### Analytics
+* GET `/metrics` returns various Prometheus metrics. Requires basic auth if set by `METRICS_USER` and `METRICS_PASSWORD` environment variables. 
+
 #### Payload of album list
 ```
 [
@@ -99,6 +102,10 @@ Run `mvn package` in the project root to get application jar with dependencies.
 * `PIC_DB` - URL to Mongo DB (mongodb://username:password@localhost/db)
 * `PIC_DB_NAME` - database name
 * `PIC_ADMIN_ID` - admin's user ID
+
+### Optional Environment Variables
+* `METRICS_USER` - username for `/metrics` Prometheus endpoint
+* `METRICS_PASSWORD` - password for `/metrics` Prometheus endpoint
 
 ## RSA Key Generation On Linux
 1. Generate a private key `openssl genrsa -out private.pem 2048`
