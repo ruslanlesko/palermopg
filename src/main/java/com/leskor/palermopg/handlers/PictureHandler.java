@@ -41,13 +41,13 @@ public class PictureHandler {
                     if (result.isNotModified()) {
                         cors(routingContext.response().setStatusCode(304))
                                 .putHeader("ETag", result.getHash())
-                                .putHeader("Cache-Control", "max-age=0, must-revalidate")
+                                .putHeader("Cache-Control", "max-age=60, public")
                                 .end();
                         return;
                     }
                     cors(routingContext.response())
                             .putHeader("ETag", result.getHash())
-                            .putHeader("Cache-Control", "max-age=0, must-revalidate")
+                            .putHeader("Cache-Control", "max-age=60, public")
                             .end(buffer(result.getData()));
                 }).onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
