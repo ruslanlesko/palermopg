@@ -83,7 +83,7 @@ class PictureServiceTest {
 
         PictureService service = new PictureService(metaDao, dataDao, albumDao, parser, storageService, pmService);
 
-        String expectedHash = "W/\"" + TIME.toEpochSecond(ZoneOffset.UTC) + "\"";
+        String expectedHash = "W/\"" + PICTURE_ID + TIME.toEpochSecond(ZoneOffset.UTC) + "\"";
 
         PictureResponse expected = new PictureResponse(data, false, expectedHash);
         service.getPictureData(TOKEN, null, USER_ID, PICTURE_ID, false)

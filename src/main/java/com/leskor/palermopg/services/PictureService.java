@@ -22,6 +22,7 @@ import java.time.ZoneOffset;
 
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
+import static java.time.ZoneOffset.UTC;
 
 public class PictureService {
     private static final Logger logger = LoggerFactory.getLogger("Application");
@@ -83,7 +84,7 @@ public class PictureService {
             dateModified = meta.getDateUploaded();
         }
         String fullSizeSuffix = fullSize ? "1" : "";
-        return "W/\"" + dateModified.toEpochSecond(ZoneOffset.UTC) + fullSizeSuffix + "\"";
+        return String.format("W/\"%d%d%s\"", meta.getId(), dateModified.toEpochSecond(UTC), fullSizeSuffix);
     }
 
     public Future<Long> insertNewPicture(String token, long userId, long albumId, byte[] data) {
