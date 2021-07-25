@@ -10,11 +10,11 @@ import io.vertx.ext.web.RoutingContext;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.leskor.palermopg.util.ApiUtils.cors;
 import static com.leskor.palermopg.util.ApiUtils.handleFailure;
 import static io.vertx.core.buffer.Buffer.buffer;
+import static java.util.stream.Collectors.toList;
 
 public class AlbumHandler {
     private final AlbumCreationService albumCreationService;
@@ -72,7 +72,7 @@ public class AlbumHandler {
                 .onSuccess(result -> {
                     List<JsonObject> data = result.stream()
                             .map(this::pictureDataToJson)
-                            .collect(Collectors.toList());
+                            .collect(toList());
                     cors(routingContext.response()).end(new JsonArray(data).encode());
                 }).onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
@@ -167,5 +167,17 @@ public class AlbumHandler {
             isChrono = Boolean.parseBoolean(json.getString("isChronologicalOrder"));
         }
         return new Album(albumId, userId, name, sharedUsers, null, isChrono);
+    }
+
+    public void deleteAllAlbumsForUser(RoutingContext routingContext) {
+        HttpServerRequest request = routingContext.request();
+        long userId = Long.parseLong(request.getParam("userId"));
+        String token = routingContext.request().getHeader("Authorization");
+
+        albumDeletingService.deleteAll(token, userId)
+                .onSuccess(deleteResult -> {
+                    JsonObject response = new JsonObject().put("id", userId);
+                    cors(routingContext.response()).end(response.encode());
+                }).onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 }

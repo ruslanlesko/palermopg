@@ -38,6 +38,9 @@ public class MetaParser {
     public int getRotation() {
         try {
             ExifIFD0Directory exifDirectory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
+            if (!exifDirectory.containsTag(ExifIFD0Directory.TAG_ORIENTATION)) {
+                return -1;
+            }
             int orientation = exifDirectory.getInt(ExifIFD0Directory.TAG_ORIENTATION);
             int degrees;
             switch (orientation) {

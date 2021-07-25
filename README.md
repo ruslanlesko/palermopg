@@ -24,6 +24,7 @@ Port number: 8081
 * PATCH `/album/{userId}/{albumId}` updates album
 * POST `/album/{userId}/{albumId}/share` shares album with provided list of users
 * DELETE `/album/{userId}/{albumId}` deletes album, returns deleted album id on success
+* DELETE `/album/{userId}` deletes all user albums, returns deleted user id on success
 
 ### Storage operations
 * GET `/storage/{userId}` returns consumed by user storage in bytes

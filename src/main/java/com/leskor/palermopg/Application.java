@@ -85,7 +85,8 @@ public class Application {
         AlbumFetchingService albumFetchingService = new AlbumFetchingService(albumDao, pictureMetaDao, pictureDataDao);
         AlbumSharingService albumSharingService = new AlbumSharingService(albumDao);
         AlbumUpdatingService albumUpdatingService = new AlbumUpdatingService(albumDao);
-        AlbumDeletingService albumDeletingService = new AlbumDeletingService(pictureService, albumDao, pictureMetaDao);
+        AlbumDeletingService albumDeletingService
+                = new AlbumDeletingService(jwtParser, pictureService, albumDao, pictureMetaDao, albumFetchingService);
 
         pictureHandler = new PictureHandler(pictureService);
         albumHandler = new AlbumHandler(albumCreationService, albumFetchingService, albumSharingService, albumUpdatingService, albumDeletingService);
@@ -132,6 +133,7 @@ public class Application {
         router.delete("/pic/:userId/:pictureId").produces(JSON_FORMAT).handler(pictureHandler::deleteById);
 
         router.get("/album/:userId/:albumId/download").handler(albumHandler::downloadAlbum);
+        router.delete("/album/:userId").produces(JSON_FORMAT).handler(albumHandler::deleteAllAlbumsForUser);
         router.route("/album/:userId*").handler(this::authorize);
         router.route("/album/:userId*").handler(BodyHandler.create());
         router.get("/album/:userId").produces(JSON_FORMAT).handler(albumHandler::getAlbumsForUser);
