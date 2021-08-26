@@ -6,6 +6,8 @@ import com.leskor.palermopg.dao.PictureMetaDao;
 import com.leskor.palermopg.entity.Album;
 import com.leskor.palermopg.entity.PictureMeta;
 import com.leskor.palermopg.exception.AuthorizationException;
+import com.leskor.palermopg.security.JWTParser;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,15 +21,13 @@ import java.util.stream.Stream;
 import static io.vertx.core.Future.succeededFuture;
 import static java.time.LocalDateTime.now;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class AlbumFetchingServiceTest {
     private static final String
+            TOKEN = "abc",
             NAME = "Birthday Party",
-            DOWNLOAD_CODE = "132",
             PATH = "/pic1.jpg",
             PATH_2 = "/pic2.jpg";
 
@@ -41,21 +41,17 @@ class AlbumFetchingServiceTest {
             DATA_2 = new byte[] {16, 101};
 
     private static final Album
-            ALBUM = new Album(ALBUM_ID, USER_ID, NAME, List.of(), DOWNLOAD_CODE, true),
-            ALBUM_FOR_SHARED_USER = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(USER_ID), DOWNLOAD_CODE, true),
-            ALBUM_WITH_SHARED_USERS_NULL = new Album(ALBUM_ID, USER_ID - 1, NAME, null, DOWNLOAD_CODE, true),
-            ALBUM_NO_DOWNLOAD_CODE = new Album(ALBUM_ID, USER_ID, NAME, List.of(), null, true),
-            ALBUM_2 = new Album(ALBUM_ID + 1, USER_ID, NAME, List.of(), DOWNLOAD_CODE, false),
-            ALBUM_2_NO_DOWNLOAD_CODE = new Album(ALBUM_ID + 1, USER_ID, NAME, List.of(), null, false),
-            ALBUM_3 = new Album(ALBUM_ID + 2, USER_ID, NAME, List.of(), DOWNLOAD_CODE, false);
+            ALBUM = new Album(ALBUM_ID, USER_ID, NAME, List.of(), true),
+            ALBUM_FOR_SHARED_USER = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(USER_ID), true),
+            ALBUM_WITH_SHARED_USERS_NULL = new Album(ALBUM_ID, USER_ID - 1, NAME, null, true),
+            ALBUM_2 = new Album(ALBUM_ID + 1, USER_ID, NAME, List.of(), false);
 
     private static final PictureMeta
-            PICTURE_META = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1, PATH, "", now(), now(), now(), DOWNLOAD_CODE),
-            PICTURE_META_2 = new PictureMeta(PICTURE_ID + 1, USER_ID, ALBUM_ID, -1, PATH_2, "", now().plusDays(2), now(), now(), DOWNLOAD_CODE),
-            PICTURE_META_2_NO_DOWNLOAD_CODE = new PictureMeta(PICTURE_ID + 1, USER_ID, ALBUM_ID, -1, "", "", now().plusDays(2), now(), now(), ""),
-            PICTURE_META_3 = new PictureMeta(PICTURE_ID + 2, USER_ID, ALBUM_ID, -1, "", "", now(), now().plusDays(2), now(), DOWNLOAD_CODE),
-            PICTURE_META_3_NO_DOWNLOAD_CODE = new PictureMeta(PICTURE_ID + 2, USER_ID, ALBUM_ID, -1, "", "", now(), now().plusDays(2), now(), "");
+            PICTURE_META = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1, PATH, "", now(), now(), now()),
+            PICTURE_META_2 = new PictureMeta(PICTURE_ID + 1, USER_ID, ALBUM_ID, -1, PATH_2, "", now().plusDays(2), now(), now()),
+            PICTURE_META_3 = new PictureMeta(PICTURE_ID + 2, USER_ID, ALBUM_ID, -1, "", "", now(), now().plusDays(2), now());
 
+    private JWTParser jwtParser;
     private AlbumDao albumDao;
     private PictureMetaDao pictureMetaDao;
     private PictureDataDao pictureDataDao;
@@ -63,10 +59,11 @@ class AlbumFetchingServiceTest {
 
     @BeforeEach
     void setUp() {
+        jwtParser = mock(JWTParser.class);
         albumDao = mock(AlbumDao.class);
         pictureMetaDao = mock(PictureMetaDao.class);
         pictureDataDao = mock(PictureDataDao.class);
-        albumFetchingService = new AlbumFetchingService(albumDao, pictureMetaDao, pictureDataDao);
+        albumFetchingService = new AlbumFetchingService(albumDao, pictureMetaDao, pictureDataDao, jwtParser);
     }
 
     @Test
@@ -87,19 +84,6 @@ class AlbumFetchingServiceTest {
     }
 
     @Test
-    void getAlbumsForUserIdWithoutDownloadCode() {
-        when(albumDao.findAlbumsForUserId(USER_ID))
-                .thenReturn(succeededFuture(List.of(ALBUM_NO_DOWNLOAD_CODE, ALBUM_2_NO_DOWNLOAD_CODE, ALBUM_3)))
-                .thenReturn(succeededFuture(List.of(ALBUM, ALBUM_2, ALBUM_3)));
-
-        when(albumDao.setDownloadCode(eq(ALBUM_ID), anyString())).thenReturn(succeededFuture());
-        when(albumDao.setDownloadCode(eq(ALBUM_ID + 1), anyString())).thenReturn(succeededFuture());
-
-        albumFetchingService.getAlbumsForUserId(USER_ID)
-                .onComplete(res -> assertEquals(List.of(ALBUM_3, ALBUM_2, ALBUM), res.result()));
-    }
-
-    @Test
     void returnsErrorWhenInvalidUserIdProvided() {
         albumFetchingService.getAlbumsForUserId(-42)
                 .onComplete(resp -> {
@@ -116,11 +100,7 @@ class AlbumFetchingServiceTest {
         when(albumDao.findById(ALBUM_ID)).thenReturn(succeededFuture(Optional.of(album)));
 
         when(pictureMetaDao.findForAlbumId(ALBUM_ID))
-                .thenReturn(succeededFuture(List.of(PICTURE_META, PICTURE_META_2_NO_DOWNLOAD_CODE, PICTURE_META_3_NO_DOWNLOAD_CODE)))
                 .thenReturn(succeededFuture(List.of(PICTURE_META, PICTURE_META_2, PICTURE_META_3)));
-
-        when(pictureMetaDao.setDownloadCode(eq(PICTURE_ID + 1), anyString())).thenReturn(succeededFuture());
-        when(pictureMetaDao.setDownloadCode(eq(PICTURE_ID + 2), anyString())).thenReturn(succeededFuture());
 
         albumFetchingService.getPictureMetaForAlbum(USER_ID, ALBUM_ID)
                 .onComplete(res -> assertEquals(List.of(PICTURE_META, PICTURE_META_3, PICTURE_META_2), res.result()));
@@ -129,6 +109,7 @@ class AlbumFetchingServiceTest {
     @ParameterizedTest
     @MethodSource("albumsWithoutUserAccess")
     void returnsErrorWhenAlbumIsNotAccessible(Album album) {
+        when(jwtParser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(albumDao.findById(ALBUM_ID)).thenReturn(succeededFuture(Optional.of(album)));
 
         albumFetchingService.getPictureMetaForAlbum(USER_ID + 1, ALBUM_ID)
@@ -139,7 +120,7 @@ class AlbumFetchingServiceTest {
                     assertEquals(AuthorizationException.class, resp.cause().getClass());
                 });
 
-        albumFetchingService.download(USER_ID + 1, ALBUM_ID, DOWNLOAD_CODE)
+        albumFetchingService.download(TOKEN, USER_ID + 1, ALBUM_ID)
                 .onComplete(resp -> {
                     assertNull(resp.result());
                     assertFalse(resp.succeeded());
@@ -150,26 +131,14 @@ class AlbumFetchingServiceTest {
 
     @Test
     void download() {
+        when(jwtParser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(albumDao.findById(ALBUM_ID)).thenReturn(succeededFuture(Optional.of(ALBUM)));
         when(pictureMetaDao.findForAlbumId(ALBUM_ID)).thenReturn(succeededFuture(List.of(PICTURE_META, PICTURE_META_2)));
         when(pictureDataDao.find(PATH)).thenReturn(succeededFuture(DATA));
         when(pictureDataDao.find(PATH_2)).thenReturn(succeededFuture(DATA_2));
 
-        albumFetchingService.download(USER_ID, ALBUM_ID, DOWNLOAD_CODE)
+        albumFetchingService.download(TOKEN, USER_ID, ALBUM_ID)
                 .onComplete(response -> assertTrue(response.result().length > 0));
-    }
-
-    @Test
-    void returnsErrorWhenDownloadCodeIsNotValid() {
-        when(albumDao.findById(ALBUM_ID)).thenReturn(succeededFuture(Optional.of(ALBUM)));
-
-        albumFetchingService.download(USER_ID, ALBUM_ID, DOWNLOAD_CODE + "z")
-                .onComplete(resp -> {
-                    assertNull(resp.result());
-                    assertFalse(resp.succeeded());
-                    assertTrue(resp.failed());
-                    assertEquals(AuthorizationException.class, resp.cause().getClass());
-                });
     }
 
     private static Stream<Arguments> albumsInDifferentOrder() {

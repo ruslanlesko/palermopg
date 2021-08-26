@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 class AlbumDeletingServiceTest {
     private static final String
             NAME = "Birthday Party",
-            DOWNLOAD_CODE = "132",
             PATH = "/pic1.jpg",
             PATH_2 = "/pic2.jpg",
             TOKEN = "Bearer abcxyz";
@@ -38,14 +37,14 @@ class AlbumDeletingServiceTest {
             PICTURE_ID = 256;
 
     private static final Album
-            ALBUM = new Album(ALBUM_ID, USER_ID, NAME, List.of(), DOWNLOAD_CODE, true),
-            ALBUM_FOR_SHARED_USER = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(USER_ID), DOWNLOAD_CODE, true),
-            ALBUM_2 = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(), DOWNLOAD_CODE, false),
-            ALBUM_3 = new Album(ALBUM_ID_3, USER_ID - 1, NAME, List.of(), DOWNLOAD_CODE, false);
+            ALBUM = new Album(ALBUM_ID, USER_ID, NAME, List.of(), true),
+            ALBUM_FOR_SHARED_USER = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(USER_ID), true),
+            ALBUM_2 = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(), false),
+            ALBUM_3 = new Album(ALBUM_ID_3, USER_ID - 1, NAME, List.of(), false);
 
     private static final PictureMeta
-            PICTURE_META = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1, PATH, "", now(), now(), now(), DOWNLOAD_CODE),
-            PICTURE_META_2 = new PictureMeta(PICTURE_ID + 1, USER_ID, ALBUM_ID, -1, PATH_2, "", now().plusDays(2), now(), now(), DOWNLOAD_CODE);
+            PICTURE_META = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1, PATH, "", now(), now(), now()),
+            PICTURE_META_2 = new PictureMeta(PICTURE_ID + 1, USER_ID, ALBUM_ID, -1, PATH_2, "", now().plusDays(2), now(), now());
 
     private JWTParser jwtParser;
     private PictureService pictureService;

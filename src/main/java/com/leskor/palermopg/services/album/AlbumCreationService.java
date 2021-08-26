@@ -2,7 +2,6 @@ package com.leskor.palermopg.services.album;
 
 import com.leskor.palermopg.dao.AlbumDao;
 import com.leskor.palermopg.entity.Album;
-import com.leskor.palermopg.util.CodeGenerator;
 import io.vertx.core.Future;
 
 import java.util.List;
@@ -27,9 +26,8 @@ public class AlbumCreationService {
 
     private Album prepareAlbumForPersisting(Album album) {
         List<Long> sharedUsers = album.getSharedUsers() == null ? List.of() : album.getSharedUsers();
-        String downloadCode = CodeGenerator.generateDownloadCode();
         boolean isChronologicalOrder = album.isChronologicalOrder() != null && album.isChronologicalOrder();
 
-        return new Album(-1, album.getUserId(), album.getName(), sharedUsers, downloadCode, isChronologicalOrder);
+        return new Album(-1, album.getUserId(), album.getName(), sharedUsers, isChronologicalOrder);
     }
 }

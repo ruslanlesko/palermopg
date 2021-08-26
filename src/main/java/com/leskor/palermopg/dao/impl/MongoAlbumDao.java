@@ -66,7 +66,6 @@ public class MongoAlbumDao implements AlbumDao {
                         doc.getLong("userId"),
                         doc.getString("name"),
                         doc.getList("sharedUsers", Long.class),
-                        doc.get("downloadCode") == null ? "" : doc.getString("downloadCode"),
                         doc.get("isChronologicalOrder") != null && doc.getBoolean("isChronologicalOrder"))), Optional.empty()));
 
         return resultPromise.future();
@@ -82,7 +81,6 @@ public class MongoAlbumDao implements AlbumDao {
                         document.getLong("userId"),
                         document.getString("name"),
                         document.getList("sharedUsers", Long.class),
-                        document.get("downloadCode") == null ? "" : document.getString("downloadCode"),
                         document.get("isChronologicalOrder") != null && document.getBoolean("isChronologicalOrder"))));
 
         return resultPromise.future();
@@ -122,11 +120,6 @@ public class MongoAlbumDao implements AlbumDao {
                 .subscribe(forSinglePromise(resultPromise, doc -> doc.getLong("maxId") + 1, 1L));
 
         return resultPromise.future();
-    }
-
-    @Override
-    public Future<Void> setDownloadCode(long id, String code) {
-        return setField(getCollection(), id, "downloadCode", code);
     }
 
     @Override

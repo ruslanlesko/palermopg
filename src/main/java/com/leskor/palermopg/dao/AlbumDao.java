@@ -13,7 +13,6 @@ public interface AlbumDao {
     Future<Void> renameAlbum(long id, String name);
     Future<Void> delete(long id);
     Future<Void> updateSharedUsers(long id, List<Long> sharedIds);
-    Future<Void> setDownloadCode(long id, String code);
     Future<Void> setChronologicalOrder(long id, boolean isChronologicalOrder);
     Future<Void> updateAlbum(Album album);
 }

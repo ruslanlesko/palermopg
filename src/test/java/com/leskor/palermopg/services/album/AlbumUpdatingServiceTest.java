@@ -19,9 +19,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class AlbumUpdatingServiceTest {
-    private static final String
-            NAME = "Birthday Party",
-            DOWNLOAD_CODE = "132";
+    private static final String NAME = "Birthday Party";;
 
     private static final long
             USER_ID = 25,
@@ -32,10 +30,10 @@ class AlbumUpdatingServiceTest {
             SHARED_USERS_TO_SET = List.of(42L, 25L, 99L, 5L);
 
     private static final Album
-            ALBUM = new Album(ALBUM_ID, USER_ID, NAME, INITIAL_SHARED_USERS, DOWNLOAD_CODE, true),
-            ALBUM_UPDATED =  new Album(ALBUM_ID, USER_ID, null, SHARED_USERS_TO_SET, null, null),
-            ALBUM_FOR_SHARED_USER = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(USER_ID), DOWNLOAD_CODE, true),
-            ALBUM_2 = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(), DOWNLOAD_CODE, true);
+            ALBUM = new Album(ALBUM_ID, USER_ID, NAME, INITIAL_SHARED_USERS, true),
+            ALBUM_UPDATED =  new Album(ALBUM_ID, USER_ID, null, SHARED_USERS_TO_SET, null),
+            ALBUM_FOR_SHARED_USER = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(USER_ID), true),
+            ALBUM_2 = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(), true);
 
     private AlbumDao dao;
     private AlbumUpdatingService albumUpdatingService;

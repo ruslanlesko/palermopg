@@ -82,7 +82,7 @@ public class Application {
         StorageService storageService = new StorageService(pictureMetaDao, pictureDataDao, limitsDao, jwtParser);
         PictureService pictureService = new PictureService(pictureMetaDao, pictureDataDao, albumDao, jwtParser, storageService, pmService);
         AlbumCreationService albumCreationService = new AlbumCreationService(albumDao);
-        AlbumFetchingService albumFetchingService = new AlbumFetchingService(albumDao, pictureMetaDao, pictureDataDao);
+        AlbumFetchingService albumFetchingService = new AlbumFetchingService(albumDao, pictureMetaDao, pictureDataDao, jwtParser);
         AlbumSharingService albumSharingService = new AlbumSharingService(albumDao);
         AlbumUpdatingService albumUpdatingService = new AlbumUpdatingService(albumDao);
         AlbumDeletingService albumDeletingService
@@ -94,7 +94,7 @@ public class Application {
     }
 
     public static void main(String[] args) {
-        logger.info("Starting PalermoPG 1.20.2");
+        logger.info("Starting PalermoPG 1.21.0");
         Application palermoPG = new Application();
         palermoPG.startHttpServer();
     }

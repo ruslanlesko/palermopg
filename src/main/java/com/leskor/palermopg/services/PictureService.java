@@ -11,7 +11,6 @@ import com.leskor.palermopg.exception.MissingItemException;
 import com.leskor.palermopg.exception.StorageLimitException;
 import com.leskor.palermopg.meta.MetaParser;
 import com.leskor.palermopg.security.JWTParser;
-import com.leskor.palermopg.util.CodeGenerator;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import org.slf4j.Logger;
@@ -69,10 +68,13 @@ public class PictureService {
                 });
     }
 
-    public Future<byte[]> downloadPicture(long userId, long pictureId, String code) {
+    public Future<byte[]> downloadPicture(String token, long userId, long pictureId) {
+        if (!jwtParser.validateTokenForUserId(token, userId)) {
+            return Future.failedFuture(new AuthorizationException("Invalid token for userId: " + userId));
+        }
+
         return pictureMetaDao.find(pictureId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
-                .compose(meta -> meta.getDownloadCode().equals(code) ? succeededFuture(meta) : failedFuture(new MissingItemException()))
                 .compose(meta -> checkPictureAccess(userId, meta))
                 .compose(meta -> pictureDataDao.find(meta.getPath()));
     }
@@ -121,8 +123,7 @@ public class PictureService {
 
             PictureMeta meta = new PictureMeta(-1, userId, albumId, size, originalPath,
                     optimizedPath,
-                    LocalDateTime.now(), dateCaptured, LocalDateTime.now(),
-                    CodeGenerator.generateDownloadCode());
+                    LocalDateTime.now(), dateCaptured, LocalDateTime.now());
 
             return pictureMetaDao.save(meta)
                     .map(id -> {

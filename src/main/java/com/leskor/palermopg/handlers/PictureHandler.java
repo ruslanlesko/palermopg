@@ -24,11 +24,11 @@ public class PictureHandler {
         long id = Long.parseLong(request.getParam("pictureId"));
         String token = request.getHeader("Authorization");
         String clientHash = request.getHeader("If-None-Match");
-        String downloadCode = request.getParam("downloadCode");
         boolean fullSize = Boolean.parseBoolean(request.getParam("fullSize"));
+        String tokenCookie = request.getCookie("token") == null ? null : request.getCookie("token").getValue();
 
-        if (downloadCode != null && !downloadCode.isEmpty()) {
-            pictureService.downloadPicture(userId, id, downloadCode)
+        if (tokenCookie != null && !tokenCookie.isEmpty()) {
+            pictureService.downloadPicture("Bearer " + tokenCookie, userId, id)
                     .onSuccess(result -> cors(routingContext.response())
                             .putHeader("Content-Disposition", "attachment; filename=\"" + id + ".jpg\"")
                             .end(buffer(result)))

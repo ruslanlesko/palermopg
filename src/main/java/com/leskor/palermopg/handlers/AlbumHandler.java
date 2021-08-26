@@ -81,9 +81,9 @@ public class AlbumHandler {
         HttpServerRequest request = routingContext.request();
         long albumId = Long.parseLong(request.getParam("albumId"));
         long userId = Long.parseLong(request.getParam("userId"));
-        String code = request.getParam("code");
+        String tokenCookie = request.getCookie("token") == null ? null : request.getCookie("token").getValue();
 
-        albumFetchingService.download(userId, albumId, code)
+        albumFetchingService.download("Bearer " + tokenCookie, userId, albumId)
                 .onSuccess(data -> cors(routingContext.response())
                         .putHeader("Content-Disposition", "attachment; filename=\"" + albumId + ".zip\"")
                         .end(buffer(data)))
@@ -152,8 +152,7 @@ public class AlbumHandler {
     private JsonObject pictureDataToJson(PictureMeta p) {
         return new JsonObject()
                 .put("userId", p.getUserId())
-                .put("pictureId", p.getId())
-                .put("downloadCode", p.getDownloadCode());
+                .put("pictureId", p.getId());
     }
 
     private Album jsonToAlbum(long userId, long albumId, JsonObject json) {
@@ -166,7 +165,7 @@ public class AlbumHandler {
         if (json.containsKey("isChronologicalOrder")) {
             isChrono = Boolean.parseBoolean(json.getString("isChronologicalOrder"));
         }
-        return new Album(albumId, userId, name, sharedUsers, null, isChrono);
+        return new Album(albumId, userId, name, sharedUsers, isChrono);
     }
 
     public void deleteAllAlbumsForUser(RoutingContext routingContext) {
