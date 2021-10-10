@@ -55,6 +55,7 @@ public class Application {
         VertxOptions options = new VertxOptions().setMetricsOptions(
                 new MicrometerMetricsOptions()
                         .setPrometheusOptions(new VertxPrometheusOptions().setEnabled(true))
+                        .setJvmMetricsEnabled(true)
                         .setEnabled(true));
 
         vertx = Vertx.vertx(options);
@@ -94,7 +95,7 @@ public class Application {
     }
 
     public static void main(String[] args) {
-        logger.info("Starting PalermoPG 1.21.0");
+        logger.info("Starting PalermoPG 1.21.1");
         Application palermoPG = new Application();
         palermoPG.startHttpServer();
     }
