@@ -42,10 +42,10 @@ public class MongoAlbumDao implements AlbumDao {
                 .onSuccess(nextId -> {
                     Document document = new Document()
                             .append("id", nextId)
-                            .append("userId", album.getUserId())
-                            .append("name", album.getName())
+                            .append("userId", album.userId())
+                            .append("name", album.name())
                             .append("isChronologicalOrder", album.isChronologicalOrder())
-                            .append("sharedUsers", album.getSharedUsers());
+                            .append("sharedUsers", album.sharedUsers());
 
                     getCollection().insertOne(document)
                             .subscribe(forSinglePromise(resultPromise, success -> nextId));
@@ -132,13 +132,13 @@ public class MongoAlbumDao implements AlbumDao {
         Promise<Void> resultPromise = Promise.promise();
 
         BasicDBObject query = new BasicDBObject();
-        query.put("id", album.getId());
+        query.put("id", album.id());
 
         BasicDBObject newDoc = new BasicDBObject();
 
-        if (album.getName() != null) newDoc.put("name", album.getName());
+        if (album.name() != null) newDoc.put("name", album.name());
         if (album.isChronologicalOrder() != null) newDoc.put("isChronologicalOrder", album.isChronologicalOrder());
-        if (album.getSharedUsers() != null) newDoc.put("sharedUsers", album.getSharedUsers());
+        if (album.sharedUsers() != null) newDoc.put("sharedUsers", album.sharedUsers());
 
         BasicDBObject updateDoc = new BasicDBObject();
         updateDoc.put("$set", newDoc);

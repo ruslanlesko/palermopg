@@ -114,7 +114,7 @@ public class AlbumHandler {
 
         albumFetchingService.getAlbumsForUserId(userId)
                 .onSuccess(result -> {
-                    boolean notExist = result.stream().map(Album::getId).noneMatch(id -> id == albumId);
+                    boolean notExist = result.stream().map(Album::id).noneMatch(id -> id == albumId);
                     if (notExist) {
                         cors(routingContext.response().setStatusCode(404)).end();
                         return;
@@ -151,8 +151,8 @@ public class AlbumHandler {
 
     private JsonObject pictureDataToJson(PictureMeta p) {
         return new JsonObject()
-                .put("userId", p.getUserId())
-                .put("pictureId", p.getId());
+                .put("userId", p.userId())
+                .put("pictureId", p.id());
     }
 
     private Album jsonToAlbum(long userId, long albumId, JsonObject json) {

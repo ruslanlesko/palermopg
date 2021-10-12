@@ -40,16 +40,16 @@ public class MongoPictureMetaDao implements PictureMetaDao {
                 .onSuccess(id -> {
                     Document document = new Document()
                             .append("id", id)
-                            .append("size", pictureMeta.getSize())
-                            .append("path", pictureMeta.getPath())
-                            .append("pathOptimized", pictureMeta.getPathOptimized())
-                            .append("userId", pictureMeta.getUserId())
-                            .append("dateUploaded", pictureMeta.getDateUploaded())
-                            .append("dateCaptured", pictureMeta.getDateCaptured())
-                            .append("dateModified", pictureMeta.getDateModified());
+                            .append("size", pictureMeta.size())
+                            .append("path", pictureMeta.path())
+                            .append("pathOptimized", pictureMeta.pathOptimized())
+                            .append("userId", pictureMeta.userId())
+                            .append("dateUploaded", pictureMeta.dateUploaded())
+                            .append("dateCaptured", pictureMeta.dateCaptured())
+                            .append("dateModified", pictureMeta.dateModified());
 
-                    if (pictureMeta.getAlbumId() > 0) {
-                        document.append("albumId", pictureMeta.getAlbumId());
+                    if (pictureMeta.albumId() > 0) {
+                        document.append("albumId", pictureMeta.albumId());
                     }
 
                     getCollection().insertOne(document).subscribe(ReactiveSubscriber.forSinglePromise(resultPromise, success -> id));

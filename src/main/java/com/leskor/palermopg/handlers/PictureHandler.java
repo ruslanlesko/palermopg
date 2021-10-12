@@ -38,17 +38,17 @@ public class PictureHandler {
 
         pictureService.getPictureData(token, clientHash, userId, id, fullSize)
                 .onSuccess(result -> {
-                    if (result.isNotModified()) {
+                    if (result.notModified()) {
                         cors(routingContext.response().setStatusCode(304))
-                                .putHeader("ETag", result.getHash())
+                                .putHeader("ETag", result.hash())
                                 .putHeader("Cache-Control", "max-age=10800, public")
                                 .end();
                         return;
                     }
                     cors(routingContext.response())
-                            .putHeader("ETag", result.getHash())
+                            .putHeader("ETag", result.hash())
                             .putHeader("Cache-Control", "max-age=10800, public")
-                            .end(buffer(result.getData()));
+                            .end(buffer(result.data()));
                 }).onFailure(cause -> handleFailure(cause, routingContext.response()));
     }
 

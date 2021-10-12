@@ -58,8 +58,8 @@ public class PictureService {
                     final String hash = calculateHash(meta, fullSize);
                     if (hash.equals(clientHash)) return succeededFuture(new PictureResponse(null, true, hash));
 
-                    final String optimizedPath = meta.getPathOptimized();
-                    final String originalPath = meta.getPath();
+                    final String optimizedPath = meta.pathOptimized();
+                    final String originalPath = meta.path();
                     final String pathToFind = fullSize || optimizedPath == null || optimizedPath.isBlank() ?
                             originalPath : optimizedPath;
 
@@ -76,16 +76,16 @@ public class PictureService {
         return pictureMetaDao.find(pictureId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
                 .compose(meta -> checkPictureAccess(userId, meta))
-                .compose(meta -> pictureDataDao.find(meta.getPath()));
+                .compose(meta -> pictureDataDao.find(meta.path()));
     }
 
     private String calculateHash(PictureMeta meta, boolean fullSize) {
-        LocalDateTime dateModified = meta.getDateModified();
+        LocalDateTime dateModified = meta.dateModified();
         if (dateModified == null) {
-            dateModified = meta.getDateUploaded();
+            dateModified = meta.dateUploaded();
         }
         String fullSizeSuffix = fullSize ? "1" : "";
-        return String.format("W/\"%d%d%s\"", meta.getId(), dateModified.toEpochSecond(UTC), fullSizeSuffix);
+        return String.format("W/\"%d%d%s\"", meta.id(), dateModified.toEpochSecond(UTC), fullSizeSuffix);
     }
 
     public Future<Long> insertNewPicture(String token, long userId, long albumId, byte[] data) {
@@ -108,7 +108,7 @@ public class PictureService {
             byte[] optimizedPictureData
     ) {
         long size = rotatedData.length + (optimizedPictureData == null ? 0 : optimizedPictureData.length);
-        if (storage.getSize() + size > storage.getLimit()) return Future.failedFuture(new StorageLimitException());
+        if (storage.size() + size > storage.limit()) return Future.failedFuture(new StorageLimitException());
 
         if (optimizedPictureData == null) {
             logger.warn("Optimized version was not created");
@@ -148,8 +148,8 @@ public class PictureService {
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
                 .compose(meta -> checkPictureAccess(userId, meta))
                 .compose(meta -> {
-                    doRotate(meta.getPathOptimized());
-                    return doRotate(meta.getPath());
+                    doRotate(meta.pathOptimized());
+                    return doRotate(meta.path());
                 }).compose(rotated ->
                     pictureMetaDao.setLastModified(pictureId, LocalDateTime.now())
                             .onFailure(cause -> logger.warn("Cannot set last modified: " + cause.getMessage()))
@@ -168,21 +168,21 @@ public class PictureService {
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
                 .compose(meta -> checkPictureAccess(userId, meta))
                 .compose(meta -> pictureMetaDao.deleteById(pictureId)
-                        .compose(dbItemDeleted -> pictureDataDao.delete(meta.getPath()))
-                        .compose(originalDeleted -> meta.getPathOptimized() == null ? succeededFuture()
-                                : pictureDataDao.delete(meta.getPathOptimized()))
+                        .compose(dbItemDeleted -> pictureDataDao.delete(meta.path()))
+                        .compose(originalDeleted -> meta.pathOptimized() == null ? succeededFuture()
+                                : pictureDataDao.delete(meta.pathOptimized()))
                 );
     }
 
     private Future<PictureMeta> checkPictureAccess(long userId, PictureMeta meta) {
-        return isAlbumNotAccessible(meta.getAlbumId(), userId)
-                .compose(albumNotAccessible -> (albumNotAccessible && meta.getUserId() != userId) ?
+        return isAlbumNotAccessible(meta.albumId(), userId)
+                .compose(albumNotAccessible -> (albumNotAccessible && meta.userId() != userId) ?
                         failedFuture(new AuthorizationException("Wrong user id")) : succeededFuture(meta));
     }
 
     private Future<Boolean> isAlbumNotAccessible(long albumId, long userId) {
         return albumId <= 0 ? succeededFuture(true)
                 : albumDao.findById(albumId)
-                .map(opt -> opt.isEmpty() || opt.get().getUserId() != userId && (opt.get().getSharedUsers() == null || !opt.get().getSharedUsers().contains(userId)));
+                .map(opt -> opt.isEmpty() || opt.get().userId() != userId && (opt.get().sharedUsers() == null || !opt.get().sharedUsers().contains(userId)));
     }
 }

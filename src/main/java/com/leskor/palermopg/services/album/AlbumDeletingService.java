@@ -44,7 +44,7 @@ public class AlbumDeletingService {
         return albumFetchingService.getAlbumsForUserId(userId)
                 .compose(albums -> {
                     var deleteFutures = albums.stream()
-                            .filter(a -> a.getUserId() == userId)
+                            .filter(a -> a.userId() == userId)
                             .map(album -> deleteAlbum(userId, album))
                             .map(fut -> {
                                 Promise promise = Promise.promise();
@@ -68,13 +68,13 @@ public class AlbumDeletingService {
     }
 
     private Future<Void> deleteAlbum(long userId, Album album) {
-        if (album.getUserId() != userId) {
+        if (album.userId() != userId) {
             return failedFuture(new AuthorizationException("Album is not available to user"));
         }
-        return pictureMetaDao.findForAlbumId(album.getId())
+        return pictureMetaDao.findForAlbumId(album.id())
                 .compose(metas -> {
                     var deleteFutures = metas.stream()
-                            .map(meta -> pictureService.deletePicture(userId, meta.getId()))
+                            .map(meta -> pictureService.deletePicture(userId, meta.id()))
                             .map(fut -> {
                                 Promise promise = Promise.promise();
 
@@ -88,6 +88,6 @@ public class AlbumDeletingService {
                     return CompositeFuture.all(deleteFutures)
                             .compose(success -> succeededFuture());
                 })
-                .compose(deleted ->  albumDao.delete(album.getId()));
+                .compose(deleted ->  albumDao.delete(album.id()));
     }
 }

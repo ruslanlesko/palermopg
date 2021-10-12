@@ -22,9 +22,9 @@ public class AlbumSharingService {
     public Future<Void> shareAlbum(long userId, long albumId, List<Long> sharedUsers) {
         return dao.findById(albumId)
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
-                .compose(album -> album.getUserId() != userId ?
+                .compose(album -> album.userId() != userId ?
                         failedFuture(new AuthorizationException("Album is not available to user")) : succeededFuture(album))
-                .compose(album -> dao.updateSharedUsers(albumId, combineSharedUsers(album.getSharedUsers(), sharedUsers)));
+                .compose(album -> dao.updateSharedUsers(albumId, combineSharedUsers(album.sharedUsers(), sharedUsers)));
     }
 
     private List<Long> combineSharedUsers(List<Long> current, List<Long> toAdd) {

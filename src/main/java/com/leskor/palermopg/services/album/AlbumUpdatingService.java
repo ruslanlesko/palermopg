@@ -16,9 +16,9 @@ public class AlbumUpdatingService {
     }
 
     public Future<Void> update(Album album) {
-        return dao.findById(album.getId())
+        return dao.findById(album.id())
                 .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
-                .compose(a -> a.getUserId() == album.getUserId() ? dao.updateAlbum(album)
+                .compose(a -> a.userId() == album.userId() ? dao.updateAlbum(album)
                         : failedFuture(new AuthorizationException("Album is not available to user")));
     }
 }

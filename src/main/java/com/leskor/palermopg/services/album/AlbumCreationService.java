@@ -16,7 +16,7 @@ public class AlbumCreationService {
     }
 
     public Future<Long> addNewAlbum(Album album) {
-        if (album == null || album.getUserId() < 1 || album.getName() == null || album.getName().isEmpty()) {
+        if (album == null || album.userId() < 1 || album.name() == null || album.name().isEmpty()) {
             return failedFuture(new IllegalArgumentException("Album data is invalid for creation"));
         }
 
@@ -25,9 +25,9 @@ public class AlbumCreationService {
     }
 
     private Album prepareAlbumForPersisting(Album album) {
-        List<Long> sharedUsers = album.getSharedUsers() == null ? List.of() : album.getSharedUsers();
+        List<Long> sharedUsers = album.sharedUsers() == null ? List.of() : album.sharedUsers();
         boolean isChronologicalOrder = album.isChronologicalOrder() != null && album.isChronologicalOrder();
 
-        return new Album(-1, album.getUserId(), album.getName(), sharedUsers, isChronologicalOrder);
+        return new Album(-1, album.userId(), album.name(), sharedUsers, isChronologicalOrder);
     }
 }

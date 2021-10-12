@@ -42,7 +42,7 @@ public class AlbumFetchingService {
 
         return albumDao.findAlbumsForUserId(userId)
             .map(albums -> albums.stream()
-                .sorted(comparingLong(Album::getId).reversed())
+                .sorted(comparingLong(Album::id).reversed())
                 .collect(toList())
             );
     }
@@ -74,7 +74,7 @@ public class AlbumFetchingService {
                             .collect(toList());
 
                     var futures = pics.stream()
-                            .map(p -> pictureDataDao.find(p.getPath()))
+                            .map(p -> pictureDataDao.find(p.path()))
                             .collect(toList());
 
                     return CompositeFuture.all(new ArrayList<>(futures))
@@ -83,7 +83,7 @@ public class AlbumFetchingService {
     }
 
     private Future<Album> checkAccess(Album album, long userId) {
-        return album.getUserId() != userId && (album.getSharedUsers() == null || !album.getSharedUsers().contains(userId)) ?
+        return album.userId() != userId && (album.sharedUsers() == null || !album.sharedUsers().contains(userId)) ?
                 failedFuture(new AuthorizationException("Album is missing or not available to user")) : succeededFuture(album);
     }
 
@@ -95,7 +95,7 @@ public class AlbumFetchingService {
             for (int i = 0; i < pictures.size(); i++) {
                 var data = (byte[]) pictures.resultAt(i);
                 var meta = metas.get(i);
-                ZipEntry entry = new ZipEntry(meta.getId() + ".jpg");
+                ZipEntry entry = new ZipEntry(meta.id() + ".jpg");
                 zos.putNextEntry(entry);
                 zos.write(data);
                 zos.closeEntry();
@@ -109,10 +109,10 @@ public class AlbumFetchingService {
     }
 
     private int sortPictureMeta(PictureMeta a, PictureMeta b) {
-        LocalDateTime uploadedA = a.getDateUploaded();
-        LocalDateTime uploadedB = b.getDateUploaded();
-        LocalDateTime capturedA = a.getDateCaptured();
-        LocalDateTime capturedB = b.getDateCaptured();
+        LocalDateTime uploadedA = a.dateUploaded();
+        LocalDateTime uploadedB = b.dateUploaded();
+        LocalDateTime capturedA = a.dateCaptured();
+        LocalDateTime capturedB = b.dateCaptured();
 
         if (uploadedA.getYear() == uploadedB.getYear() && uploadedA.getDayOfYear() == uploadedB.getDayOfYear()) {
             return capturedB.compareTo(capturedA);

@@ -26,8 +26,8 @@ public class StorageHandler {
         storageService.findForUser(token, userId)
                 .onSuccess(result -> {
                     JsonObject jsonResponse = new JsonObject()
-                            .put("size", result.getSize())
-                            .put("limit", result.getLimit());
+                            .put("size", result.size())
+                            .put("limit", result.limit());
                     cors(routingContext.response()).end(jsonResponse.encode());
                 }).onFailure(cause -> handleFailure(cause, routingContext.response()));
     }

@@ -50,12 +50,12 @@ public class StorageService {
         pictureMetaDao.findPictureMetasForUserId(userId)
                 .onSuccess(metas -> {
                     long knownSize = metas.stream()
-                        .mapToLong(PictureMeta::getSize)
+                        .mapToLong(PictureMeta::size)
                         .filter(size -> size > 0)
                         .sum();
 
                     List<Future<Long>> unknownMetasSizes = metas.stream()
-                        .filter(i -> i.getSize() <= 0)
+                        .filter(i -> i.size() <= 0)
                         .map(this::calculateSize)
                         .collect(Collectors.toList());
 
@@ -115,10 +115,10 @@ public class StorageService {
     }
 
     private Future<Long> calculateSize(PictureMeta meta) {
-        return pictureDataDao.find(meta.getPath())
+        return pictureDataDao.find(meta.path())
                 .compose(originalData -> {
                     final long size = originalData.length;
-                    final String pathOptimized = meta.getPathOptimized();
+                    final String pathOptimized = meta.pathOptimized();
                     return pathOptimized == null ? succeededFuture(size)
                             : pictureDataDao.find(pathOptimized)
                                 .map(optimizedData -> optimizedData.length + size);

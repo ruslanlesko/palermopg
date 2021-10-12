@@ -67,10 +67,10 @@ class AlbumCreationServiceTest {
     }
 
     private static Album albumMatcher(List<Long> sharedUsers, boolean isChronologicalOrder) {
-        return argThat(a -> a.getId() == -1
-                && a.getUserId() == USER_ID
-                && a.getName().equals(ALBUM_NAME)
-                && a.getSharedUsers().equals(sharedUsers)
+        return argThat(a -> a.id() == -1
+                && a.userId() == USER_ID
+                && a.name().equals(ALBUM_NAME)
+                && a.sharedUsers().equals(sharedUsers)
                 && a.isChronologicalOrder().equals(isChronologicalOrder)
         );
     }
