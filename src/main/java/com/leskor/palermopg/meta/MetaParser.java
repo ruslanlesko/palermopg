@@ -15,6 +15,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 
+import static com.drew.metadata.exif.ExifIFD0Directory.TAG_ORIENTATION;
+import static com.drew.metadata.exif.ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL;
+
 public class MetaParser {
     private static final Logger logger = LoggerFactory.getLogger("Application");
 
@@ -31,37 +34,23 @@ public class MetaParser {
 
     public LocalDateTime getDateCaptured() {
         ExifSubIFDDirectory exifDirectory = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
-        Date date = exifDirectory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
+        Date date = exifDirectory.getDate(TAG_DATETIME_ORIGINAL);
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
     }
 
     public int getRotation() {
         try {
-            ExifIFD0Directory exifDirectory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
-            if (!exifDirectory.containsTag(ExifIFD0Directory.TAG_ORIENTATION)) {
+            var exifDirectory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
+            if (!exifDirectory.containsTag(TAG_ORIENTATION)) {
                 return -1;
             }
-            int orientation = exifDirectory.getInt(ExifIFD0Directory.TAG_ORIENTATION);
-            int degrees;
-            switch (orientation) {
-                case 3: {
-                    degrees = 180;
-                    break;
-                }
-                case 6: {
-                    degrees = 90;
-                    break;
-                }
-                case 8: {
-                    degrees = 270;
-                    break;
-                }
-                default: {
-                    degrees = 0;
-                    break;
-                }
-            }
-            return degrees;
+            int orientation = exifDirectory.getInt(TAG_ORIENTATION);
+            return switch (orientation) {
+                case 3 -> 180;
+                case 6 -> 90;
+                case 8 -> 270;
+                default -> 0;
+            };
         } catch (MetadataException e) {
             logger.error(e.getMessage());
             return -1;
