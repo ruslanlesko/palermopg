@@ -19,8 +19,8 @@ public class ApiUtils {
             cors(response.setStatusCode(404)).end();
             return;
         }
-        if (cause instanceof StorageLimitException) {
-            cors(response.setStatusCode(400)).end(((StorageLimitException) cause).json());
+        if (cause instanceof StorageLimitException sle) {
+            cors(response.setStatusCode(400)).end(sle.json());
             return;
         }
         logger.error("Exception occurred", cause);
