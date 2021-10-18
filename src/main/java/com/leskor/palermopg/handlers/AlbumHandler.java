@@ -14,7 +14,6 @@ import java.util.List;
 import static com.leskor.palermopg.util.ApiUtils.cors;
 import static com.leskor.palermopg.util.ApiUtils.handleFailure;
 import static io.vertx.core.buffer.Buffer.buffer;
-import static java.util.stream.Collectors.toList;
 
 public class AlbumHandler {
     private final AlbumCreationService albumCreationService;
@@ -72,7 +71,7 @@ public class AlbumHandler {
                 .onSuccess(result -> {
                     List<JsonObject> data = result.stream()
                             .map(this::pictureDataToJson)
-                            .collect(toList());
+                            .toList();
                     cors(routingContext.response()).end(new JsonArray(data).encode());
                 }).onFailure(cause -> handleFailure(cause, routingContext.response()));
     }

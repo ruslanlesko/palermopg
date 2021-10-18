@@ -10,7 +10,6 @@ import java.util.List;
 
 import static com.leskor.palermopg.util.ApiUtils.cors;
 import static com.leskor.palermopg.util.ApiUtils.handleFailure;
-import static java.util.stream.Collectors.toList;
 
 public class StorageHandler {
     private final StorageService storageService;
@@ -50,7 +49,7 @@ public class StorageHandler {
 
     private List<Long> extractUserIds(String raw) {
         return (raw == null || raw.isBlank()) ? List.of()
-                : Arrays.stream(raw.split(",")).map(Long::valueOf).collect(toList());
+                : Arrays.stream(raw.split(",")).map(Long::valueOf).toList();
     }
 
     public void setUserLimit(RoutingContext routingContext) {

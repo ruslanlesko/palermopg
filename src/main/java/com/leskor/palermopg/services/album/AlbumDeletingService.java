@@ -13,7 +13,6 @@ import io.vertx.core.Promise;
 
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
-import static java.util.stream.Collectors.toList;
 
 public class AlbumDeletingService {
     private final JWTParser jwtParser;
@@ -54,7 +53,7 @@ public class AlbumDeletingService {
 
                                 return promise.future();
                             })
-                            .collect(toList());
+                            .toList();
 
                     return CompositeFuture.all(deleteFutures)
                             .compose(success -> succeededFuture());
@@ -83,7 +82,7 @@ public class AlbumDeletingService {
 
                                 return promise.future();
                             })
-                            .collect(toList());
+                            .toList();
 
                     return CompositeFuture.all(deleteFutures)
                             .compose(success -> succeededFuture());

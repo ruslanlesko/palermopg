@@ -10,7 +10,6 @@ import java.util.List;
 
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
-import static java.util.stream.Collectors.toList;
 
 public class AlbumSharingService {
     private final AlbumDao dao;
@@ -29,10 +28,10 @@ public class AlbumSharingService {
 
     private List<Long> combineSharedUsers(List<Long> current, List<Long> toAdd) {
         if (current == null) {
-            return toAdd.stream().distinct().collect(toList());
+            return toAdd.stream().distinct().toList();
         }
         List<Long> result = new ArrayList<>(current);
         result.addAll(toAdd);
-        return result.stream().distinct().collect(toList());
+        return result.stream().distinct().toList();
     }
 }

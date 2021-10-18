@@ -22,7 +22,6 @@ import java.util.zip.ZipOutputStream;
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
 import static java.util.Comparator.comparingLong;
-import static java.util.stream.Collectors.toList;
 
 public class AlbumFetchingService {
     private final AlbumDao albumDao;
@@ -43,7 +42,7 @@ public class AlbumFetchingService {
         return albumDao.findAlbumsForUserId(userId)
             .map(albums -> albums.stream()
                 .sorted(comparingLong(Album::id).reversed())
-                .collect(toList())
+                .toList()
             );
     }
 
@@ -54,7 +53,7 @@ public class AlbumFetchingService {
                 .compose(album -> pictureMetaDao.findForAlbumId(albumId)
                         .map(metas -> metas.stream()
                             .sorted((a, b) -> album.isChronologicalOrder() ? -1 * sortPictureMeta(a, b) : sortPictureMeta(a, b))
-                            .collect(toList())
+                            .toList()
                         )
                 );
     }
@@ -71,11 +70,11 @@ public class AlbumFetchingService {
                 .compose(metas -> {
                     var pics = metas.stream()
                             .sorted(this::sortPictureMeta)
-                            .collect(toList());
+                            .toList();
 
                     var futures = pics.stream()
                             .map(p -> pictureDataDao.find(p.path()))
-                            .collect(toList());
+                            .toList();
 
                     return CompositeFuture.all(new ArrayList<>(futures))
                             .compose(dataResults -> createArchive(dataResults, pics));

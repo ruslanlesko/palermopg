@@ -3,9 +3,9 @@ package com.leskor.palermopg.services;
 import com.leskor.palermopg.dao.LimitsDao;
 import com.leskor.palermopg.dao.PictureDataDao;
 import com.leskor.palermopg.dao.PictureMetaDao;
-import com.leskor.palermopg.exception.AuthorizationException;
 import com.leskor.palermopg.entity.PictureMeta;
 import com.leskor.palermopg.entity.StorageConsumption;
+import com.leskor.palermopg.exception.AuthorizationException;
 import com.leskor.palermopg.security.JWTParser;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static io.vertx.core.Future.succeededFuture;
 
@@ -57,7 +56,7 @@ public class StorageService {
                     List<Future<Long>> unknownMetasSizes = metas.stream()
                         .filter(i -> i.size() <= 0)
                         .map(this::calculateSize)
-                        .collect(Collectors.toList());
+                        .toList();
 
                     if (unknownMetasSizes.isEmpty()) {
                         getLimitAndReturnStorageConsumption(resultPromise, userId, knownSize);
@@ -84,7 +83,7 @@ public class StorageService {
 
         List<Future<StorageConsumption>> futures = ids.stream()
                 .map(id -> findForUser(token, id))
-                .collect(Collectors.toList());
+                .toList();
 
         CompositeFuture.all(new ArrayList<>(futures))
                 .onSuccess(results -> {
