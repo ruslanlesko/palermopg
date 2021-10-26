@@ -2,7 +2,7 @@
 # PalermoPG - picture gallery server
 Created by [Ruslan Lesko](https://leskor.com)
 
-![badge](https://action-badges.now.sh/ruslanlesko/palermopg)
+[![PalermoPG Test](https://github.com/ruslanlesko/palermopg/actions/workflows/palermopg-test.yml/badge.svg)](https://github.com/ruslanlesko/palermopg/actions/workflows/palermopg-test.yml)
 
 PalermoPG provides a solution for a self-hosted picture gallery using JWT as an authentication mechanism. Please note that the front-end (and authentication service) for this API is not present. PalermoPG is designed to be a building block for custom picture management systems.
 
