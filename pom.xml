@@ -6,7 +6,7 @@
 
   <groupId>com.ruslanlesko.palermopg</groupId>
   <artifactId>core</artifactId>
-  <version>1.21.2</version>
+  <version>1.21.3</version>
 
   <properties>
     <surefire-plugin.version>2.22.0</surefire-plugin.version>
@@ -16,7 +16,7 @@
     <exec.mainClass>com.leskor.palermopg.Application</exec.mainClass>
     <vertx.version>4.0.2</vertx.version>
     <logging.slf4f-api.version>1.7.29</logging.slf4f-api.version>
-    <logging.log4j2.version>2.13.3</logging.log4j2.version>
+    <logging.log4j2.version>2.15.0</logging.log4j2.version>
     <jackson.version>2.12.3</jackson.version>
   </properties>
 
