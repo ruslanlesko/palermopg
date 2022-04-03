@@ -25,12 +25,13 @@ public class FilePictureDataDao implements PictureDataDao {
     }
 
     @Override
-    public Future<String> save(byte[] data) {
+    public Future<String> save(byte[] data, long albumId) {
         Promise<String> resultPromise = Promise.promise();
 
         context.executeBlocking(call -> {
             try {
-                long largestId = Files.walk(Paths.get(folderPath), 2)
+                Path path = folderPathForAlbum(albumId);
+                long largestId = Files.walk(path, 2)
                         .map(this::extractId)
                         .map(Number::longValue)
                         .filter(n -> n > 0).reduce(0L, (a, b) -> a > b ? a : b);
@@ -42,7 +43,7 @@ public class FilePictureDataDao implements PictureDataDao {
 
                 long newId = largestId + 1;
 
-                Path target = Paths.get(folderPath + "/" + newId + ".jpg");
+                Path target = Paths.get(path.toString() + "/" + newId + ".jpg");
                 Files.write(target, data);
                 resultPromise.complete(target.toString());
             } catch (IOException e) {
@@ -54,6 +55,11 @@ public class FilePictureDataDao implements PictureDataDao {
         });
 
         return resultPromise.future();
+    }
+
+    private Path folderPathForAlbum(long albumId) throws IOException {
+        Path target = albumId < 0 ? Paths.get(folderPath) : Paths.get(folderPath + "/a" + albumId);
+        return Files.exists(target) && Files.isDirectory(target) ? target : Files.createDirectory(target);
     }
 
     @Override

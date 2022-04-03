@@ -115,8 +115,8 @@ public class PictureService {
             return failedFuture("Optimized version was not created");
         }
 
-        Future<String> optimizedPathFuture = pictureDataDao.save(optimizedPictureData);
-        Future<String> originalPathFuture = pictureDataDao.save(rotatedData);
+        Future<String> optimizedPathFuture = pictureDataDao.save(optimizedPictureData, albumId);
+        Future<String> originalPathFuture = pictureDataDao.save(rotatedData, albumId);
         return CompositeFuture.all(optimizedPathFuture, originalPathFuture).compose(pathResults -> {
             String optimizedPath = pathResults.resultAt(0);
             String originalPath = pathResults.resultAt(1);

@@ -125,8 +125,8 @@ class PictureServiceTest {
 
     @Test
     void testInsertingNewPicture() {
-        when(dataDao.save(data)).thenReturn(Future.succeededFuture(PATH));
-        when(dataDao.save(OPTIMIZED_DATA)).thenReturn(Future.succeededFuture(PATH + "_optimized"));
+        when(dataDao.save(data, -1)).thenReturn(Future.succeededFuture(PATH));
+        when(dataDao.save(OPTIMIZED_DATA, -1)).thenReturn(Future.succeededFuture(PATH + "_optimized"));
         when(metaDao.save(any())).thenReturn(Future.succeededFuture(PICTURE_ID));
         when(storageService.findForUser(TOKEN, USER_ID)).thenReturn(Future.succeededFuture(STORAGE_CONSUMPTION));
         when(pmService.rotateToCorrectOrientation(data)).thenReturn(Future.succeededFuture(data));

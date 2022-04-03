@@ -95,7 +95,7 @@ public class Application {
     }
 
     public static void main(String[] args) {
-        logger.info("Starting PalermoPG 1.21.4");
+        logger.info("Starting PalermoPG 1.21.5");
         Application palermoPG = new Application();
         palermoPG.startHttpServer();
     }
