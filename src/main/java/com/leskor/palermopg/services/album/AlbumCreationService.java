@@ -28,6 +28,6 @@ public class AlbumCreationService {
         List<Long> sharedUsers = album.sharedUsers() == null ? List.of() : album.sharedUsers();
         boolean isChronologicalOrder = album.isChronologicalOrder() != null && album.isChronologicalOrder();
 
-        return new Album(-1, album.userId(), album.name(), sharedUsers, isChronologicalOrder, null);
+        return Album.create(-1, album.userId(), album.name(), sharedUsers, isChronologicalOrder);
     }
 }

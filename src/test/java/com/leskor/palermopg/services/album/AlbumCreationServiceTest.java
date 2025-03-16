@@ -1,21 +1,23 @@
 package com.leskor.palermopg.services.album;
 
+import static io.vertx.core.Future.succeededFuture;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.leskor.palermopg.dao.AlbumDao;
 import com.leskor.palermopg.entity.Album;
+import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.List;
-import java.util.stream.Stream;
-
-import static io.vertx.core.Future.succeededFuture;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class AlbumCreationServiceTest {
     private static final long
@@ -38,18 +40,20 @@ class AlbumCreationServiceTest {
 
     @Test
     void addNewAlbum() {
-        when(dao.save(albumMatcher(SHARED_USERS, true))).thenReturn(succeededFuture(CREATED_ALBUM_ID));
+        when(dao.save(albumMatcher(SHARED_USERS, true))).thenReturn(
+                succeededFuture(CREATED_ALBUM_ID));
 
-        Album album = new Album(-1, USER_ID, ALBUM_NAME, SHARED_USERS, true, null);
+        Album album = Album.create(-1, USER_ID, ALBUM_NAME, SHARED_USERS, true);
         albumCreationService.addNewAlbum(album)
                 .onComplete(resp -> assertEquals(CREATED_ALBUM_ID, resp.result()));
     }
 
     @Test
     void addNewAlbumWithOnlyRequiredFieldsSet() {
-        when(dao.save(albumMatcher(List.of(), false))).thenReturn(succeededFuture(CREATED_ALBUM_ID));
+        when(dao.save(albumMatcher(List.of(), false))).thenReturn(
+                succeededFuture(CREATED_ALBUM_ID));
 
-        Album album = new Album(-1, USER_ID, ALBUM_NAME, null, null, null);
+        Album album = Album.create(-1, USER_ID, ALBUM_NAME, null, null);
         albumCreationService.addNewAlbum(album)
                 .onComplete(resp -> assertEquals(CREATED_ALBUM_ID, resp.result()));
     }
@@ -77,9 +81,9 @@ class AlbumCreationServiceTest {
 
     private static Stream<Arguments> invalidAlbums() {
         return Stream.of(
-                Arguments.of(new Album(-1, -1, ALBUM_NAME, SHARED_USERS, true, null)),
-                Arguments.of(new Album(-1, USER_ID, "", SHARED_USERS, true, null)),
-                Arguments.of(new Album(-1, USER_ID, null, SHARED_USERS, true, null)),
+                Arguments.of(Album.create(-1, -1, ALBUM_NAME, SHARED_USERS, true)),
+                Arguments.of(Album.create(-1, USER_ID, "", SHARED_USERS, true)),
+                Arguments.of(Album.create(-1, USER_ID, null, SHARED_USERS, true)),
                 Arguments.of((Album) null)
         );
     }

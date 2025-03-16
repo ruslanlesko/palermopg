@@ -61,7 +61,9 @@ public class AlbumFetchingService {
         return albums.stream()
                 .map(album -> pictureMetaDao.findForAlbumId(album.id())
                         .map(metas -> metas.stream().max(this::sortPictureMeta)
-                                .map(first -> album.withCoverPicture(new Album.CoverPicture(first.userId(), first.id())))
+                                .map(first ->
+                                        album.withCoverPicture(new Album.CoverPicture(first.userId(), first.id()))
+                                                .withDateCreated(first.dateUploaded()))
                                 .orElse(album)
                         )
                 ).toList();

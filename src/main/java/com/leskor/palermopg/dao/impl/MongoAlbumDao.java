@@ -61,13 +61,13 @@ public class MongoAlbumDao implements AlbumDao {
         getCollection()
                 .find(eq("id", id))
                 .first()
-                .subscribe(forSinglePromise(resultPromise, doc -> Optional.of(new Album(
+                .subscribe(forSinglePromise(resultPromise, doc -> Optional.of(Album.create(
                         id,
                         doc.getLong("userId"),
                         doc.getString("name"),
                         doc.getList("sharedUsers", Long.class),
-                        doc.get("isChronologicalOrder") != null && doc.getBoolean("isChronologicalOrder"),
-                        null)), Optional.empty()));
+                        doc.get("isChronologicalOrder") != null &&
+                                doc.getBoolean("isChronologicalOrder"))), Optional.empty()));
 
         return resultPromise.future();
     }
@@ -77,13 +77,13 @@ public class MongoAlbumDao implements AlbumDao {
         Promise<List<Album>> resultPromise = Promise.promise();
 
         getCollection().find(or(eq("userId", userId), eq("sharedUsers", userId)))
-                .subscribe(forPromise(resultPromise, document -> new Album(
+                .subscribe(forPromise(resultPromise, document -> Album.create(
                         document.getLong("id"),
                         document.getLong("userId"),
                         document.getString("name"),
                         document.getList("sharedUsers", Long.class),
-                        document.get("isChronologicalOrder") != null && document.getBoolean("isChronologicalOrder"),
-                        null)));
+                        document.get("isChronologicalOrder") != null &&
+                                document.getBoolean("isChronologicalOrder"))));
 
         return resultPromise.future();
     }
@@ -100,7 +100,8 @@ public class MongoAlbumDao implements AlbumDao {
         getCollection().deleteOne(eq("id", id))
                 .subscribe(forVoidPromise(
                         resultPromise,
-                        deleteResult -> deleteResult.getDeletedCount() == 1 && deleteResult.wasAcknowledged(),
+                        deleteResult -> deleteResult.getDeletedCount() == 1 &&
+                                deleteResult.wasAcknowledged(),
                         new MissingItemException()));
 
         return resultPromise.future();
@@ -138,9 +139,15 @@ public class MongoAlbumDao implements AlbumDao {
 
         BasicDBObject newDoc = new BasicDBObject();
 
-        if (album.name() != null) newDoc.put("name", album.name());
-        if (album.isChronologicalOrder() != null) newDoc.put("isChronologicalOrder", album.isChronologicalOrder());
-        if (album.sharedUsers() != null) newDoc.put("sharedUsers", album.sharedUsers());
+        if (album.name() != null) {
+            newDoc.put("name", album.name());
+        }
+        if (album.isChronologicalOrder() != null) {
+            newDoc.put("isChronologicalOrder", album.isChronologicalOrder());
+        }
+        if (album.sharedUsers() != null) {
+            newDoc.put("sharedUsers", album.sharedUsers());
+        }
 
         BasicDBObject updateDoc = new BasicDBObject();
         updateDoc.put("$set", newDoc);
@@ -149,7 +156,8 @@ public class MongoAlbumDao implements AlbumDao {
                 .updateOne(query, updateDoc)
                 .subscribe(
                         ReactiveSubscriber.forVoidPromise(
-                                resultPromise, res -> res.getModifiedCount() == 1 && res.wasAcknowledged(),
+                                resultPromise,
+                                res -> res.getModifiedCount() == 1 && res.wasAcknowledged(),
                                 new MissingItemException()
                         )
                 );

@@ -72,7 +72,7 @@ class PictureServiceTest {
     @Test
     void testGetPictureData() {
         PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME);
-        Album album = new Album(ALBUM_ID, USER_ID, "album", List.of(), false, null);
+        Album album = Album.create(ALBUM_ID, USER_ID, "album", List.of(), false);
 
         when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(metaDao.find(PICTURE_ID)).thenReturn(Future.succeededFuture(Optional.of(meta)));
@@ -91,7 +91,7 @@ class PictureServiceTest {
     @Test
     void testDownloadPictureData() {
         PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME);
-        Album album = new Album(ALBUM_ID, USER_ID, "album", List.of(), false, null);
+        Album album = Album.create(ALBUM_ID, USER_ID, "album", List.of(), false);
 
         when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(metaDao.find(PICTURE_ID)).thenReturn(Future.succeededFuture(Optional.of(meta)));
@@ -108,7 +108,7 @@ class PictureServiceTest {
     @Test
     void testGetPictureDataAlbumNotAccessible() {
         PictureMeta meta = new PictureMeta(PICTURE_ID, USER_ID_2, ALBUM_ID, -1L, PATH, null, TIME, TIME, TIME);
-        Album album = new Album(ALBUM_ID, USER_ID_2, "album", List.of(USER_ID_3), false, null);
+        Album album = Album.create(ALBUM_ID, USER_ID_2, "album", List.of(USER_ID_3), false);
 
         when(parser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(metaDao.find(PICTURE_ID)).thenReturn(Future.succeededFuture(Optional.of(meta)));

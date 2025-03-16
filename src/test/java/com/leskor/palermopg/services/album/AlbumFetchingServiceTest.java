@@ -1,5 +1,14 @@
 package com.leskor.palermopg.services.album;
 
+import static io.vertx.core.Future.succeededFuture;
+import static java.time.LocalDateTime.now;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.leskor.palermopg.dao.AlbumDao;
 import com.leskor.palermopg.dao.PictureDataDao;
 import com.leskor.palermopg.dao.PictureMetaDao;
@@ -7,22 +16,14 @@ import com.leskor.palermopg.entity.Album;
 import com.leskor.palermopg.entity.PictureMeta;
 import com.leskor.palermopg.exception.AuthorizationException;
 import com.leskor.palermopg.security.JWTParser;
-
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
-
-import static io.vertx.core.Future.succeededFuture;
-import static java.time.LocalDateTime.now;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class AlbumFetchingServiceTest {
     private static final String
@@ -41,15 +42,19 @@ class AlbumFetchingServiceTest {
             DATA_2 = new byte[] {16, 101};
 
     private static final Album
-            ALBUM = new Album(ALBUM_ID, USER_ID, NAME, List.of(), true, null),
-            ALBUM_FOR_SHARED_USER = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(USER_ID), true, null),
-            ALBUM_WITH_SHARED_USERS_NULL = new Album(ALBUM_ID, USER_ID - 1, NAME, null, true, null),
-            ALBUM_2 = new Album(ALBUM_ID + 1, USER_ID, NAME, List.of(), false, null);
+            ALBUM = Album.create(ALBUM_ID, USER_ID, NAME, List.of(), true),
+            ALBUM_FOR_SHARED_USER =
+                    Album.create(ALBUM_ID, USER_ID - 1, NAME, List.of(USER_ID), true),
+            ALBUM_WITH_SHARED_USERS_NULL = Album.create(ALBUM_ID, USER_ID - 1, NAME, null, true),
+            ALBUM_2 = Album.create(ALBUM_ID + 1, USER_ID, NAME, List.of(), false);
 
     private static final PictureMeta
-            PICTURE_META = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1, PATH, "", now(), now(), now()),
-            PICTURE_META_2 = new PictureMeta(PICTURE_ID + 1, USER_ID, ALBUM_ID, -1, PATH_2, "", now().plusDays(2), now(), now()),
-            PICTURE_META_3 = new PictureMeta(PICTURE_ID + 2, USER_ID, ALBUM_ID, -1, "", "", now(), now().plusDays(2), now());
+            PICTURE_META =
+            new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1, PATH, "", now(), now(), now()),
+            PICTURE_META_2 = new PictureMeta(PICTURE_ID + 1, USER_ID, ALBUM_ID, -1, PATH_2, "",
+                    now().plusDays(2), now(), now()),
+            PICTURE_META_3 = new PictureMeta(PICTURE_ID + 2, USER_ID, ALBUM_ID, -1, "", "", now(),
+                    now().plusDays(2), now());
 
     private JWTParser jwtParser;
     private AlbumDao albumDao;
@@ -63,12 +68,14 @@ class AlbumFetchingServiceTest {
         albumDao = mock(AlbumDao.class);
         pictureMetaDao = mock(PictureMetaDao.class);
         pictureDataDao = mock(PictureDataDao.class);
-        albumFetchingService = new AlbumFetchingService(albumDao, pictureMetaDao, pictureDataDao, jwtParser);
+        albumFetchingService =
+                new AlbumFetchingService(albumDao, pictureMetaDao, pictureDataDao, jwtParser);
     }
 
     @Test
     void getAlbumsForUserId() {
-        when(albumDao.findAlbumsForUserId(USER_ID)).thenReturn(succeededFuture(List.of(ALBUM, ALBUM_2)));
+        when(albumDao.findAlbumsForUserId(USER_ID)).thenReturn(
+                succeededFuture(List.of(ALBUM, ALBUM_2)));
 
         when(pictureMetaDao.findForAlbumId(ALBUM_ID))
                 .thenReturn(succeededFuture(List.of(PICTURE_META, PICTURE_META_2)));
@@ -79,8 +86,10 @@ class AlbumFetchingServiceTest {
                 .onComplete(res -> assertEquals(
                         List.of(
                                 ALBUM_2,
-                                ALBUM.withCoverPicture(new Album.CoverPicture(PICTURE_META.userId(), PICTURE_META.id()))),
-                        res.result()));
+                                ALBUM.withCoverPicture(new Album.CoverPicture(PICTURE_META.userId(),
+                                                PICTURE_META.id()))
+                                        .withDateCreated(PICTURE_META.dateUploaded())),
+                                res.result()));
     }
 
     @ParameterizedTest
@@ -112,7 +121,9 @@ class AlbumFetchingServiceTest {
                 .thenReturn(succeededFuture(List.of(PICTURE_META, PICTURE_META_2, PICTURE_META_3)));
 
         albumFetchingService.getPictureMetaForAlbum(USER_ID, ALBUM_ID)
-                .onComplete(res -> assertEquals(List.of(PICTURE_META, PICTURE_META_3, PICTURE_META_2), res.result()));
+                .onComplete(
+                        res -> assertEquals(List.of(PICTURE_META, PICTURE_META_3, PICTURE_META_2),
+                                res.result()));
     }
 
     @ParameterizedTest
@@ -142,7 +153,8 @@ class AlbumFetchingServiceTest {
     void download() {
         when(jwtParser.validateTokenForUserId(TOKEN, USER_ID)).thenReturn(true);
         when(albumDao.findById(ALBUM_ID)).thenReturn(succeededFuture(Optional.of(ALBUM)));
-        when(pictureMetaDao.findForAlbumId(ALBUM_ID)).thenReturn(succeededFuture(List.of(PICTURE_META, PICTURE_META_2)));
+        when(pictureMetaDao.findForAlbumId(ALBUM_ID)).thenReturn(
+                succeededFuture(List.of(PICTURE_META, PICTURE_META_2)));
         when(pictureDataDao.find(PATH)).thenReturn(succeededFuture(DATA));
         when(pictureDataDao.find(PATH_2)).thenReturn(succeededFuture(DATA_2));
 

@@ -164,7 +164,7 @@ public class AlbumHandler {
         if (json.containsKey("isChronologicalOrder")) {
             isChrono = Boolean.parseBoolean(json.getString("isChronologicalOrder"));
         }
-        return new Album(albumId, userId, name, sharedUsers, isChrono, null);
+        return new Album(albumId, userId, name, sharedUsers, isChrono, null, null);
     }
 
     public void deleteAllAlbumsForUser(RoutingContext routingContext) {

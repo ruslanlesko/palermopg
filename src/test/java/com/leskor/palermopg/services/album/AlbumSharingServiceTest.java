@@ -31,9 +31,9 @@ public class AlbumSharingServiceTest {
             SHARED_USERS_TO_SET = List.of(42L, 25L, 99L, 5L);
 
     private static final Album
-            ALBUM = new Album(ALBUM_ID, USER_ID, NAME, INITIAL_SHARED_USERS, true, null),
-            ALBUM_FOR_SHARED_USER = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(USER_ID), true, null),
-            ALBUM_2 = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(), true, null);
+            ALBUM = Album.create(ALBUM_ID, USER_ID, NAME, INITIAL_SHARED_USERS, true),
+            ALBUM_FOR_SHARED_USER = Album.create(ALBUM_ID, USER_ID - 1, NAME, List.of(USER_ID), true),
+            ALBUM_2 = Album.create(ALBUM_ID, USER_ID - 1, NAME, List.of(), true);
 
 
     private AlbumDao dao;

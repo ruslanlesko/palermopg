@@ -1,9 +1,9 @@
 package com.leskor.palermopg.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Objects;
 
 public record Album(
         long id,
@@ -11,15 +11,25 @@ public record Album(
         String name,
         List<Long> sharedUsers,
         @JsonProperty("isChronologicalOrder") Boolean isChronologicalOrder,
-        CoverPicture coverPicture
+        CoverPicture coverPicture,
+        String dateCreated
 ) {
-    public static Album create(long id, long userId, String name, List<Long> sharedUsers, Boolean isChronologicalOrder) {
-        return new Album(id, userId, name, sharedUsers, isChronologicalOrder, null);
+    public static Album create(long id, long userId, String name, List<Long> sharedUsers,
+                               Boolean isChronologicalOrder) {
+        return new Album(id, userId, name, sharedUsers, isChronologicalOrder, null, null);
     }
 
     public Album withCoverPicture(CoverPicture coverPicture) {
-        return new Album(id, userId, name, sharedUsers, isChronologicalOrder, coverPicture);
+        return new Album(id, userId, name, sharedUsers, isChronologicalOrder, coverPicture,
+                dateCreated);
     }
 
-    public record CoverPicture(long userId, long pictureId) {}
+    public Album withDateCreated(LocalDateTime dateCreated) {
+        return new Album(id, userId, name, sharedUsers, isChronologicalOrder, coverPicture,
+                dateCreated.format(
+                        DateTimeFormatter.ISO_LOCAL_DATE));
+    }
+
+    public record CoverPicture(long userId, long pictureId) {
+    }
 }

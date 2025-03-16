@@ -44,7 +44,8 @@ Port number: 8081
         "coverPicture": {
             "userId": 69,
             "pictureId": 25
-        }
+        },
+        "dateCreated": "2025-03-16"
     },
     { ... }
 ]
