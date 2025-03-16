@@ -66,7 +66,8 @@ public class MongoAlbumDao implements AlbumDao {
                         doc.getLong("userId"),
                         doc.getString("name"),
                         doc.getList("sharedUsers", Long.class),
-                        doc.get("isChronologicalOrder") != null && doc.getBoolean("isChronologicalOrder"))), Optional.empty()));
+                        doc.get("isChronologicalOrder") != null && doc.getBoolean("isChronologicalOrder"),
+                        null)), Optional.empty()));
 
         return resultPromise.future();
     }
@@ -81,7 +82,8 @@ public class MongoAlbumDao implements AlbumDao {
                         document.getLong("userId"),
                         document.getString("name"),
                         document.getList("sharedUsers", Long.class),
-                        document.get("isChronologicalOrder") != null && document.getBoolean("isChronologicalOrder"))));
+                        document.get("isChronologicalOrder") != null && document.getBoolean("isChronologicalOrder"),
+                        null)));
 
         return resultPromise.future();
     }

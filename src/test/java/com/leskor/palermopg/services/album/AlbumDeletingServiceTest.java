@@ -37,10 +37,10 @@ class AlbumDeletingServiceTest {
             PICTURE_ID = 256;
 
     private static final Album
-            ALBUM = new Album(ALBUM_ID, USER_ID, NAME, List.of(), true),
-            ALBUM_FOR_SHARED_USER = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(USER_ID), true),
-            ALBUM_2 = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(), false),
-            ALBUM_3 = new Album(ALBUM_ID_3, USER_ID - 1, NAME, List.of(), false);
+            ALBUM = new Album(ALBUM_ID, USER_ID, NAME, List.of(), true, null),
+            ALBUM_FOR_SHARED_USER = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(USER_ID), true, null),
+            ALBUM_2 = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(), false, null),
+            ALBUM_3 = new Album(ALBUM_ID_3, USER_ID - 1, NAME, List.of(), false, null);
 
     private static final PictureMeta
             PICTURE_META = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1, PATH, "", now(), now(), now()),

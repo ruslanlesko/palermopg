@@ -11,6 +11,7 @@ import com.leskor.palermopg.security.JWTParser;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 
+import io.vertx.core.Promise;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -39,11 +40,31 @@ public class AlbumFetchingService {
     public Future<List<Album>> getAlbumsForUserId(long userId) {
         if (userId < 1) return failedFuture(new IllegalArgumentException("User ID is invalid for fetching albums"));
 
-        return albumDao.findAlbumsForUserId(userId)
+        Promise<List<Album>> resultPromise = Promise.promise();
+
+        albumDao.findAlbumsForUserId(userId)
             .map(albums -> albums.stream()
                 .sorted(comparingLong(Album::id).reversed())
                 .toList()
+            ).compose(albums -> CompositeFuture.join(new ArrayList<>(enrichAlbumsWithCoverPictures(albums)))
+                        .onSuccess(results -> {
+                            List<Album> enrichedAlbums = results.list();
+                            resultPromise.complete(enrichedAlbums);
+                        })
+                        .onFailure(resultPromise::fail)
             );
+
+        return resultPromise.future();
+    }
+
+    private List<Future<Album>> enrichAlbumsWithCoverPictures(List<Album> albums) {
+        return albums.stream()
+                .map(album -> pictureMetaDao.findForAlbumId(album.id())
+                        .map(metas -> metas.stream().max(this::sortPictureMeta)
+                                .map(first -> album.withCoverPicture(new Album.CoverPicture(first.userId(), first.id())))
+                                .orElse(album)
+                        )
+                ).toList();
     }
 
     public Future<List<PictureMeta>> getPictureMetaForAlbum(long userId, long albumId) {

@@ -40,7 +40,7 @@ class AlbumCreationServiceTest {
     void addNewAlbum() {
         when(dao.save(albumMatcher(SHARED_USERS, true))).thenReturn(succeededFuture(CREATED_ALBUM_ID));
 
-        Album album = new Album(-1, USER_ID, ALBUM_NAME, SHARED_USERS, true);
+        Album album = new Album(-1, USER_ID, ALBUM_NAME, SHARED_USERS, true, null);
         albumCreationService.addNewAlbum(album)
                 .onComplete(resp -> assertEquals(CREATED_ALBUM_ID, resp.result()));
     }
@@ -49,7 +49,7 @@ class AlbumCreationServiceTest {
     void addNewAlbumWithOnlyRequiredFieldsSet() {
         when(dao.save(albumMatcher(List.of(), false))).thenReturn(succeededFuture(CREATED_ALBUM_ID));
 
-        Album album = new Album(-1, USER_ID, ALBUM_NAME, null, null);
+        Album album = new Album(-1, USER_ID, ALBUM_NAME, null, null, null);
         albumCreationService.addNewAlbum(album)
                 .onComplete(resp -> assertEquals(CREATED_ALBUM_ID, resp.result()));
     }
@@ -77,9 +77,9 @@ class AlbumCreationServiceTest {
 
     private static Stream<Arguments> invalidAlbums() {
         return Stream.of(
-                Arguments.of(new Album(-1, -1, ALBUM_NAME, SHARED_USERS, true)),
-                Arguments.of(new Album(-1, USER_ID, "", SHARED_USERS, true)),
-                Arguments.of(new Album(-1, USER_ID, null, SHARED_USERS, true)),
+                Arguments.of(new Album(-1, -1, ALBUM_NAME, SHARED_USERS, true, null)),
+                Arguments.of(new Album(-1, USER_ID, "", SHARED_USERS, true, null)),
+                Arguments.of(new Album(-1, USER_ID, null, SHARED_USERS, true, null)),
                 Arguments.of((Album) null)
         );
     }

@@ -40,7 +40,11 @@ Port number: 8081
         "userId": 69,
         "name": "Vacation",
         "sharedUsers": [25, 27],
-        "isChronologicalOrder": false
+        "isChronologicalOrder": false,
+        "coverPicture": {
+            "userId": 69,
+            "pictureId": 25
+        }
     },
     { ... }
 ]
@@ -90,7 +94,7 @@ Port number: 8081
 To run unit test execute `mvn test` in the project root
 
 ## Build and run
-Make sure that you have Java 11 or later, MongoDB and RSA public key (described below) on your machine.
+Make sure that you have Java 17 or later, MongoDB and RSA public key (described below) on your machine.
 
 Run `mvn package` in the project root to get application jar with dependencies.
 

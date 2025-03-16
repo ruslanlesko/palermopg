@@ -41,10 +41,10 @@ class AlbumFetchingServiceTest {
             DATA_2 = new byte[] {16, 101};
 
     private static final Album
-            ALBUM = new Album(ALBUM_ID, USER_ID, NAME, List.of(), true),
-            ALBUM_FOR_SHARED_USER = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(USER_ID), true),
-            ALBUM_WITH_SHARED_USERS_NULL = new Album(ALBUM_ID, USER_ID - 1, NAME, null, true),
-            ALBUM_2 = new Album(ALBUM_ID + 1, USER_ID, NAME, List.of(), false);
+            ALBUM = new Album(ALBUM_ID, USER_ID, NAME, List.of(), true, null),
+            ALBUM_FOR_SHARED_USER = new Album(ALBUM_ID, USER_ID - 1, NAME, List.of(USER_ID), true, null),
+            ALBUM_WITH_SHARED_USERS_NULL = new Album(ALBUM_ID, USER_ID - 1, NAME, null, true, null),
+            ALBUM_2 = new Album(ALBUM_ID + 1, USER_ID, NAME, List.of(), false, null);
 
     private static final PictureMeta
             PICTURE_META = new PictureMeta(PICTURE_ID, USER_ID, ALBUM_ID, -1, PATH, "", now(), now(), now()),
@@ -68,10 +68,19 @@ class AlbumFetchingServiceTest {
 
     @Test
     void getAlbumsForUserId() {
-        when(albumDao.findAlbumsForUserId(USER_ID)).thenReturn(succeededFuture(List.of(ALBUM)));
+        when(albumDao.findAlbumsForUserId(USER_ID)).thenReturn(succeededFuture(List.of(ALBUM, ALBUM_2)));
+
+        when(pictureMetaDao.findForAlbumId(ALBUM_ID))
+                .thenReturn(succeededFuture(List.of(PICTURE_META, PICTURE_META_2)));
+        when(pictureMetaDao.findForAlbumId(ALBUM_ID + 1))
+                .thenReturn(succeededFuture(List.of()));
 
         albumFetchingService.getAlbumsForUserId(USER_ID)
-                .onComplete(res -> assertEquals(List.of(ALBUM), res.result()));
+                .onComplete(res -> assertEquals(
+                        List.of(
+                                ALBUM_2,
+                                ALBUM.withCoverPicture(new Album.CoverPicture(PICTURE_META.userId(), PICTURE_META.id()))),
+                        res.result()));
     }
 
     @ParameterizedTest
