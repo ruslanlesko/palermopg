@@ -19,6 +19,7 @@ Port number: 8081
 ### Album operations
 * GET `/album/{userId}` returns list of albums for user
 * GET `/album/{userId}/{albumId}` returns list of pictures contained in album
+* GET `/v2/album/{userId}/{albumId}` returns album details with list of pictures contained in album
 * GET `/album/{userId}/{albumId}` with cookie `token=Bearer <tokenvalue>` downloads album as a zip archive
 * POST `/album/{userId}` creates album for user, returns newly created album id
 * PATCH `/album/{userId}/{albumId}` updates album
@@ -64,6 +65,35 @@ Port number: 8081
     },
     { ... }
 ]
+```
+
+#### Payload of album details with pictures contained in an album
+```
+{
+    "albumDetails": {
+        "id": 42,
+        "userId": 69,
+        "name": "Vacation",
+        "sharedUsers": [25, 27],
+        "isChronologicalOrder": false,
+        "coverPicture": {
+            "userId": 69,
+            "pictureId": 25
+        },
+        "dateCreated": "2025-03-16"
+    },
+    "pictures": [
+        {
+            "userId": 42,
+            "pictureId": 25
+        },
+        {
+            "userId": 69,
+            "pictureId": 27
+        },
+        { ... }
+    ]
+}
 ```
 
 #### Payload of create album body

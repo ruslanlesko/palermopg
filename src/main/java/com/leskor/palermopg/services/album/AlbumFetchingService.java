@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -30,7 +31,8 @@ public class AlbumFetchingService {
     private final PictureDataDao pictureDataDao;
     private final JWTParser jwtParser;
 
-    public AlbumFetchingService(AlbumDao albumDao, PictureMetaDao pictureMetaDao, PictureDataDao pictureDataDao, JWTParser jwtParser) {
+    public AlbumFetchingService(AlbumDao albumDao, PictureMetaDao pictureMetaDao,
+                                PictureDataDao pictureDataDao, JWTParser jwtParser) {
         this.albumDao = albumDao;
         this.pictureMetaDao = pictureMetaDao;
         this.pictureDataDao = pictureDataDao;
@@ -38,23 +40,47 @@ public class AlbumFetchingService {
     }
 
     public Future<List<Album>> getAlbumsForUserId(long userId) {
-        if (userId < 1) return failedFuture(new IllegalArgumentException("User ID is invalid for fetching albums"));
+        if (userId < 1) {
+            return failedFuture(
+                    new IllegalArgumentException("User ID is invalid for fetching albums"));
+        }
 
         Promise<List<Album>> resultPromise = Promise.promise();
 
         albumDao.findAlbumsForUserId(userId)
-            .map(albums -> albums.stream()
-                .sorted(comparingLong(Album::id).reversed())
-                .toList()
-            ).compose(albums -> CompositeFuture.join(new ArrayList<>(enrichAlbumsWithCoverPictures(albums)))
+                .map(albums -> albums.stream()
+                        .sorted(comparingLong(Album::id).reversed())
+                        .toList()
+                ).compose(albums -> CompositeFuture.join(
+                                new ArrayList<>(enrichAlbumsWithCoverPictures(albums)))
                         .onSuccess(results -> {
                             List<Album> enrichedAlbums = results.list();
                             resultPromise.complete(enrichedAlbums);
                         })
                         .onFailure(resultPromise::fail)
-            );
+                );
 
         return resultPromise.future();
+    }
+
+    public Future<Album> getAlbumForUserId(long userId, long albumId) {
+        if (userId < 1) {
+            return failedFuture(
+                    new IllegalArgumentException("User ID is invalid for fetching albums"));
+        }
+
+        return albumDao.findById(albumId)
+                .compose(opt -> opt.map(Future::succeededFuture)
+                        .orElseGet(() -> failedFuture(new MissingItemException())))
+                .compose(album -> checkAccess(album, userId))
+                .compose(album -> pictureMetaDao.findForAlbumId(album.id())
+                        .map(metas -> metas.stream().max(this::sortPictureMeta)
+                                .map(first ->
+                                        album.withCoverPicture(
+                                                        new Album.CoverPicture(first.userId(), first.id()))
+                                                .withDateCreated(first.dateUploaded()))
+                                .orElse(album)
+                        ));
     }
 
     private List<Future<Album>> enrichAlbumsWithCoverPictures(List<Album> albums) {
@@ -62,7 +88,8 @@ public class AlbumFetchingService {
                 .map(album -> pictureMetaDao.findForAlbumId(album.id())
                         .map(metas -> metas.stream().max(this::sortPictureMeta)
                                 .map(first ->
-                                        album.withCoverPicture(new Album.CoverPicture(first.userId(), first.id()))
+                                        album.withCoverPicture(
+                                                        new Album.CoverPicture(first.userId(), first.id()))
                                                 .withDateCreated(first.dateUploaded()))
                                 .orElse(album)
                         )
@@ -71,12 +98,14 @@ public class AlbumFetchingService {
 
     public Future<List<PictureMeta>> getPictureMetaForAlbum(long userId, long albumId) {
         return albumDao.findById(albumId)
-                .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> Future.failedFuture(new MissingItemException())))
+                .compose(opt -> opt.map(Future::succeededFuture)
+                        .orElseGet(() -> Future.failedFuture(new MissingItemException())))
                 .compose(album -> checkAccess(album, userId))
                 .compose(album -> pictureMetaDao.findForAlbumId(albumId)
                         .map(metas -> metas.stream()
-                            .sorted((a, b) -> album.isChronologicalOrder() ? -1 * sortPictureMeta(a, b) : sortPictureMeta(a, b))
-                            .toList()
+                                .sorted((a, b) -> album.isChronologicalOrder() ?
+                                        -1 * sortPictureMeta(a, b) : sortPictureMeta(a, b))
+                                .toList()
                         )
                 );
     }
@@ -87,7 +116,8 @@ public class AlbumFetchingService {
         }
 
         return albumDao.findById(albumId)
-                .compose(opt -> opt.map(Future::succeededFuture).orElseGet(() -> failedFuture(new MissingItemException())))
+                .compose(opt -> opt.map(Future::succeededFuture)
+                        .orElseGet(() -> failedFuture(new MissingItemException())))
                 .compose(album -> checkAccess(album, userId))
                 .compose(album -> pictureMetaDao.findForAlbumId(albumId))
                 .compose(metas -> {
@@ -105,8 +135,11 @@ public class AlbumFetchingService {
     }
 
     private Future<Album> checkAccess(Album album, long userId) {
-        return album.userId() != userId && (album.sharedUsers() == null || !album.sharedUsers().contains(userId)) ?
-                failedFuture(new AuthorizationException("Album is missing or not available to user")) : succeededFuture(album);
+        return album.userId() != userId &&
+                (album.sharedUsers() == null || !album.sharedUsers().contains(userId)) ?
+                failedFuture(
+                        new AuthorizationException("Album is missing or not available to user")) :
+                succeededFuture(album);
     }
 
     private Future<byte[]> createArchive(CompositeFuture pictures, List<PictureMeta> metas) {
@@ -136,7 +169,8 @@ public class AlbumFetchingService {
         LocalDateTime capturedA = a.dateCaptured();
         LocalDateTime capturedB = b.dateCaptured();
 
-        if (uploadedA.getYear() == uploadedB.getYear() && uploadedA.getDayOfYear() == uploadedB.getDayOfYear()) {
+        if (uploadedA.getYear() == uploadedB.getYear() &&
+                uploadedA.getDayOfYear() == uploadedB.getDayOfYear()) {
             return capturedB.compareTo(capturedA);
         }
 

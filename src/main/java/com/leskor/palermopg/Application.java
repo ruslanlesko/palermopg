@@ -95,7 +95,7 @@ public class Application {
     }
 
     public static void main(String[] args) {
-        logger.info("Starting PalermoPG 1.21.5");
+        logger.info("Starting PalermoPG 1.23.0");
         Application palermoPG = new Application();
         palermoPG.startHttpServer();
     }
@@ -139,6 +139,8 @@ public class Application {
         router.route("/album/:userId*").handler(BodyHandler.create());
         router.get("/album/:userId").produces(JSON_FORMAT).handler(albumHandler::getAlbumsForUser);
         router.get("/album/:userId/:albumId").produces(JSON_FORMAT).handler(albumHandler::getAlbumContents);
+        router.route("/v2/album/:userId*").handler(this::authorize);
+        router.get("/v2/album/:userId/:albumId").produces(JSON_FORMAT).handler(albumHandler::getAlbumDetails);
         router.post("/album/:userId").consumes(JSON_FORMAT).handler(albumHandler::add);
         router.patch("/album/:userId/:albumId").consumes(JSON_FORMAT).handler(albumHandler::updateAlbum);
         router.post("/album/:userId/:albumId/share").consumes(JSON_FORMAT).handler(albumHandler::shareAlbum);

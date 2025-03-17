@@ -112,6 +112,20 @@ class AlbumFetchingServiceTest {
                 });
     }
 
+    @Test
+    void getAlbumForUserId() {
+        when(albumDao.findById(ALBUM_ID)).thenReturn(succeededFuture(Optional.of(ALBUM)));
+        when(pictureMetaDao.findForAlbumId(ALBUM_ID))
+                .thenReturn(succeededFuture(List.of(PICTURE_META, PICTURE_META_2)));
+
+        albumFetchingService.getAlbumForUserId(USER_ID, ALBUM_ID)
+                .onComplete(res -> assertEquals(
+                        ALBUM.withCoverPicture(new Album.CoverPicture(PICTURE_META.userId(),
+                                        PICTURE_META.id()))
+                                .withDateCreated(PICTURE_META.dateUploaded()),
+                        res.result()));
+    }
+
     @ParameterizedTest
     @MethodSource("albumsWithUserAccess")
     void getPictureMetaForAlbum(Album album) {
